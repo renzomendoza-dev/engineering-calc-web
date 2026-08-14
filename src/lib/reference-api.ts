@@ -12,6 +12,7 @@ import type {
 } from "@/features/conduit-fill/types";
 import type { MotorFlcTableRow } from "@/features/motor-flc/types";
 import type { LockedRotorTableRow } from "@/features/locked-rotor/types";
+import type { PipeMaterialOption } from "@/features/pipe-velocity/types";
 
 /**
  * Wraps calc-api's electrical reference endpoints
@@ -142,4 +143,12 @@ export function getLockedRotorSinglePhaseTable(): Promise<LockedRotorTableRow[]>
 /** Raw rows of PEC Table 4.30.14.5(B) (polyphase locked-rotor current). */
 export function getLockedRotorPolyphaseTable(): Promise<LockedRotorTableRow[]> {
   return apiGet<LockedRotorTableRow[]>("/api/electrical/reference/locked-rotor-polyphase-table");
+}
+
+/**
+ * Pipe material/schedule/nominal-size reference catalog for the pipe velocity/sizing
+ * calculator's dropdowns (calc-api's PipeReferenceController).
+ */
+export function getPipeMaterials(): Promise<PipeMaterialOption[]> {
+  return apiGet<PipeMaterialOption[]>("/api/mechanical/reference/pipe-materials");
 }

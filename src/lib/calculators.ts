@@ -44,4 +44,18 @@ export const calculators: CalculatorConfig[] = [
     href: "/electrical/motor-flc",
     status: "available",
   },
+  {
+    name: "Pipe Velocity / Sizing",
+    description: "Check flow velocity through a pipe, or size a pipe for a target velocity.",
+    category: "Mechanical",
+    href: "/mechanical/pipe-velocity",
+    status: "available",
+  },
+  {
+    name: "Fire Pump Sizing",
+    description: "Demand, capacity resolution, curve validation, and driver power sizing for fire pumps.",
+    category: "Mechanical",
+    href: "/mechanical/firepump",
+    status: "available",
+  },
 ];
