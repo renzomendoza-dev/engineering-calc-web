@@ -1,0 +1,47 @@
+export type CalculatorStatus = "available" | "coming-soon";
+
+export interface CalculatorConfig {
+  name: string;
+  description: string;
+  category: string;
+  href: string;
+  status: CalculatorStatus;
+}
+
+export const calculators: CalculatorConfig[] = [
+  {
+    name: "Voltage Drop",
+    description: "Calculate voltage drop across a conductor run for a given load and length.",
+    category: "Electrical",
+    href: "/electrical/voltage-drop",
+    status: "available",
+  },
+  {
+    name: "Wire Sizing",
+    description: "Determine minimum conductor size for a load based on ampacity and derating.",
+    category: "Electrical",
+    href: "/electrical/wire-sizing",
+    status: "available",
+  },
+  {
+    name: "Conduit Fill",
+    description: "Check conduit fill percentage against code-allowed fill for a set of conductors.",
+    category: "Electrical",
+    href: "/electrical/conduit-fill",
+    status: "available",
+  },
+  {
+    name: "Locked Rotor Current",
+    description: "Estimate locked rotor current for a motor from nameplate horsepower and voltage.",
+    category: "Electrical",
+    href: "/electrical/locked-rotor",
+    status: "available",
+  },
+  {
+    name: "Motor FLC",
+    description: "Look up full-load current for a motor by horsepower and voltage.",
+    category: "Electrical",
+    href: "/electrical/motor-flc",
+    status: "available",
+  },
+];
