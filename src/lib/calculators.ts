@@ -86,4 +86,11 @@ export const calculators: CalculatorConfig[] = [
     href: "/acoustics/distance-attenuation",
     status: "available",
   },
+  {
+    name: "Fire Alarm Audibility",
+    description: "Check notification appliance audibility against NFPA 72 public/private/sleeping-area thresholds.",
+    category: "Acoustics",
+    href: "/acoustics/fire-alarm-audibility",
+    status: "available",
+  },
 ];
