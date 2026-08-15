@@ -79,4 +79,11 @@ export const calculators: CalculatorConfig[] = [
     href: "/mechanical/pump/power",
     status: "available",
   },
+  {
+    name: "Distance Attenuation",
+    description: "Sound pressure level at a target distance from a reference SPL and distance (inverse-square law).",
+    category: "Acoustics",
+    href: "/acoustics/distance-attenuation",
+    status: "available",
+  },
 ];
