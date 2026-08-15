@@ -93,4 +93,11 @@ export const calculators: CalculatorConfig[] = [
     href: "/acoustics/fire-alarm-audibility",
     status: "available",
   },
+  {
+    name: "Smoke Production (Plume) Calculator",
+    description: "Axisymmetric plume smoke production and volumetric flow rate per NFPA 92.",
+    category: "Mechanical",
+    href: "/smoke-control/plume",
+    status: "available",
+  },
 ];
