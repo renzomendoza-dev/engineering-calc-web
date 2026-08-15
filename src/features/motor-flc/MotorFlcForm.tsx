@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
-import { apiPost, ApiError } from "@/lib/api-client";
+import { apiPost } from "@/lib/api-client";
+import { useApiFormError } from "@/hooks/useApiFormError";
 import { useMotorReferenceData } from "@/hooks/useMotorReferenceData";
 import { useMotorHorsepowerRatings } from "@/hooks/useMotorHorsepowerRatings";
 import { useMotorVoltages } from "@/hooks/useMotorVoltages";
@@ -72,7 +73,6 @@ interface MotorFlcFormProps {
 }
 
 export function MotorFlcForm({ onResult }: MotorFlcFormProps) {
-  const [generalError, setGeneralError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -84,6 +84,7 @@ export function MotorFlcForm({ onResult }: MotorFlcFormProps) {
     resolver: zodResolver(motorFlcSchema),
     defaultValues,
   });
+  const { generalError, setGeneralError, handleApiError } = useApiFormError(setError, defaultValues);
 
   const { motorPhaseTypes, motorClasses, isLoading: motorRefLoading, error: motorRefError } =
     useMotorReferenceData();
@@ -274,21 +275,7 @@ export function MotorFlcForm({ onResult }: MotorFlcFormProps) {
       );
       onResult({ kind: "pipeline", data: result });
     } catch (err) {
-      if (err instanceof ApiError) {
-        const unmatched: string[] = [];
-        if (err.fieldErrors) {
-          for (const [field, message] of Object.entries(err.fieldErrors)) {
-            if (field in defaultValues) {
-              setError(field as keyof MotorFlcFormInput, { message });
-            } else {
-              unmatched.push(message);
-            }
-          }
-        }
-        setGeneralError(unmatched.length > 0 ? unmatched.join(" ") : err.message);
-      } else {
-        setGeneralError("Something went wrong. Please try again.");
-      }
+      handleApiError(err);
     }
   };
 

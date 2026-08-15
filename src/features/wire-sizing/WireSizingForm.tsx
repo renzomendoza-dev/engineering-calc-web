@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
-import { apiPost, ApiError } from "@/lib/api-client";
+import { apiPost } from "@/lib/api-client";
+import { useApiFormError } from "@/hooks/useApiFormError";
 import { useWireSizingReferenceData } from "@/hooks/useWireSizingReferenceData";
 import { CIRCUIT_TYPES } from "@/features/voltage-drop/types";
 import { wireSizingSchema, type WireSizingFormInput, type WireSizingFormValues } from "./schema";
@@ -59,7 +60,6 @@ interface WireSizingFormProps {
 }
 
 export function WireSizingForm({ onResult }: WireSizingFormProps) {
-  const [generalError, setGeneralError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -71,6 +71,7 @@ export function WireSizingForm({ onResult }: WireSizingFormProps) {
     resolver: zodResolver(wireSizingSchema),
     defaultValues,
   });
+  const { generalError, setGeneralError, handleApiError } = useApiFormError(setError, defaultValues);
 
   const {
     insulationTypes,
@@ -161,21 +162,7 @@ export function WireSizingForm({ onResult }: WireSizingFormProps) {
       );
       onResult(result);
     } catch (err) {
-      if (err instanceof ApiError) {
-        const unmatched: string[] = [];
-        if (err.fieldErrors) {
-          for (const [field, message] of Object.entries(err.fieldErrors)) {
-            if (field in defaultValues) {
-              setError(field as keyof WireSizingFormInput, { message });
-            } else {
-              unmatched.push(message);
-            }
-          }
-        }
-        setGeneralError(unmatched.length > 0 ? unmatched.join(" ") : err.message);
-      } else {
-        setGeneralError("Something went wrong. Please try again.");
-      }
+      handleApiError(err);
     }
   };
 

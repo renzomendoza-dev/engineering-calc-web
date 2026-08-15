@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
 import { DiameterSpecInput } from "@/components/DiameterSpecInput";
-import { apiPost, ApiError } from "@/lib/api-client";
+import { apiPost } from "@/lib/api-client";
+import { useApiFormError } from "@/hooks/useApiFormError";
+import { toDiameterSpecRequest } from "@/lib/diameterSpec";
 import {
   checkVelocitySchema,
   FLOW_RATE_UNITS,
@@ -33,7 +34,6 @@ interface CheckVelocityFormProps {
 }
 
 export function CheckVelocityForm({ onResult }: CheckVelocityFormProps) {
-  const [generalError, setGeneralError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -45,6 +45,7 @@ export function CheckVelocityForm({ onResult }: CheckVelocityFormProps) {
     resolver: zodResolver(checkVelocitySchema),
     defaultValues,
   });
+  const { generalError, setGeneralError, handleApiError } = useApiFormError(setError, defaultValues);
 
   const onSubmit = async (values: CheckVelocityFormValues) => {
     setGeneralError(null);
@@ -53,15 +54,7 @@ export function CheckVelocityForm({ onResult }: CheckVelocityFormProps) {
       mode: "VELOCITY_FROM_DIAMETER",
       flowRateValue: values.flowRateValue,
       flowRateUnit: values.flowRateUnit,
-      diameterSpecType: values.diameterSource === "standard" ? "NOMINAL" : "RAW",
-      nominalMaterial: values.diameterSource === "standard" ? values.nominalMaterial || null : null,
-      nominalSchedule: values.diameterSource === "standard" ? values.nominalSchedule || null : null,
-      // The backend field is named nominalLabel, but it takes the machine-friendly
-      // nominalSize key (e.g. "2"), not the reference data's human-readable nominalLabel --
-      // see PipeVelocityRequest / NominalSize's Javadoc in calc-core.
-      nominalLabel: values.diameterSource === "standard" ? values.nominalSize || null : null,
-      rawDiameterValue: values.diameterSource === "custom" ? (values.rawDiameterValue ?? null) : null,
-      rawDiameterUnit: values.diameterSource === "custom" ? values.rawDiameterUnit || null : null,
+      ...toDiameterSpecRequest(values),
       targetVelocityValue: null,
       targetVelocityUnit: null,
       pipeMaterial: null,
@@ -75,21 +68,7 @@ export function CheckVelocityForm({ onResult }: CheckVelocityFormProps) {
       );
       onResult(result);
     } catch (err) {
-      if (err instanceof ApiError) {
-        const unmatched: string[] = [];
-        if (err.fieldErrors) {
-          for (const [field, message] of Object.entries(err.fieldErrors)) {
-            if (field in defaultValues) {
-              setError(field as keyof CheckVelocityFormInput, { message });
-            } else {
-              unmatched.push(message);
-            }
-          }
-        }
-        setGeneralError(unmatched.length > 0 ? unmatched.join(" ") : err.message);
-      } else {
-        setGeneralError("Something went wrong. Please try again.");
-      }
+      handleApiError(err);
     }
   };
 

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
-import { apiPost, ApiError } from "@/lib/api-client";
+import { apiPost } from "@/lib/api-client";
+import { useApiFormError } from "@/hooks/useApiFormError";
 import { PumpCurvePointsInput } from "./PumpCurvePointsInput";
 import { powerSchema, type PowerFormInput, type PowerFormValues } from "./schema";
 import type { FirePumpPowerRequest, FirePumpPowerResponse } from "./types";
@@ -30,7 +31,6 @@ interface PowerFormProps {
 }
 
 export function PowerForm({ onResult }: PowerFormProps) {
-  const [generalError, setGeneralError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -43,6 +43,7 @@ export function PowerForm({ onResult }: PowerFormProps) {
     resolver: zodResolver(powerSchema),
     defaultValues,
   });
+  const { generalError, setGeneralError, handleApiError } = useApiFormError(setError, defaultValues);
 
   const inputType = watch("inputType");
   const curveRatedFlowGpm = Number(watch("curveRatedFlowGpm")) || undefined;
@@ -85,21 +86,7 @@ export function PowerForm({ onResult }: PowerFormProps) {
       );
       onResult(result);
     } catch (err) {
-      if (err instanceof ApiError) {
-        const unmatched: string[] = [];
-        if (err.fieldErrors) {
-          for (const [field, message] of Object.entries(err.fieldErrors)) {
-            if (field in defaultValues) {
-              setError(field as keyof PowerFormInput, { message });
-            } else {
-              unmatched.push(message);
-            }
-          }
-        }
-        setGeneralError(unmatched.length > 0 ? unmatched.join(" ") : err.message);
-      } else {
-        setGeneralError("Something went wrong. Please try again.");
-      }
+      handleApiError(err);
     }
   };
 

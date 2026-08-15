@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
-import { apiPost, ApiError } from "@/lib/api-client";
+import { apiPost } from "@/lib/api-client";
+import { useApiFormError } from "@/hooks/useApiFormError";
 import { PumpCurvePointsInput } from "./PumpCurvePointsInput";
 import {
   curveValidationSchema,
@@ -25,7 +25,6 @@ export function CurveValidationForm({
   initialDemandFlow,
   initialDemandPressure,
 }: CurveValidationFormProps) {
-  const [generalError, setGeneralError] = useState<string | null>(null);
   const defaultValues: CurveValidationFormInput = {
     candidateRatedFlowGpm: 0,
     candidateRatedPressurePsi: 0,
@@ -48,6 +47,7 @@ export function CurveValidationForm({
     resolver: zodResolver(curveValidationSchema),
     defaultValues,
   });
+  const { generalError, setGeneralError, handleApiError } = useApiFormError(setError, defaultValues);
 
   const candidateRatedFlowGpm = Number(watch("candidateRatedFlowGpm")) || undefined;
 
@@ -69,21 +69,7 @@ export function CurveValidationForm({
       );
       onResult(result, values.candidateRatedPressurePsi);
     } catch (err) {
-      if (err instanceof ApiError) {
-        const unmatched: string[] = [];
-        if (err.fieldErrors) {
-          for (const [field, message] of Object.entries(err.fieldErrors)) {
-            if (field in defaultValues) {
-              setError(field as keyof CurveValidationFormInput, { message });
-            } else {
-              unmatched.push(message);
-            }
-          }
-        }
-        setGeneralError(unmatched.length > 0 ? unmatched.join(" ") : err.message);
-      } else {
-        setGeneralError("Something went wrong. Please try again.");
-      }
+      handleApiError(err);
     }
   };
 

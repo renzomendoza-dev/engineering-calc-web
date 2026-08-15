@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
-import { apiPost, ApiError } from "@/lib/api-client";
+import { apiPost } from "@/lib/api-client";
+import { useApiFormError } from "@/hooks/useApiFormError";
 import { demandSchema, type DemandFormInput, type DemandFormValues } from "./schema";
 import { SUCTION_CONDITIONS, type FirePumpDemandRequest, type FirePumpDemandResponse } from "./types";
 
@@ -33,7 +34,6 @@ interface DemandFormProps {
 }
 
 export function DemandForm({ onResult }: DemandFormProps) {
-  const [generalError, setGeneralError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -45,6 +45,7 @@ export function DemandForm({ onResult }: DemandFormProps) {
     resolver: zodResolver(demandSchema),
     defaultValues,
   });
+  const { generalError, setGeneralError, handleApiError } = useApiFormError(setError, defaultValues);
 
   const suctionCondition = watch("suctionCondition");
 
@@ -78,21 +79,7 @@ export function DemandForm({ onResult }: DemandFormProps) {
       );
       onResult(result);
     } catch (err) {
-      if (err instanceof ApiError) {
-        const unmatched: string[] = [];
-        if (err.fieldErrors) {
-          for (const [field, message] of Object.entries(err.fieldErrors)) {
-            if (field in defaultValues) {
-              setError(field as keyof DemandFormInput, { message });
-            } else {
-              unmatched.push(message);
-            }
-          }
-        }
-        setGeneralError(unmatched.length > 0 ? unmatched.join(" ") : err.message);
-      } else {
-        setGeneralError("Something went wrong. Please try again.");
-      }
+      handleApiError(err);
     }
   };
 

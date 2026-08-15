@@ -65,4 +65,18 @@ export const calculators: CalculatorConfig[] = [
     href: "/mechanical/firepump",
     status: "available",
   },
+  {
+    name: "Pump TDH",
+    description: "Total Dynamic Head for a pump from static lift, suction/discharge piping, and residual pressure.",
+    category: "Mechanical",
+    href: "/mechanical/pump/tdh",
+    status: "available",
+  },
+  {
+    name: "Pump Power",
+    description: "Hydraulic and shaft power, plus recommended motor size, from flow and TDH.",
+    category: "Mechanical",
+    href: "/mechanical/pump/power",
+    status: "available",
+  },
 ];

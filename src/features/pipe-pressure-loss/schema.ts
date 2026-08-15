@@ -1,9 +1,10 @@
 import { z } from "zod";
 import { diameterSpecFields, validateDiameterSpec } from "@/lib/diameterSpec";
-import { FLUIDS, FRICTION_FACTOR_METHODS } from "./types";
+import { FRICTION_FACTOR_METHODS } from "@/lib/frictionFactorMethod";
+import { FLOW_RATE_UNITS } from "@/lib/flowRateUnit";
+import { FLUIDS } from "./types";
 
-/** Matches PipeUnitParsing's FLOW_RATE_UNITS keys exactly (shared with pipe velocity). */
-export const FLOW_RATE_UNITS = ["L/s", "L/min", "m3/s", "m3/hr", "gpm"] as const;
+export { FLOW_RATE_UNITS };
 
 const FLUID_KEYS = FLUIDS.map((f) => f.key) as [string, ...string[]];
 

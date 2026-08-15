@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
-import { apiPost, ApiError } from "@/lib/api-client";
+import { apiPost } from "@/lib/api-client";
+import { useApiFormError } from "@/hooks/useApiFormError";
 import { capacitySchema, type CapacityFormInput, type CapacityFormValues } from "./schema";
 import type { FirePumpCapacityRequest, FirePumpCapacityResponse } from "./types";
 
@@ -15,7 +15,6 @@ interface CapacityFormProps {
 }
 
 export function CapacityForm({ onResult, initialRatedFlow }: CapacityFormProps) {
-  const [generalError, setGeneralError] = useState<string | null>(null);
   const defaultValues: CapacityFormInput = {
     ratedFlowGpm: initialRatedFlow ? Number(initialRatedFlow) : 0,
   };
@@ -28,6 +27,7 @@ export function CapacityForm({ onResult, initialRatedFlow }: CapacityFormProps) 
     resolver: zodResolver(capacitySchema),
     defaultValues,
   });
+  const { generalError, setGeneralError, handleApiError } = useApiFormError(setError, defaultValues);
 
   const onSubmit = async (values: CapacityFormValues) => {
     setGeneralError(null);
@@ -41,21 +41,7 @@ export function CapacityForm({ onResult, initialRatedFlow }: CapacityFormProps) 
       );
       onResult(result);
     } catch (err) {
-      if (err instanceof ApiError) {
-        const unmatched: string[] = [];
-        if (err.fieldErrors) {
-          for (const [field, message] of Object.entries(err.fieldErrors)) {
-            if (field in defaultValues) {
-              setError(field as keyof CapacityFormInput, { message });
-            } else {
-              unmatched.push(message);
-            }
-          }
-        }
-        setGeneralError(unmatched.length > 0 ? unmatched.join(" ") : err.message);
-      } else {
-        setGeneralError("Something went wrong. Please try again.");
-      }
+      handleApiError(err);
     }
   };
 

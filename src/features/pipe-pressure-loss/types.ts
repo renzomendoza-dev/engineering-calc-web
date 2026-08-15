@@ -1,12 +1,9 @@
 import type { DiameterSpecType } from "@/lib/diameterSpec";
+import type { FrictionFactorMethod } from "@/lib/frictionFactorMethod";
 
 /** Mirrors calc-api's FlowRegimeDto enum. */
 export const FLOW_REGIMES = ["LAMINAR", "TRANSITIONAL", "TURBULENT"] as const;
 export type FlowRegime = (typeof FLOW_REGIMES)[number];
-
-/** Mirrors calc-api's FrictionFactorMethodDto enum. */
-export const FRICTION_FACTOR_METHODS = ["SWAMEE_JAIN", "COLEBROOK_WHITE"] as const;
-export type FrictionFactorMethod = (typeof FRICTION_FACTOR_METHODS)[number];
 
 /**
  * Static fluid list — no reference/mechanical/fluids GET endpoint exists yet (calc-core's

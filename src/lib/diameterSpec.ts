@@ -32,6 +32,7 @@ export const diameterSpecFields = {
 interface DiameterSpecFormData {
   diameterSource: DiameterSource;
   nominalMaterial?: string;
+  nominalSchedule?: string;
   nominalSize?: string;
   rawDiameterValue?: number;
   rawDiameterUnit?: string;
@@ -57,4 +58,41 @@ export function validateDiameterSpec(data: DiameterSpecFormData, ctx: z.Refineme
       ctx.addIssue({ code: "custom", path: ["rawDiameterUnit"], message: "Unit is required" });
     }
   }
+}
+
+/** The DiameterSpec discriminated shape every API request that embeds one expects. */
+export interface DiameterSpecRequestFields {
+  diameterSpecType: DiameterSpecType;
+  nominalMaterial: string | null;
+  nominalSchedule: string | null;
+  nominalLabel: string | null;
+  rawDiameterValue: number | null;
+  rawDiameterUnit: string | null;
+}
+
+/**
+ * Converts a DiameterSpecInput form's fields into the API's DiameterSpec discriminated shape.
+ * Shared by every request builder that embeds a diameter spec (pipe velocity, pipe pressure
+ * loss, and each pump TDH pipe segment) so the nominalSize-becomes-nominalLabel mapping (see
+ * NominalSize's Javadoc in calc-core) is written once, not once per caller.
+ */
+export function toDiameterSpecRequest(data: DiameterSpecFormData): DiameterSpecRequestFields {
+  if (data.diameterSource === "standard") {
+    return {
+      diameterSpecType: "NOMINAL",
+      nominalMaterial: data.nominalMaterial || null,
+      nominalSchedule: data.nominalSchedule || null,
+      nominalLabel: data.nominalSize || null,
+      rawDiameterValue: null,
+      rawDiameterUnit: null,
+    };
+  }
+  return {
+    diameterSpecType: "RAW",
+    nominalMaterial: null,
+    nominalSchedule: null,
+    nominalLabel: null,
+    rawDiameterValue: data.rawDiameterValue ?? null,
+    rawDiameterUnit: data.rawDiameterUnit || null,
+  };
 }

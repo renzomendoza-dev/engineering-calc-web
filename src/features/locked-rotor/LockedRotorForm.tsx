@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
-import { apiPost, ApiError } from "@/lib/api-client";
+import { apiPost } from "@/lib/api-client";
+import { useApiFormError } from "@/hooks/useApiFormError";
 import { lockedRotorSchema, type LockedRotorFormInput, type LockedRotorFormValues } from "./schema";
 import type { LockedRotorRequest, LockedRotorResponse } from "./types";
 
@@ -25,7 +25,6 @@ interface LockedRotorFormProps {
 }
 
 export function LockedRotorForm({ onResult }: LockedRotorFormProps) {
-  const [generalError, setGeneralError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -35,6 +34,7 @@ export function LockedRotorForm({ onResult }: LockedRotorFormProps) {
     resolver: zodResolver(lockedRotorSchema),
     defaultValues,
   });
+  const { generalError, setGeneralError, handleApiError } = useApiFormError(setError, defaultValues);
 
   const onSubmit = async (values: LockedRotorFormValues) => {
     setGeneralError(null);
@@ -52,21 +52,7 @@ export function LockedRotorForm({ onResult }: LockedRotorFormProps) {
       );
       onResult(result);
     } catch (err) {
-      if (err instanceof ApiError) {
-        const unmatched: string[] = [];
-        if (err.fieldErrors) {
-          for (const [field, message] of Object.entries(err.fieldErrors)) {
-            if (field in defaultValues) {
-              setError(field as keyof LockedRotorFormInput, { message });
-            } else {
-              unmatched.push(message);
-            }
-          }
-        }
-        setGeneralError(unmatched.length > 0 ? unmatched.join(" ") : err.message);
-      } else {
-        setGeneralError("Something went wrong. Please try again.");
-      }
+      handleApiError(err);
     }
   };
 

@@ -2,9 +2,8 @@ import { z } from "zod";
 import { diameterSpecFields, validateDiameterSpec } from "@/lib/diameterSpec";
 
 export { DIAMETER_SOURCES, RAW_DIAMETER_UNITS, type DiameterSource } from "@/lib/diameterSpec";
-
-/** Matches PipeUnitParsing's FLOW_RATE_UNITS keys exactly (shared with pipe pressure loss). */
-export const FLOW_RATE_UNITS = ["L/s", "L/min", "m3/s", "m3/hr", "gpm"] as const;
+import { FLOW_RATE_UNITS } from "@/lib/flowRateUnit";
+export { FLOW_RATE_UNITS };
 
 /** Matches PipeVelocityMapper's SPEED_UNITS keys. */
 export const TARGET_VELOCITY_UNITS = ["m/s", "ft/s"] as const;
