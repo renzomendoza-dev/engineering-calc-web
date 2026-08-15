@@ -52,6 +52,13 @@ export const calculators: CalculatorConfig[] = [
     status: "available",
   },
   {
+    name: "Pipe Pressure Loss",
+    description: "Compute Darcy-Weisbach head and pressure loss for a pipe run.",
+    category: "Mechanical",
+    href: "/mechanical/pipe-pressure-loss",
+    status: "available",
+  },
+  {
     name: "Fire Pump Sizing",
     description: "Demand, capacity resolution, curve validation, and driver power sizing for fire pumps.",
     category: "Mechanical",

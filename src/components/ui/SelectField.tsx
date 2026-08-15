@@ -9,14 +9,19 @@ interface SelectFieldProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>,
   label: string;
   options: SelectOption[];
   error?: string;
+  /** Short guidance shown under the label, e.g. what value to enter or where to find it. */
+  hint?: string;
 }
 
 /**
  * Labeled select with inline validation error display. Reused across every calculator
  * form for enum-backed fields (CircuitType, wire material, etc.).
+ *
+ * `hint` renders as always-visible text rather than a hover tooltip, so guidance isn't lost
+ * on touch/keyboard-only input.
  */
 export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
-  ({ label, options, error, id, className, ...selectProps }, ref) => {
+  ({ label, options, error, hint, id, className, ...selectProps }, ref) => {
     const fieldId = id ?? selectProps.name;
 
     return (
@@ -24,6 +29,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
         <label htmlFor={fieldId} className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
           {label}
         </label>
+        {hint && <p className="text-xs text-zinc-500 dark:text-zinc-400">{hint}</p>}
         <select
           {...selectProps}
           ref={ref}

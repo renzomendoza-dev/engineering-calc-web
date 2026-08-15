@@ -1,10 +1,8 @@
+import type { DiameterSpecType } from "@/lib/diameterSpec";
+
 /** Mirrors calc-api's PipeSizingModeDto enum. */
 export const PIPE_SIZING_MODES = ["VELOCITY_FROM_DIAMETER", "DIAMETER_FROM_VELOCITY"] as const;
 export type PipeSizingMode = (typeof PIPE_SIZING_MODES)[number];
-
-/** Mirrors calc-api's DiameterSpecTypeDto enum. */
-export const DIAMETER_SPEC_TYPES = ["NOMINAL", "RAW"] as const;
-export type DiameterSpecType = (typeof DIAMETER_SPEC_TYPES)[number];
 
 /**
  * Mirrors calc-api's PipeVelocityRequest field-for-field.

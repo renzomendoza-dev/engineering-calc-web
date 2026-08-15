@@ -101,11 +101,13 @@ export function DemandForm({ onResult }: DemandFormProps) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <NumberField
           label="Required Flow (GPM)"
+          hint="The fire flow demand for the system, from your hydraulic calculation or NFPA sizing table."
           error={errors.requiredFlowGpm?.message}
           {...register("requiredFlowGpm")}
         />
         <NumberField
           label="Required Pressure at Demand Point (psi)"
+          hint="Pressure needed at the hydraulically most remote (hardest to supply) point in the system."
           error={errors.requiredPressurePsiAtDemandPoint?.message}
           {...register("requiredPressurePsiAtDemandPoint")}
         />
@@ -113,6 +115,7 @@ export function DemandForm({ onResult }: DemandFormProps) {
 
       <SelectField
         label="Suction Condition"
+        hint="Flooded: the water source sits above the pump (positive suction pressure). Lift: the pump must draw water up from below, e.g. a tank or reservoir."
         options={suctionOptions}
         error={errors.suctionCondition?.message}
         {...register("suctionCondition")}
@@ -121,12 +124,14 @@ export function DemandForm({ onResult }: DemandFormProps) {
       {suctionCondition === "FLOODED" ? (
         <NumberField
           label="Available Suction Pressure (psi)"
+          hint="Static pressure available at the pump suction from the flooded source."
           error={errors.availableSuctionPressurePsi?.message}
           {...register("availableSuctionPressurePsi")}
         />
       ) : (
         <NumberField
           label="Suction Lift (feet)"
+          hint="Vertical distance from the water source up to the pump centerline."
           error={errors.suctionLiftFeet?.message}
           {...register("suctionLiftFeet")}
         />
@@ -134,6 +139,7 @@ export function DemandForm({ onResult }: DemandFormProps) {
 
       <NumberField
         label="Safety Margin (%)"
+        hint="Optional extra flow margin for future demand growth or calculation uncertainty. Leave at 0 if not needed."
         error={errors.safetyMarginPercent?.message}
         {...register("safetyMarginPercent")}
       />

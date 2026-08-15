@@ -105,36 +105,59 @@ export function PowerForm({ onResult }: PowerFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <div className="flex gap-4">
-        <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          <input type="radio" value="RATED_POINT_ONLY" className="h-4 w-4" {...register("inputType")} />
-          Rated point only
-        </label>
-        <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          <input type="radio" value="FULL_CURVE" className="h-4 w-4" {...register("inputType")} />
-          Full curve
-        </label>
+      <div className="flex flex-col gap-2">
+        <div className="flex gap-4">
+          <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            <input type="radio" value="RATED_POINT_ONLY" className="h-4 w-4" {...register("inputType")} />
+            Rated point only
+          </label>
+          <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            <input type="radio" value="FULL_CURVE" className="h-4 w-4" {...register("inputType")} />
+            Full curve
+          </label>
+        </div>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          Rated point only evaluates power at a single operating point — quick, but doesn&apos;t
+          check the overload (150% flow) point. Full curve evaluates both, giving a more
+          reliable driver size.
+        </p>
       </div>
 
       {inputType === "RATED_POINT_ONLY" ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <NumberField label="Flow (GPM)" error={errors.flowGpm?.message} {...register("flowGpm")} />
-          <NumberField label="Pressure (psi)" error={errors.pressurePsi?.message} {...register("pressurePsi")} />
+          <NumberField
+            label="Flow (GPM)"
+            hint="The operating point to evaluate power at — usually the pump's rated flow."
+            error={errors.flowGpm?.message}
+            {...register("flowGpm")}
+          />
+          <NumberField
+            label="Pressure (psi)"
+            hint="The pressure at that operating point — usually the pump's rated pressure."
+            error={errors.pressurePsi?.message}
+            {...register("pressurePsi")}
+          />
         </div>
       ) : (
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <NumberField
               label="Rated Flow (GPM)"
+              hint="The pump's nameplate rated flow — the 100% point on its performance curve."
               error={errors.curveRatedFlowGpm?.message}
               {...register("curveRatedFlowGpm")}
             />
             <NumberField
               label="Rated Pressure (psi)"
+              hint="The pump's nameplate rated pressure at its rated flow."
               error={errors.curveRatedPressurePsi?.message}
               {...register("curveRatedPressurePsi")}
             />
           </div>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Enter points from the pump manufacturer&apos;s published performance curve. Power is
+            evaluated at the rated point and at 150% of rated flow.
+          </p>
           <PumpCurvePointsInput
             control={control}
             register={register}
@@ -149,11 +172,13 @@ export function PowerForm({ onResult }: PowerFormProps) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <NumberField
           label="Pump Efficiency (%)"
+          hint="The pump's efficiency at its rated point, from the manufacturer's curve or datasheet (typically 60-85%)."
           error={errors.pumpEfficiencyPercent?.message}
           {...register("pumpEfficiencyPercent")}
         />
         <NumberField
           label="Specific Gravity"
+          hint="Ratio of the fluid's density to water. Leave at 1.0 for plain water."
           error={errors.specificGravity?.message}
           {...register("specificGravity")}
         />

@@ -1,51 +1,26 @@
 import { z } from "zod";
+import { diameterSpecFields, validateDiameterSpec } from "@/lib/diameterSpec";
 
-/** Matches PipeVelocityMapper's FLOW_RATE_UNITS keys exactly. */
+export { DIAMETER_SOURCES, RAW_DIAMETER_UNITS, type DiameterSource } from "@/lib/diameterSpec";
+
+/** Matches PipeUnitParsing's FLOW_RATE_UNITS keys exactly (shared with pipe pressure loss). */
 export const FLOW_RATE_UNITS = ["L/s", "L/min", "m3/s", "m3/hr", "gpm"] as const;
-
-/** Matches PipeVelocityMapper's LENGTH_UNITS keys — subset offered for raw diameter entry. */
-export const RAW_DIAMETER_UNITS = ["mm", "in"] as const;
 
 /** Matches PipeVelocityMapper's SPEED_UNITS keys. */
 export const TARGET_VELOCITY_UNITS = ["m/s", "ft/s"] as const;
 
-export const DIAMETER_SOURCES = ["standard", "custom"] as const;
-export type DiameterSource = (typeof DIAMETER_SOURCES)[number];
-
 /**
- * "Check velocity" mode (VELOCITY_FROM_DIAMETER). diameterSource is a UI-only concept that
- * maps to the request's diameterSpecType (standard -> NOMINAL, custom -> RAW); the fields for
- * whichever side isn't selected are `.optional()` since they're unmounted, not just disabled
- * — same reasoning as voltage drop's schema.
+ * "Check velocity" mode (VELOCITY_FROM_DIAMETER). The diameterSpecFields shape and its
+ * validation are shared with pipe pressure loss's schema via lib/diameterSpec.ts, since both
+ * forms embed the same DiameterSpecInput component.
  */
 export const checkVelocitySchema = z
   .object({
     flowRateValue: z.coerce.number().positive("Must be positive"),
     flowRateUnit: z.enum(FLOW_RATE_UNITS),
-    diameterSource: z.enum(DIAMETER_SOURCES),
-    nominalMaterial: z.string().optional(),
-    nominalSchedule: z.string().optional(),
-    nominalSize: z.string().optional(),
-    rawDiameterValue: z.coerce.number().optional(),
-    rawDiameterUnit: z.enum(RAW_DIAMETER_UNITS).optional(),
+    ...diameterSpecFields,
   })
-  .superRefine((data, ctx) => {
-    if (data.diameterSource === "standard") {
-      if (!data.nominalMaterial) {
-        ctx.addIssue({ code: "custom", path: ["nominalMaterial"], message: "Material is required" });
-      }
-      if (!data.nominalSize) {
-        ctx.addIssue({ code: "custom", path: ["nominalSize"], message: "Pipe size is required" });
-      }
-    } else {
-      if (data.rawDiameterValue === undefined || data.rawDiameterValue <= 0) {
-        ctx.addIssue({ code: "custom", path: ["rawDiameterValue"], message: "Must be positive" });
-      }
-      if (!data.rawDiameterUnit) {
-        ctx.addIssue({ code: "custom", path: ["rawDiameterUnit"], message: "Unit is required" });
-      }
-    }
-  });
+  .superRefine(validateDiameterSpec);
 
 export type CheckVelocityFormInput = z.input<typeof checkVelocitySchema>;
 export type CheckVelocityFormValues = z.output<typeof checkVelocitySchema>;

@@ -4,14 +4,19 @@ interface NumberFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "
   label: string;
   unit?: string;
   error?: string;
+  /** Short guidance shown under the label, e.g. what value to enter or where to find it. */
+  hint?: string;
 }
 
 /**
  * Labeled numeric input with inline validation error display. Reused across every
  * calculator form — register it with react-hook-form via the forwarded ref.
+ *
+ * `hint` renders as always-visible text rather than a hover tooltip, so guidance isn't lost
+ * on touch/keyboard-only input.
  */
 export const NumberField = forwardRef<HTMLInputElement, NumberFieldProps>(
-  ({ label, unit, error, id, className, ...inputProps }, ref) => {
+  ({ label, unit, error, hint, id, className, ...inputProps }, ref) => {
     const fieldId = id ?? inputProps.name;
 
     return (
@@ -20,6 +25,7 @@ export const NumberField = forwardRef<HTMLInputElement, NumberFieldProps>(
           {label}
           {unit && <span className="ml-1 text-zinc-400 dark:text-zinc-500">({unit})</span>}
         </label>
+        {hint && <p className="text-xs text-zinc-500 dark:text-zinc-400">{hint}</p>}
         <input
           {...inputProps}
           ref={ref}

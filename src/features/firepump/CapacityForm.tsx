@@ -61,7 +61,12 @@ export function CapacityForm({ onResult, initialRatedFlow }: CapacityFormProps) 
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <NumberField label="Rated Flow (GPM)" error={errors.ratedFlowGpm?.message} {...register("ratedFlowGpm")} />
+      <NumberField
+        label="Rated Flow (GPM)"
+        hint="The flow you need a standard-size pump for — typically the rated flow from the Demand calculator."
+        error={errors.ratedFlowGpm?.message}
+        {...register("ratedFlowGpm")}
+      />
 
       {generalError && (
         <div className="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400">

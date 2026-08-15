@@ -92,16 +92,23 @@ export function CurveValidationForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <NumberField
           label="Candidate Rated Flow (GPM)"
+          hint="The candidate pump's nameplate rated flow — the 100% point on its performance curve."
           error={errors.candidateRatedFlowGpm?.message}
           {...register("candidateRatedFlowGpm")}
         />
         <NumberField
           label="Candidate Rated Pressure (psi)"
+          hint="The candidate pump's nameplate rated pressure at its rated flow."
           error={errors.candidateRatedPressurePsi?.message}
           {...register("candidateRatedPressurePsi")}
         />
       </div>
 
+      <p className="text-xs text-zinc-500 dark:text-zinc-400">
+        Enter points straight from the pump manufacturer&apos;s published performance curve
+        (flow vs. pressure). You need at least the shutoff point (0 GPM) and a point at or
+        beyond 150% of the candidate&apos;s rated flow.
+      </p>
       <PumpCurvePointsInput
         control={control}
         register={register}
@@ -114,11 +121,13 @@ export function CurveValidationForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <NumberField
           label="Demand Flow (GPM)"
+          hint="The flow your system requires — usually the rated flow from the Demand calculator."
           error={errors.demandFlowGpm?.message}
           {...register("demandFlowGpm")}
         />
         <NumberField
           label="Demand Pressure (psi)"
+          hint="The pressure your system requires — usually the rated pressure from the Demand calculator."
           error={errors.demandPressurePsi?.message}
           {...register("demandPressurePsi")}
         />
