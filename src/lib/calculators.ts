@@ -100,4 +100,18 @@ export const calculators: CalculatorConfig[] = [
     href: "/smoke-control/plume",
     status: "available",
   },
+  {
+    name: "t-Squared Fire Growth Smoke Production Calculator",
+    description: "Time-varying t-squared fire growth smoke production at a single evaluation time, per NFPA 92.",
+    category: "Mechanical",
+    href: "/smoke-control/plume-tsquared",
+    status: "available",
+  },
+  {
+    name: "Natural Smoke Vent Area Calculator",
+    description: "Required natural smoke vent area from smoke volumetric flow rate and temperature, per NFPA 92/204.",
+    category: "Mechanical",
+    href: "/smoke-control/vent-area",
+    status: "available",
+  },
 ];

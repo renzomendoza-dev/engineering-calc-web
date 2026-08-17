@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { FormulaBlock } from "@/components/ui/FormulaBlock";
 import { PlumeStepCard } from "./PlumeStepCard";
 import type { PlumeRegimeType, SmokeProductionRequest, SmokeProductionResponse } from "./types";
@@ -143,6 +144,13 @@ export function SmokePlumeResults({ result, request }: SmokePlumeResultsProps) {
           <span className="ml-2 text-lg font-normal text-zinc-500">m³/s</span>
         </p>
       </div>
+
+      <Link
+        href={`/smoke-control/vent-area?volumetricFlowRate=${result.volumetricFlowRate}&smokeTemperature=${result.smokeTemperature}&ambientTemperature=${request.ambientTemperature}`}
+        className="w-fit font-medium text-blue-600 hover:underline dark:text-blue-400"
+      >
+        Send to Vent Sizing →
+      </Link>
     </div>
   );
 }
