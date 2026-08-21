@@ -67,4 +67,28 @@ export const PEC_TABLES = {
     number: "4.30.14.5(B)",
     title: "Locked-Rotor Current — Polyphase Motors (Design B, C, D)",
   },
+  AMPACITY: {
+    number: "3.10.2.6(B)(16)",
+    title:
+      "Allowable Ampacities of Insulated Conductors (up to 2000V, ≤3 Current-Carrying Conductors, 30°C Ambient)",
+  },
+  /**
+   * Not independently confirmed against a specific numbered table — reuses
+   * CONDUCTOR_DIMENSIONS' citation (10.1.1.5), since that's the table calc-core's
+   * InsulationType enum itself is already cited to, and this mapping (insulation type ->
+   * max operating temperature) is the same kind of per-insulation-type data published
+   * alongside it. Flagged here rather than presented as independently verified.
+   */
+  INSULATION_TEMP_RATING: {
+    number: "10.1.1.5",
+    title: "Insulation Type Temperature Ratings",
+  },
+  AMBIENT_TEMP_CORRECTION: {
+    number: "3.10.2.6(B)(2)(a)",
+    title: "Ambient Temperature Correction Factors (30°C Base)",
+  },
+  CONDUCTOR_COUNT_ADJUSTMENT: {
+    number: "3.10.2.6(B)(3)(a)",
+    title: "Ampacity Adjustment for More Than Three Current-Carrying Conductors",
+  },
 } as const;

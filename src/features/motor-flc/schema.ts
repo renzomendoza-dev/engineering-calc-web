@@ -31,6 +31,7 @@ export const motorFlcSchema = z
     includeWireSizing: z.boolean(),
     ambientTempCelsius: z.coerce.number().optional(),
     numberOfCurrentCarryingConductors: z.coerce.number().int("Must be a whole number").optional(),
+    numberOfParallelSets: z.coerce.number().int("Must be a whole number").optional(),
     insulationType: z.string().optional(),
     conductorMaterial: z.union([z.enum(CONDUCTOR_MATERIALS), z.literal("")]).optional(),
     terminationTempRatingCelsius: z.coerce.number().optional(),
@@ -75,6 +76,13 @@ export const motorFlcSchema = z
       ctx.addIssue({
         code: "custom",
         path: ["numberOfCurrentCarryingConductors"],
+        message: "Must be at least 1",
+      });
+    }
+    if (data.numberOfParallelSets === undefined || data.numberOfParallelSets < 1) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["numberOfParallelSets"],
         message: "Must be at least 1",
       });
     }

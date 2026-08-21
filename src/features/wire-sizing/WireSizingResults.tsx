@@ -17,8 +17,15 @@ export function WireSizingResults({ result }: WireSizingResultsProps) {
           Recommended Conductor Size
         </p>
         <p className="mt-1 text-4xl font-bold text-blue-900 dark:text-blue-100">
+          {result.numberOfParallelSets > 1 && `${result.numberOfParallelSets} × `}
           {result.recommendedSizeLabel}
         </p>
+        {result.numberOfParallelSets > 1 && (
+          <p className="mt-2 text-xs text-blue-700 dark:text-blue-400">
+            {result.numberOfParallelSets} identical conductors run in parallel, each carrying
+            an equal share of the load — not {result.numberOfParallelSets} separate circuits.
+          </p>
+        )}
       </div>
 
       {!result.meetsTerminationRating && (
@@ -36,12 +43,22 @@ export function WireSizingResults({ result }: WireSizingResultsProps) {
           label="Derated Ampacity"
           value={result.deratedAmpacityAmps.toFixed(2)}
           unit="A"
+          note={result.numberOfParallelSets > 1 ? "Per conductor." : undefined}
         />
         <ResultCard
           label="Required Ampacity"
           value={result.requiredAmpacityAmps.toFixed(2)}
           unit="A"
+          note={result.numberOfParallelSets > 1 ? "Total across all parallel sets." : undefined}
         />
+        {result.numberOfParallelSets > 1 && (
+          <ResultCard
+            label="Required Ampacity (per conductor)"
+            value={result.requiredAmpacityPerSetAmps.toFixed(2)}
+            unit="A"
+            note={`Total ÷ ${result.numberOfParallelSets} sets — this is what the recommended size was actually sized against.`}
+          />
+        )}
         <ResultCard label="Base Ampacity" value={result.baseAmpacityAmps.toFixed(2)} unit="A" />
         <ResultCard
           label="Temp Correction Factor"

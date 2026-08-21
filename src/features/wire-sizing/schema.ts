@@ -34,6 +34,10 @@ export const wireSizingSchema = z
       .number()
       .int("Must be a whole number")
       .min(1, "Must be at least 1"),
+    numberOfParallelSets: z.coerce
+      .number()
+      .int("Must be a whole number")
+      .min(1, "Must be at least 1"),
     insulationType: z.string().min(1, "Insulation type is required"),
     conductorMaterial: z.union([z.enum(CONDUCTOR_MATERIALS), z.literal("")]),
     terminationTempRatingCelsius: z.coerce

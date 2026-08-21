@@ -54,6 +54,7 @@ const defaultValues: MotorFlcFormInput = {
   includeWireSizing: false,
   ambientTempCelsius: 30,
   numberOfCurrentCarryingConductors: 3,
+  numberOfParallelSets: 1,
   insulationType: "",
   conductorMaterial: "",
   terminationTempRatingCelsius: "" as unknown as MotorFlcFormInput["terminationTempRatingCelsius"],
@@ -78,6 +79,7 @@ export function MotorFlcForm({ onResult }: MotorFlcFormProps) {
     handleSubmit,
     setError,
     setValue,
+    getValues,
     watch,
     formState: { errors, isSubmitting },
   } = useForm<MotorFlcFormInput, unknown, MotorFlcFormValues>({
@@ -145,6 +147,7 @@ export function MotorFlcForm({ onResult }: MotorFlcFormProps) {
     if (!includeWireSizing) {
       setValue("ambientTempCelsius", undefined);
       setValue("numberOfCurrentCarryingConductors", undefined);
+      setValue("numberOfParallelSets", undefined);
       setValue("insulationType", "");
       setValue("conductorMaterial", "");
       setValue(
@@ -166,6 +169,14 @@ export function MotorFlcForm({ onResult }: MotorFlcFormProps) {
       setValue("voltageDropCheck.parallelSetsPerPhase", 1);
     }
   }, [includeVoltageDropCheck, setValue]);
+
+  // When the voltage drop check is first turned on, default its own parallel-sets field to
+  // match the top-level one — same reasoning as wire-sizing's own form.
+  useEffect(() => {
+    if (includeVoltageDropCheck) {
+      setValue("voltageDropCheck.parallelSetsPerPhase", getValues("numberOfParallelSets") ?? 1);
+    }
+  }, [includeVoltageDropCheck, getValues, setValue]);
 
   // Same backend quirk wire-sizing's form compensates for: VoltageDropCheckRequestDto.conduitMaterial
   // is required even for DC (ignored in the DC calculation, but still validated non-blank).
@@ -255,6 +266,7 @@ export function MotorFlcForm({ onResult }: MotorFlcFormProps) {
         synchronousPowerFactorPercent,
         ambientTempCelsius: values.ambientTempCelsius ?? 30,
         numberOfCurrentCarryingConductors: values.numberOfCurrentCarryingConductors ?? 3,
+        numberOfParallelSets: values.numberOfParallelSets ?? 1,
         insulationType: values.insulationType ?? "",
         conductorMaterial: values.conductorMaterial || "COPPER",
         terminationTempRatingCelsius: values.terminationTempRatingCelsius ?? 60,
@@ -356,8 +368,15 @@ export function MotorFlcForm({ onResult }: MotorFlcFormProps) {
             />
             <NumberField
               label="Current-Carrying Conductors"
+              tooltip="Total conductors sharing this conduit/raceway, from this circuit and any others pulled through it — not the number of strands in this wire. 3 or fewer means no derating."
               error={errors.numberOfCurrentCarryingConductors?.message}
               {...register("numberOfCurrentCarryingConductors")}
+            />
+            <NumberField
+              label="Number of Wires"
+              tooltip="How many identical conductors run in parallel to carry this motor's current — e.g. 2 if a single conductor sized for the full load would be too large or isn't listed in the table. All parallel conductors must match in size, material, and length. 1 is the normal single-conductor case."
+              error={errors.numberOfParallelSets?.message}
+              {...register("numberOfParallelSets")}
             />
           </div>
 

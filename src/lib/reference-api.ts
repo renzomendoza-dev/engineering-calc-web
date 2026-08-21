@@ -13,6 +13,12 @@ import type {
 import type { MotorFlcTableRow } from "@/features/motor-flc/types";
 import type { LockedRotorTableRow } from "@/features/locked-rotor/types";
 import type { PipeMaterialOption } from "@/features/pipe-velocity/types";
+import type {
+  AmbientTempCorrectionTableRow,
+  AmpacityTableRow,
+  ConductorCountAdjustmentTableRow,
+  InsulationTypeTempRatingTableRow,
+} from "@/features/wire-sizing/types";
 
 /**
  * Wraps calc-api's electrical reference endpoints
@@ -151,4 +157,33 @@ export function getLockedRotorPolyphaseTable(): Promise<LockedRotorTableRow[]> {
  */
 export function getPipeMaterials(): Promise<PipeMaterialOption[]> {
   return apiGet<PipeMaterialOption[]>("/api/mechanical/reference/pipe-materials");
+}
+
+/** Raw rows of PEC Table 3.10.2.6(B)(16) (base ampacities) — wire sizing's core lookup table. */
+export function getAmpacityTable(): Promise<AmpacityTableRow[]> {
+  return apiGet<AmpacityTableRow[]>("/api/electrical/reference/ampacity-table");
+}
+
+/** Raw rows of the insulation-type-to-temperature-rating mapping. */
+export function getInsulationTypeTempRatingTable(): Promise<InsulationTypeTempRatingTableRow[]> {
+  return apiGet<InsulationTypeTempRatingTableRow[]>(
+    "/api/electrical/reference/insulation-type-temp-rating-table",
+  );
+}
+
+/** Raw rows of PEC Table 3.10.2.6(B)(2)(a) (ambient temperature correction factors). */
+export function getAmbientTempCorrectionTable(): Promise<AmbientTempCorrectionTableRow[]> {
+  return apiGet<AmbientTempCorrectionTableRow[]>(
+    "/api/electrical/reference/ambient-temp-correction-table",
+  );
+}
+
+/**
+ * Raw rows of PEC Table 3.10.2.6(B)(3)(a) (ampacity adjustment for more than three
+ * current-carrying conductors).
+ */
+export function getConductorCountAdjustmentTable(): Promise<ConductorCountAdjustmentTableRow[]> {
+  return apiGet<ConductorCountAdjustmentTableRow[]>(
+    "/api/electrical/reference/conductor-count-adjustment-table",
+  );
 }

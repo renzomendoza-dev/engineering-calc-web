@@ -41,6 +41,7 @@ const defaultValues: WireSizingFormInput = {
   isContinuousLoad: false,
   ambientTempCelsius: 30,
   numberOfCurrentCarryingConductors: 3,
+  numberOfParallelSets: 1,
   insulationType: "",
   conductorMaterial: "",
   terminationTempRatingCelsius: "" as unknown as WireSizingFormInput["terminationTempRatingCelsius"],
@@ -65,6 +66,7 @@ export function WireSizingForm({ onResult }: WireSizingFormProps) {
     handleSubmit,
     setError,
     setValue,
+    getValues,
     watch,
     formState: { errors, isSubmitting },
   } = useForm<WireSizingFormInput, unknown, WireSizingFormValues>({
@@ -98,6 +100,17 @@ export function WireSizingForm({ onResult }: WireSizingFormProps) {
       setValue("voltageDropCheck.parallelSetsPerPhase", 1);
     }
   }, [includeVoltageDropCheck, setValue]);
+
+  // When the voltage drop check is first turned on, default its own parallel-sets field to
+  // match the top-level one, so the two don't silently disagree about how many conductors are
+  // actually in this run. Reads numberOfParallelSets imperatively (not via watch) so this only
+  // fires on toggle, not on every subsequent edit to the top-level field — a user is still
+  // free to make them differ afterward (e.g. to check a hypothetical different split).
+  useEffect(() => {
+    if (includeVoltageDropCheck) {
+      setValue("voltageDropCheck.parallelSetsPerPhase", getValues("numberOfParallelSets"));
+    }
+  }, [includeVoltageDropCheck, getValues, setValue]);
 
   // VoltageDropCheckRequestDto.conduitMaterial is required by the backend even for DC (it's
   // ignored in the DC calculation but still validated as non-blank "for API consistency" —
@@ -137,6 +150,7 @@ export function WireSizingForm({ onResult }: WireSizingFormProps) {
       isContinuousLoad: values.isContinuousLoad,
       ambientTempCelsius: values.ambientTempCelsius,
       numberOfCurrentCarryingConductors: values.numberOfCurrentCarryingConductors,
+      numberOfParallelSets: values.numberOfParallelSets,
       insulationType: values.insulationType,
       conductorMaterial: values.conductorMaterial || "COPPER",
       terminationTempRatingCelsius: values.terminationTempRatingCelsius,
@@ -183,8 +197,15 @@ export function WireSizingForm({ onResult }: WireSizingFormProps) {
         />
         <NumberField
           label="Current-Carrying Conductors"
+          tooltip="Total conductors sharing this conduit/raceway, from this circuit and any others pulled through it — not the number of strands in this wire. 3 or fewer means no derating."
           error={errors.numberOfCurrentCarryingConductors?.message}
           {...register("numberOfCurrentCarryingConductors")}
+        />
+        <NumberField
+          label="Number of Wires"
+          tooltip="How many identical conductors run in parallel to carry this circuit's current — e.g. 2 if a single conductor sized for the full load would be too large or isn't listed in the table. All parallel conductors must match in size, material, and length. 1 is the normal single-conductor case."
+          error={errors.numberOfParallelSets?.message}
+          {...register("numberOfParallelSets")}
         />
       </div>
 

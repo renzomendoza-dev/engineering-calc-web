@@ -35,6 +35,7 @@ export interface MotorConductorSizingRequest {
   synchronousPowerFactorPercent: number | null;
   ambientTempCelsius: number;
   numberOfCurrentCarryingConductors: number;
+  numberOfParallelSets: number;
   insulationType: string;
   conductorMaterial: ConductorMaterial;
   terminationTempRatingCelsius: number;

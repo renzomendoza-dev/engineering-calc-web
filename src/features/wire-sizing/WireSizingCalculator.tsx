@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { WireSizingForm } from "./WireSizingForm";
 import { WireSizingResults } from "./WireSizingResults";
+import { WireSizingReference } from "./WireSizingReference";
 import type { WireSizingResponse } from "./types";
 
 /**
@@ -17,6 +18,7 @@ export function WireSizingCalculator() {
     <div className="flex flex-col gap-8">
       <WireSizingForm onResult={setResult} />
       {result && <WireSizingResults result={result} />}
+      <WireSizingReference />
     </div>
   );
 }

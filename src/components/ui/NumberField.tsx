@@ -1,4 +1,5 @@
 import { forwardRef, type InputHTMLAttributes } from "react";
+import { InfoTooltip } from "./InfoTooltip";
 
 interface NumberFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "type"> {
   label: string;
@@ -6,6 +7,10 @@ interface NumberFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "
   error?: string;
   /** Short guidance shown under the label, e.g. what value to enter or where to find it. */
   hint?: string;
+  /** Longer explanation revealed via a "ⓘ" next to the label on hover or click/tap, for
+   *  guidance too long to keep permanently visible. Independent of `hint` — use whichever
+   *  fits, or both. */
+  tooltip?: string;
 }
 
 /**
@@ -13,17 +18,23 @@ interface NumberFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "
  * calculator form — register it with react-hook-form via the forwarded ref.
  *
  * `hint` renders as always-visible text rather than a hover tooltip, so guidance isn't lost
- * on touch/keyboard-only input.
+ * on touch/keyboard-only input. `tooltip` is the opt-in alternative for longer text where
+ * always-visible would be too much clutter — its trigger still supports click/tap, not just
+ * hover, for the same reason.
  */
 export const NumberField = forwardRef<HTMLInputElement, NumberFieldProps>(
-  ({ label, unit, error, hint, id, className, ...inputProps }, ref) => {
+  ({ label, unit, error, hint, tooltip, id, className, ...inputProps }, ref) => {
     const fieldId = id ?? inputProps.name;
 
     return (
       <div className="flex flex-col gap-1">
-        <label htmlFor={fieldId} className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <label
+          htmlFor={fieldId}
+          className="flex items-center gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300"
+        >
           {label}
           {unit && <span className="ml-1 text-zinc-400 dark:text-zinc-500">({unit})</span>}
+          {tooltip && <InfoTooltip text={tooltip} />}
         </label>
         {hint && <p className="text-xs text-zinc-500 dark:text-zinc-400">{hint}</p>}
         <input
