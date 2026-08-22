@@ -59,6 +59,13 @@ export const calculators: CalculatorConfig[] = [
     status: "available",
   },
   {
+    name: "Duct Sizing",
+    description: "Size round or rectangular ducts by equal-friction or velocity method.",
+    category: "Mechanical",
+    href: "/mechanical/duct/sizing",
+    status: "available",
+  },
+  {
     name: "Fire Pump Sizing",
     description: "Demand, capacity resolution, curve validation, and driver power sizing for fire pumps.",
     category: "Mechanical",

@@ -24,6 +24,10 @@ import type {
   WsfuDemandTableRow,
 } from "@/features/domestic-water-storage/types";
 import type { FireWaterDurationTableRow } from "@/features/fire-water-storage/types";
+import type {
+  DuctRoughnessTableRow,
+  DuctVelocityLimitTableRow,
+} from "@/features/duct-sizing/types";
 
 /**
  * Wraps calc-api's electrical reference endpoints
@@ -215,4 +219,22 @@ export function getWsfuDemandTable(): Promise<WsfuDemandTableRow[]> {
  */
 export function getFireWaterDurationTable(): Promise<FireWaterDurationTableRow[]> {
   return apiGet<FireWaterDurationTableRow[]>("/api/mechanical/reference/fire-water-duration-table");
+}
+
+/**
+ * Raw rows of reference/duct/duct-roughness.json (ASHRAE Fundamentals Table 1) — Duct
+ * Sizing's material dropdown, required on every render (not just an optional reference
+ * display), same role as getPipeMaterials for pipe velocity/sizing.
+ */
+export function getDuctRoughnessTable(): Promise<DuctRoughnessTableRow[]> {
+  return apiGet<DuctRoughnessTableRow[]>("/api/mechanical/reference/duct-roughness-table");
+}
+
+/**
+ * Raw rows of reference/duct/duct-velocity-limits.json (ASHRAE Fundamentals Table 12) —
+ * backs the VELOCITY method's "suggest a value" helper. These are acoustic design targets,
+ * not code-mandated limits (see DuctVelocitySuggestionHelper).
+ */
+export function getDuctVelocityLimitsTable(): Promise<DuctVelocityLimitTableRow[]> {
+  return apiGet<DuctVelocityLimitTableRow[]>("/api/mechanical/reference/duct-velocity-limits-table");
 }
