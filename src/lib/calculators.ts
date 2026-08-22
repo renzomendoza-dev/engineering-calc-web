@@ -114,4 +114,18 @@ export const calculators: CalculatorConfig[] = [
     href: "/smoke-control/vent-area",
     status: "available",
   },
+  {
+    name: "Domestic Water Storage",
+    description: "Required domestic water storage volume from occupant count or fixture units, plus storage duration.",
+    category: "Mechanical",
+    href: "/mechanical/storage/domestic",
+    status: "available",
+  },
+  {
+    name: "Fire Water Storage",
+    description: "Required fire water storage volume from rated pump flow and NFPA 13 hazard classification duration.",
+    category: "Mechanical",
+    href: "/mechanical/storage/fire",
+    status: "available",
+  },
 ];

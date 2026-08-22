@@ -19,6 +19,11 @@ import type {
   ConductorCountAdjustmentTableRow,
   InsulationTypeTempRatingTableRow,
 } from "@/features/wire-sizing/types";
+import type {
+  OccupancyTypeTableRow,
+  WsfuDemandTableRow,
+} from "@/features/domestic-water-storage/types";
+import type { FireWaterDurationTableRow } from "@/features/fire-water-storage/types";
 
 /**
  * Wraps calc-api's electrical reference endpoints
@@ -186,4 +191,28 @@ export function getConductorCountAdjustmentTable(): Promise<ConductorCountAdjust
   return apiGet<ConductorCountAdjustmentTableRow[]>(
     "/api/electrical/reference/conductor-count-adjustment-table",
   );
+}
+
+/**
+ * Raw rows of reference/storage/lpcd-consumption.json — Domestic Water Storage's OCCUPANT_LOAD
+ * lookup table (placeholder confidence, see OccupantLoadForm's caveat note).
+ */
+export function getLpcdConsumptionTable(): Promise<OccupancyTypeTableRow[]> {
+  return apiGet<OccupancyTypeTableRow[]>("/api/mechanical/reference/lpcd-consumption-table");
+}
+
+/**
+ * Raw rows of reference/storage/wsfu-demand.json — Domestic Water Storage's FIXTURE_UNIT
+ * lookup table (NSPC 2009 Table B.5.4, verified confidence).
+ */
+export function getWsfuDemandTable(): Promise<WsfuDemandTableRow[]> {
+  return apiGet<WsfuDemandTableRow[]>("/api/mechanical/reference/wsfu-demand-table");
+}
+
+/**
+ * Raw rows of reference/storage/fire-water-duration.json — Fire Water Storage's hazard
+ * classification duration table (NFPA 13 2019, Table 11.2.3.1.2, verified confidence).
+ */
+export function getFireWaterDurationTable(): Promise<FireWaterDurationTableRow[]> {
+  return apiGet<FireWaterDurationTableRow[]>("/api/mechanical/reference/fire-water-duration-table");
 }

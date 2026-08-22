@@ -61,7 +61,7 @@ calculators, backed by a separate Spring Boot API
 
 **Mechanical** — Pipe Velocity/Sizing, Pipe Pressure Loss, Fire Pump Sizing, Pump TDH, Pump
 Power, Smoke Production (Plume), t-Squared Fire Growth Smoke Production, Natural Smoke Vent
-Area
+Area, Domestic Water Storage, Fire Water Storage
 
 **Acoustics** — Distance Attenuation, Fire Alarm Audibility
 
