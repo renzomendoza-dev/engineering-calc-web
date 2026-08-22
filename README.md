@@ -59,9 +59,10 @@ calculators, backed by a separate Spring Boot API
 
 **Electrical** — Voltage Drop, Wire Sizing, Conduit Fill, Locked Rotor Current, Motor FLC
 
-**Mechanical** — Pipe Velocity/Sizing, Pipe Pressure Loss, Duct Sizing, Fire Pump Sizing, Pump
-TDH, Pump Power, Smoke Production (Plume), t-Squared Fire Growth Smoke Production, Natural
-Smoke Vent Area, Domestic Water Storage, Fire Water Storage
+**Mechanical** — Pipe Velocity/Sizing, Pipe Pressure Loss, Duct Sizing, Expansion Tank Sizing,
+Pressure Tank Sizing, Fire Pump Sizing, Pump TDH, Pump Power, Smoke Production (Plume),
+t-Squared Fire Growth Smoke Production, Natural Smoke Vent Area, Domestic Water Storage, Fire
+Water Storage
 
 **Acoustics** — Distance Attenuation, Fire Alarm Audibility
 

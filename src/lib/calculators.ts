@@ -66,6 +66,20 @@ export const calculators: CalculatorConfig[] = [
     status: "available",
   },
   {
+    name: "Expansion Tank Sizing",
+    description: "Thermal expansion tank volume for a domestic water heater or hydronic heating system.",
+    category: "Mechanical",
+    href: "/mechanical/tank/expansion",
+    status: "available",
+  },
+  {
+    name: "Pressure Tank Sizing",
+    description: "Hydropneumatic pressure tank drawdown volume for conventional or VFD pump control.",
+    category: "Mechanical",
+    href: "/mechanical/tank/pressure",
+    status: "available",
+  },
+  {
     name: "Fire Pump Sizing",
     description: "Demand, capacity resolution, curve validation, and driver power sizing for fire pumps.",
     category: "Mechanical",
