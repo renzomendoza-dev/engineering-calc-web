@@ -45,6 +45,13 @@ export const calculators: CalculatorConfig[] = [
     status: "available",
   },
   {
+    name: "Power Consumption",
+    description: "Estimate power draw and energy cost from wattage, voltage/current, or horsepower.",
+    category: "Electrical",
+    href: "/electrical/power-consumption",
+    status: "available",
+  },
+  {
     name: "Pipe Velocity / Sizing",
     description: "Check flow velocity through a pipe, or size a pipe for a target velocity.",
     category: "Mechanical",
