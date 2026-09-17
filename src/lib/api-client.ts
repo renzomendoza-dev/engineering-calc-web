@@ -72,6 +72,14 @@ async function parseErrorBody(response: Response): Promise<ApiError> {
     );
   }
 
+  // A `{"message": ...}` body without fieldErrors (typically from a proxy or gateway in front of
+  // the API) is a plain message. Checked before the legacy flat-map branch below, which would
+  // otherwise read "message" as the name of a failed request field. No request DTO has a field
+  // called "message", so this can't swallow a real legacy field error.
+  if (typeof record.message === "string") {
+    return new ApiError(response.status, record.message);
+  }
+
   // Legacy shapes, from before the backend unified its error body: `{"error": message}` for
   // calculation errors (also matches Spring's default error body), and a flat
   // field -> message map for validation errors. Kept so this client works against a backend

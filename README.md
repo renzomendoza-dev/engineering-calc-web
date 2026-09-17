@@ -54,6 +54,8 @@ calculators, backed by a separate Spring Boot API
 | `npm run build` | Production build                    |
 | `npm run start` | Serve a production build            |
 | `npm run lint`  | Run ESLint                          |
+| `npm test`      | Run unit tests once (Vitest)        |
+| `npm run test:watch` | Run unit tests in watch mode   |
 
 ## Calculators
 

@@ -2,17 +2,16 @@
 
 import { useState } from "react";
 import type { FieldValues, Path, UseFormSetError } from "react-hook-form";
-import { ApiError, isGenericValidationMessage } from "@/lib/api-client";
+import { resolveApiFormError } from "@/lib/apiFormError";
 
 interface UseApiFormErrorResult {
   generalError: string | null;
   setGeneralError: (message: string | null) => void;
   /**
-   * Call from a form's submit catch block. A field error goes inline (react-hook-form's
-   * setError) when that field is part of the form AND currently on screen; everything else
-   * lands in the inline generalError banner every calculator form in this app renders the
-   * same way. The banner is left empty when every field error is already shown inline and the
-   * error's message is only a generic "validation failed" placeholder.
+   * Call from a form's submit catch block. Field errors for fields that are part of this form
+   * and currently on screen go inline (react-hook-form's setError); everything else lands in the
+   * generalError banner every calculator form in this app renders the same way. See
+   * resolveApiFormError for the exact rules.
    */
   handleApiError: (err: unknown) => void;
 }
@@ -32,25 +31,9 @@ function isFieldRendered(field: string): boolean {
 }
 
 /**
- * "totalOperatingHours" -> "Total operating hours". The backend's field-level messages are
- * Bean Validation defaults ("must be greater than 0"), which only read as a sentence once the
- * field is named — needed whenever a field error can't be shown next to its input.
- */
-function humanizeFieldName(field: string): string {
-  const words = field.replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase();
-  return words.charAt(0).toUpperCase() + words.slice(1);
-}
-
-/** Adds a closing period unless the message already ends a sentence, so joined messages don't run together. */
-function asSentence(message: string): string {
-  return /[.!?]$/.test(message.trim()) ? message.trim() : `${message.trim()}.`;
-}
-
-/**
- * Every calculator form used to duplicate this same ~15-line submit-error-handling block
- * verbatim (13 forms, at last count). This hook is the single copy — call it right after
- * useForm() so it has access to setError, and call handleApiError(err) from the catch block
- * instead of re-deriving unmatched/fieldErrors logic per form.
+ * Every calculator form used to duplicate this same submit-error-handling block verbatim (13
+ * forms, at last count). This hook is the single copy — call it right after useForm() so it has
+ * access to setError, and call handleApiError(err) from the catch block.
  */
 export function useApiFormError<T extends FieldValues>(
   setError: UseFormSetError<T>,
@@ -59,25 +42,14 @@ export function useApiFormError<T extends FieldValues>(
   const [generalError, setGeneralError] = useState<string | null>(null);
 
   function handleApiError(err: unknown) {
-    if (!(err instanceof ApiError)) {
-      setGeneralError("Something went wrong. Please try again.");
-      return;
+    const { inlineErrors, banner } = resolveApiFormError(
+      err,
+      (field) => field in defaultValues && isFieldRendered(field),
+    );
+    for (const [field, message] of Object.entries(inlineErrors)) {
+      setError(field as Path<T>, { message });
     }
-
-    const bannerFieldMessages: string[] = [];
-    if (err.fieldErrors) {
-      for (const [field, message] of Object.entries(err.fieldErrors)) {
-        if (field in defaultValues && isFieldRendered(field)) {
-          setError(field as Path<T>, { message });
-        } else {
-          bannerFieldMessages.push(`${humanizeFieldName(field)} ${message}`);
-        }
-      }
-    }
-
-    const showMessage = !err.fieldErrors || !isGenericValidationMessage(err.message);
-    const bannerMessages = showMessage ? [err.message, ...bannerFieldMessages] : bannerFieldMessages;
-    setGeneralError(bannerMessages.length > 0 ? bannerMessages.map(asSentence).join(" ") : null);
+    setGeneralError(banner);
   }
 
   return { generalError, setGeneralError, handleApiError };
