@@ -20,6 +20,19 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Placeholder messages that carry no information beyond "some fields failed" — the backend's
+ * `GlobalExceptionHandler.VALIDATION_FAILED_MESSAGE`, and the one this client assigns to the
+ * legacy flat field-map body. When an ApiError has fieldErrors and one of these as its message,
+ * the field messages are the whole story; the message itself adds nothing worth showing.
+ */
+const LEGACY_VALIDATION_FAILED_MESSAGE = "Validation failed";
+const GENERIC_VALIDATION_MESSAGES = new Set(["Request validation failed", LEGACY_VALIDATION_FAILED_MESSAGE]);
+
+export function isGenericValidationMessage(message: string): boolean {
+  return GENERIC_VALIDATION_MESSAGES.has(message);
+}
+
 /** Keeps only the string-valued entries of a plain object; anything else yields `{}`. */
 function toStringRecord(value: unknown): Record<string, string> {
   const result: Record<string, string> = {};
@@ -68,7 +81,7 @@ async function parseErrorBody(response: Response): Promise<ApiError> {
   }
   const legacyFieldErrors = toStringRecord(record);
   if (Object.keys(legacyFieldErrors).length > 0) {
-    return new ApiError(response.status, "Validation failed", legacyFieldErrors);
+    return new ApiError(response.status, LEGACY_VALIDATION_FAILED_MESSAGE, legacyFieldErrors);
   }
 
   return new ApiError(response.status, fallbackMessage);

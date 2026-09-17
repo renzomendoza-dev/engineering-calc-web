@@ -252,7 +252,9 @@ export function PowerConsumptionForm({ onResult }: PowerConsumptionFormProps) {
             />
           </div>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            = {Number(totalOperatingHours) || 0} total hours
+            {/* Rounded for display only (0.1 × 3 is 0.30000000000000004 in floating point);
+                the unrounded product is what gets submitted. */}
+            = {Number((Number(totalOperatingHours) || 0).toFixed(4))} total hours
           </p>
         </div>
       )}

@@ -29,7 +29,7 @@ export function PowerConsumptionResults({ result }: PowerConsumptionResultsProps
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <ResultCard label="Power" value={result.powerWatts.toFixed(1)} unit="W" />
-        <ResultCard label="Power (kW)" value={result.powerKw.toFixed(3)} unit="kW" />
+        <ResultCard label="Power" value={result.powerKw.toFixed(3)} unit="kW" />
       </div>
 
       {result.isEstimatedPower && (
