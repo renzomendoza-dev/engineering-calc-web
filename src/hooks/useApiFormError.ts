@@ -10,8 +10,8 @@ interface UseApiFormErrorResult {
   /**
    * Call from a form's submit catch block. Field-level ApiError messages that match a known
    * form field go through react-hook-form's setError; everything else (unmatched field names,
-   * or a CalculationException's flat `{"error": message}`) becomes the inline generalError
-   * banner every calculator form in this app renders the same way.
+   * or an error with no field-level detail, such as a CalculationException) becomes the inline
+   * generalError banner every calculator form in this app renders the same way.
    */
   handleApiError: (err: unknown) => void;
 }

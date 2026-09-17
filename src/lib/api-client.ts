@@ -3,11 +3,10 @@ import { config } from "@/lib/config";
 /**
  * Error thrown for any non-2xx API response.
  *
- * The backend's GlobalExceptionHandler returns two different shapes depending on the
- * failure: a CalculationException yields `{"error": "message"}`, while a bean-validation
- * failure yields a flat field-name -> message map with no "error" key. `fieldErrors` is
- * populated only in the latter case, so callers can show inline errors when possible and
- * fall back to `message` otherwise.
+ * The backend returns one error shape for every 400:
+ * `{"message": string, "fieldErrors": {fieldName: message}}`. `fieldErrors` here is set only
+ * when that map is non-empty, so callers can show inline errors when possible and fall back
+ * to `message` otherwise.
  */
 export class ApiError extends Error {
   readonly status: number;
@@ -21,32 +20,58 @@ export class ApiError extends Error {
   }
 }
 
+/** Keeps only the string-valued entries of a plain object; anything else yields `{}`. */
+function toStringRecord(value: unknown): Record<string, string> {
+  const result: Record<string, string> = {};
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    for (const [key, entry] of Object.entries(value)) {
+      if (typeof entry === "string") {
+        result[key] = entry;
+      }
+    }
+  }
+  return result;
+}
+
 async function parseErrorBody(response: Response): Promise<ApiError> {
+  const fallbackMessage = response.statusText || "Request failed";
+
   let body: unknown;
   try {
     body = await response.json();
   } catch {
-    return new ApiError(response.status, response.statusText || "Request failed");
+    return new ApiError(response.status, fallbackMessage);
   }
 
-  if (body && typeof body === "object") {
-    const record = body as Record<string, unknown>;
-    if (typeof record.error === "string") {
-      return new ApiError(response.status, record.error);
-    }
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return new ApiError(response.status, fallbackMessage);
+  }
+  const record = body as Record<string, unknown>;
 
-    const fieldErrors: Record<string, string> = {};
-    for (const [key, value] of Object.entries(record)) {
-      if (typeof value === "string") {
-        fieldErrors[key] = value;
-      }
-    }
-    if (Object.keys(fieldErrors).length > 0) {
-      return new ApiError(response.status, "Validation failed", fieldErrors);
-    }
+  // Current contract. Requiring both keys keeps an unrelated `{"message": ...}` body (e.g. from
+  // a proxy in front of the API) from being mistaken for it.
+  if (typeof record.message === "string" && "fieldErrors" in record) {
+    const fieldErrors = toStringRecord(record.fieldErrors);
+    return new ApiError(
+      response.status,
+      record.message,
+      Object.keys(fieldErrors).length > 0 ? fieldErrors : undefined,
+    );
   }
 
-  return new ApiError(response.status, response.statusText || "Request failed");
+  // Legacy shapes, from before the backend unified its error body: `{"error": message}` for
+  // calculation errors (also matches Spring's default error body), and a flat
+  // field -> message map for validation errors. Kept so this client works against a backend
+  // that hasn't been redeployed yet; safe to delete once the new backend is live everywhere.
+  if (typeof record.error === "string") {
+    return new ApiError(response.status, record.error);
+  }
+  const legacyFieldErrors = toStringRecord(record);
+  if (Object.keys(legacyFieldErrors).length > 0) {
+    return new ApiError(response.status, "Validation failed", legacyFieldErrors);
+  }
+
+  return new ApiError(response.status, fallbackMessage);
 }
 
 export async function apiPost<TRequest, TResponse>(
