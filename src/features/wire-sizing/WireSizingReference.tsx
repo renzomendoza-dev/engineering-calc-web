@@ -61,7 +61,9 @@ function InsulationTempRatingRows({ rows }: { rows: InsulationTypeTempRatingTabl
       <tbody>
         {rows.map((row) => (
           <tr
-            key={`${row.insulationType}-${row.conductorMaterial}`}
+            // Dual-rated insulations (e.g. THHW, XHHW: 75 °C wet, 90 °C dry) have one row per
+            // rating for the same type/material, so the rating is part of the identity.
+            key={`${row.insulationType}-${row.conductorMaterial}-${row.tempRatingCelsius}`}
             className="border-b border-zinc-100 dark:border-zinc-800/50"
           >
             <td className={DATA_CELL}>{row.insulationType}</td>
