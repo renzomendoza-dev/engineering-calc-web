@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   useFieldArray,
   useForm,
@@ -11,7 +11,8 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
-import { apiPost, ApiError } from "@/lib/api-client";
+import { apiPost } from "@/lib/api-client";
+import { useApiFormError } from "@/hooks/useApiFormError";
 import { useConduitFillReferenceData } from "@/hooks/useConduitFillReferenceData";
 import { useConductorFillSizes } from "@/hooks/useConductorFillSizes";
 import { conduitFillSchema, type ConduitFillFormInput, type ConduitFillFormValues } from "./schema";
@@ -117,11 +118,11 @@ interface ConduitFillFormProps {
 }
 
 export function ConduitFillForm({ onResult }: ConduitFillFormProps) {
-  const [generalError, setGeneralError] = useState<string | null>(null);
   const {
     control,
     register,
     handleSubmit,
+    setError,
     watch,
     setValue,
     formState: { errors, isSubmitting },
@@ -129,6 +130,7 @@ export function ConduitFillForm({ onResult }: ConduitFillFormProps) {
     resolver: zodResolver(conduitFillSchema),
     defaultValues,
   });
+  const { generalError, setGeneralError, handleApiError } = useApiFormError(setError, defaultValues);
 
   const { fields, append, remove } = useFieldArray({ control, name: "conductors" });
 
@@ -165,12 +167,7 @@ export function ConduitFillForm({ onResult }: ConduitFillFormProps) {
       );
       onResult(result);
     } catch (err) {
-      if (err instanceof ApiError) {
-        const messages = err.fieldErrors ? Object.values(err.fieldErrors) : [err.message];
-        setGeneralError(messages.join(" "));
-      } else {
-        setGeneralError("Something went wrong. Please try again.");
-      }
+      handleApiError(err);
     }
   };
 

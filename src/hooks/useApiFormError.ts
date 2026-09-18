@@ -42,9 +42,10 @@ export function useApiFormError<T extends FieldValues>(
   const [generalError, setGeneralError] = useState<string | null>(null);
 
   function handleApiError(err: unknown) {
+    // A list item's path ("conductors.0.quantity") belongs to the form when its list does.
     const { inlineErrors, banner } = resolveApiFormError(
       err,
-      (field) => field in defaultValues && isFieldRendered(field),
+      (path) => path.split(".")[0] in defaultValues && isFieldRendered(path),
     );
     for (const [field, message] of Object.entries(inlineErrors)) {
       setError(field as Path<T>, { message });

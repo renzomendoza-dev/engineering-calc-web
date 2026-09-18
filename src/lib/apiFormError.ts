@@ -10,12 +10,24 @@ export interface ResolvedApiFormError {
 }
 
 /**
- * "totalOperatingHours" -> "Total operating hours". The backend's field-level messages are
- * Bean Validation defaults ("must be greater than 0"), which only read as a sentence once the
- * field is named — needed whenever a field error can't be shown next to its input.
+ * Spring reports a list item's field as "conductors[0].quantity"; react-hook-form names that
+ * input "conductors.0.quantity". Converting lets list-item errors reach their inputs.
+ */
+export function toFormFieldPath(field: string): string {
+  return field.replace(/\[(\d+)\]/g, ".$1");
+}
+
+/**
+ * "totalOperatingHours" -> "Total operating hours"; "suctionSegments.0.lengthMeters" ->
+ * "Suction segments #1 length meters". The backend's field-level messages are Bean Validation
+ * defaults ("must be greater than 0"), which only read as a sentence once the field is named —
+ * needed whenever a field error can't be shown next to its input.
  */
 export function humanizeFieldName(field: string): string {
-  const words = field.replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase();
+  const words = toFormFieldPath(field)
+    .split(".")
+    .map((part) => (/^\d+$/.test(part) ? `#${Number(part) + 1}` : part.replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase()))
+    .join(" ");
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
@@ -29,8 +41,10 @@ export function asSentence(message: string): string {
  * Decides where each part of a failed submit's error goes. Pure (no React, no DOM) so it can be
  * unit tested; useApiFormError supplies `canShowInline` and applies the result.
  *
- * - A field error goes inline when `canShowInline(field)` — the field is part of the form AND
- *   currently on screen. Otherwise it goes to the banner with the field named.
+ * - A field error goes inline when `canShowInline(path)` — the field is part of the form AND
+ *   currently on screen. Otherwise it goes to the banner with the field named. Paths are
+ *   react-hook-form style (see toFormFieldPath), both in `inlineErrors` and when passed to
+ *   `canShowInline`.
  * - The error's own message goes to the banner, except when it's only a generic "validation
  *   failed" placeholder accompanying field errors (those already say everything).
  */
@@ -45,8 +59,9 @@ export function resolveApiFormError(
   const inlineErrors: Record<string, string> = {};
   const bannerFieldMessages: string[] = [];
   for (const [field, message] of Object.entries(err.fieldErrors ?? {})) {
-    if (canShowInline(field)) {
-      inlineErrors[field] = message;
+    const path = toFormFieldPath(field);
+    if (canShowInline(path)) {
+      inlineErrors[path] = message;
     } else {
       bannerFieldMessages.push(`${humanizeFieldName(field)} ${message}`);
     }

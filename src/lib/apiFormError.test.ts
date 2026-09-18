@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { ApiError } from "./api-client";
-import { UNEXPECTED_ERROR_MESSAGE, asSentence, humanizeFieldName, resolveApiFormError } from "./apiFormError";
+import {
+  UNEXPECTED_ERROR_MESSAGE,
+  asSentence,
+  humanizeFieldName,
+  resolveApiFormError,
+  toFormFieldPath,
+} from "./apiFormError";
 
 const everyFieldInline = () => true;
 const noFieldInline = () => false;
@@ -68,6 +74,31 @@ describe("resolveApiFormError", () => {
     expect(resolveApiFormError(err, everyFieldInline).banner).toBeNull();
   });
 
+  it("converts Spring list paths so list-item errors can go inline", () => {
+    const err = new ApiError(400, "Request validation failed", {
+      "conductors[0].quantity": "must be greater than or equal to 1",
+    });
+    const seen: string[] = [];
+
+    const resolved = resolveApiFormError(err, (path) => {
+      seen.push(path);
+      return true;
+    });
+    expect(seen).toEqual(["conductors.0.quantity"]);
+    expect(resolved).toEqual({
+      inlineErrors: { "conductors.0.quantity": "must be greater than or equal to 1" },
+      banner: null,
+    });
+  });
+
+  it("names a list item readably when it can't be shown inline", () => {
+    const err = new ApiError(400, "Request validation failed", {
+      "suctionSegments[1].lengthMeters": "must be greater than 0",
+    });
+
+    expect(resolveApiFormError(err, noFieldInline).banner).toBe("Suction segments #2 length meters must be greater than 0.");
+  });
+
   it("still shows a generic message when there are no field errors to explain it", () => {
     const err = new ApiError(400, "Request validation failed");
 
@@ -81,8 +112,21 @@ describe("humanizeFieldName", () => {
     ["voltage", "Voltage"],
     ["airFlowLps", "Air flow lps"],
     ["fire2Hazard", "Fire2 hazard"],
+    ["conductors.0.quantity", "Conductors #1 quantity"],
+    ["curvePoints[2].flowGpm", "Curve points #3 flow gpm"],
   ])("%s -> %s", (field, expected) => {
     expect(humanizeFieldName(field)).toBe(expected);
+  });
+});
+
+describe("toFormFieldPath", () => {
+  it.each([
+    ["conductors[0].quantity", "conductors.0.quantity"],
+    ["suctionSegments[12].lengthMeters", "suctionSegments.12.lengthMeters"],
+    ["a[0].b[1].c", "a.0.b.1.c"],
+    ["voltage", "voltage"],
+  ])("%s -> %s", (field, expected) => {
+    expect(toFormFieldPath(field)).toBe(expected);
   });
 });
 
