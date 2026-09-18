@@ -1,3 +1,4 @@
+import { HeadlineResult } from "@/components/ui/HeadlineResult";
 import { ResultCard } from "@/components/ui/ResultCard";
 import type { PumpPowerResponse } from "./types";
 
@@ -22,12 +23,8 @@ export function PowerResults({ result }: PowerResultsProps) {
         </div>
       </div>
 
-      <div className="rounded-lg border border-blue-300 bg-blue-50 p-5 dark:border-blue-800 dark:bg-blue-950/40">
-        <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Recommended Motor Size</p>
-        <p className="mt-1 text-3xl font-semibold text-blue-900 dark:text-blue-100">
-          {result.recommendedMotorSizeKw}
-        </p>
-      </div>
+      {/* No unit prop: the API returns this pre-formatted with its unit, e.g. "5.5 kW". */}
+      <HeadlineResult label="Recommended Motor Size" value={result.recommendedMotorSizeKw} />
     </div>
   );
 }

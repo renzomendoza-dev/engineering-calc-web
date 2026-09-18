@@ -1,3 +1,4 @@
+import { HeadlineResult } from "@/components/ui/HeadlineResult";
 import { ResultCard } from "@/components/ui/ResultCard";
 import type { WireSizingResponse } from "./types";
 
@@ -12,21 +13,19 @@ export function WireSizingResults({ result }: WireSizingResultsProps) {
     <div className="flex flex-col gap-4">
       <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Results</h2>
 
-      <div className="rounded-lg border border-blue-400 bg-blue-50 p-6 text-center dark:border-blue-500 dark:bg-blue-950/40">
-        <p className="text-sm font-medium text-blue-700 dark:text-blue-400">
-          Recommended Conductor Size
-        </p>
-        <p className="mt-1 text-4xl font-bold text-blue-900 dark:text-blue-100">
-          {result.numberOfParallelSets > 1 && `${result.numberOfParallelSets} × `}
-          {result.recommendedSizeLabel}
-        </p>
-        {result.numberOfParallelSets > 1 && (
-          <p className="mt-2 text-xs text-blue-700 dark:text-blue-400">
-            {result.numberOfParallelSets} identical conductors run in parallel, each carrying
-            an equal share of the load — not {result.numberOfParallelSets} separate circuits.
-          </p>
-        )}
-      </div>
+      <HeadlineResult
+        label="Recommended Conductor Size"
+        value={
+          result.numberOfParallelSets > 1
+            ? `${result.numberOfParallelSets} × ${result.recommendedSizeLabel}`
+            : result.recommendedSizeLabel
+        }
+        note={
+          result.numberOfParallelSets > 1
+            ? `${result.numberOfParallelSets} identical conductors run in parallel, each carrying an equal share of the load — not ${result.numberOfParallelSets} separate circuits.`
+            : undefined
+        }
+      />
 
       {!result.meetsTerminationRating && (
         <div className="rounded-lg border border-amber-400 bg-amber-50 p-4 dark:border-amber-500 dark:bg-amber-950/40">

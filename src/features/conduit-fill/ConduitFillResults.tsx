@@ -1,4 +1,5 @@
 import { AdvisoryNote } from "@/components/ui/AdvisoryNote";
+import { HeadlineResult } from "@/components/ui/HeadlineResult";
 import { ResultCard } from "@/components/ui/ResultCard";
 import type { ConduitFillResponse } from "./types";
 
@@ -51,14 +52,7 @@ export function ConduitFillResults({ result }: ConduitFillResultsProps) {
   return (
     <div className="flex flex-col gap-4">
       <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Results</h2>
-      <div className="rounded-lg border border-blue-400 bg-blue-50 p-6 text-center dark:border-blue-500 dark:bg-blue-950/40">
-        <p className="text-sm font-medium text-blue-700 dark:text-blue-400">
-          Recommended Trade Size
-        </p>
-        <p className="mt-1 text-4xl font-bold text-blue-900 dark:text-blue-100">
-          {result.recommendedTradeSizeMm} mm
-        </p>
-      </div>
+      <HeadlineResult label="Recommended Trade Size" value={result.recommendedTradeSizeMm} unit="mm" />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <ResultCard
           label="Actual Fill"

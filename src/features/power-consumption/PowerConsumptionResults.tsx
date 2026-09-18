@@ -1,3 +1,4 @@
+import { HeadlineResult } from "@/components/ui/HeadlineResult";
 import { ResultCard } from "@/components/ui/ResultCard";
 import type { PowerConsumptionResponse } from "./types";
 
@@ -10,21 +11,10 @@ export function PowerConsumptionResults({ result }: PowerConsumptionResultsProps
     <div className="flex flex-col gap-4">
       <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Results</h2>
 
-      <div className="rounded-lg border border-blue-400 bg-blue-50 p-5 dark:border-blue-500 dark:bg-blue-950/40">
-        <p className="text-sm font-medium text-blue-800 dark:text-blue-300">Energy Consumed</p>
-        <p className="mt-1 text-3xl font-semibold text-zinc-900 dark:text-zinc-50">
-          {result.energyConsumedKwh.toFixed(3)}
-          <span className="ml-1 text-lg font-normal text-zinc-500">kWh</span>
-        </p>
-      </div>
+      <HeadlineResult label="Energy Consumed" value={result.energyConsumedKwh.toFixed(3)} unit="kWh" />
 
       {result.estimatedCost !== null && (
-        <div className="rounded-lg border border-emerald-400 bg-emerald-50 p-5 dark:border-emerald-500 dark:bg-emerald-950/40">
-          <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">Estimated Cost</p>
-          <p className="mt-1 text-3xl font-semibold text-zinc-900 dark:text-zinc-50">
-            {result.estimatedCost.toFixed(2)}
-          </p>
-        </div>
+        <HeadlineResult label="Estimated Cost" value={result.estimatedCost.toFixed(2)} tone="emerald" />
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

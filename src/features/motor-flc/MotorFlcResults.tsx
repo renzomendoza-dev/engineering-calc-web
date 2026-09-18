@@ -1,3 +1,4 @@
+import { HeadlineResult } from "@/components/ui/HeadlineResult";
 import { ResultCard } from "@/components/ui/ResultCard";
 import { WireSizingResults } from "@/features/wire-sizing/WireSizingResults";
 import type { MotorFlcFormResult, MotorFlcResponse } from "./types";
@@ -11,17 +12,12 @@ function MotorFlcSummary({ flc }: { flc: MotorFlcResponse }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-lg border border-blue-400 bg-blue-50 p-6 text-center dark:border-blue-500 dark:bg-blue-950/40">
-        <p className="text-sm font-medium text-blue-700 dark:text-blue-400">Full-Load Current</p>
-        <p className="mt-1 text-4xl font-bold text-blue-900 dark:text-blue-100">
-          {flc.flcAmps.toFixed(2)} A
-        </p>
-        {wasAdjusted && (
-          <p className="mt-2 text-xs text-blue-700 dark:text-blue-400">
-            Adjusted from {flc.baseFlcAmps.toFixed(2)} A at unity power factor.
-          </p>
-        )}
-      </div>
+      <HeadlineResult
+        label="Full-Load Current"
+        value={flc.flcAmps.toFixed(2)}
+        unit="A"
+        note={wasAdjusted ? `Adjusted from ${flc.baseFlcAmps.toFixed(2)} A at unity power factor.` : undefined}
+      />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <ResultCard label="Base FLC" value={flc.baseFlcAmps.toFixed(2)} unit="A" />
         <ResultCard

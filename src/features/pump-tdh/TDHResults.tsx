@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HeadlineResult } from "@/components/ui/HeadlineResult";
 import { ResultCard } from "@/components/ui/ResultCard";
 import { PressureLossResults } from "@/features/pipe-pressure-loss/PressureLossResults";
 import type { PipeSegmentSpec, PumpTDHResponse, SegmentLossDetail } from "./types";
@@ -58,13 +59,7 @@ export function TDHResults({ result, flowRateValue, flowRateUnit }: TDHResultsPr
         </div>
       )}
 
-      <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900">
-        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Total Dynamic Head</p>
-        <p className="mt-1 text-3xl font-semibold text-zinc-900 dark:text-zinc-50">
-          {result.totalDynamicHeadMeters.toFixed(2)}
-          <span className="ml-1 text-lg font-normal text-zinc-500">m</span>
-        </p>
-      </div>
+      <HeadlineResult label="Total Dynamic Head" value={result.totalDynamicHeadMeters.toFixed(2)} unit="m" />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <ResultCard label="Static Head" value={result.staticHeadMeters.toFixed(2)} unit="m" />

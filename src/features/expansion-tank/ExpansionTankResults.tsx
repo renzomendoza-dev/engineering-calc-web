@@ -1,3 +1,4 @@
+import { HeadlineResult } from "@/components/ui/HeadlineResult";
 import { ResultCard } from "@/components/ui/ResultCard";
 import type { ExpansionTankRequest, ExpansionTankResponse } from "./types";
 
@@ -28,13 +29,7 @@ export function ExpansionTankResults({ result, request }: ExpansionTankResultsPr
     <div className="flex flex-col gap-4">
       <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Results</h2>
 
-      <div className="rounded-lg border border-blue-400 bg-blue-50 p-5 dark:border-blue-500 dark:bg-blue-950/40">
-        <p className="text-sm font-medium text-blue-800 dark:text-blue-300">Required Tank Volume</p>
-        <p className="mt-1 text-3xl font-semibold text-zinc-900 dark:text-zinc-50">
-          {result.requiredTankVolumeLiters.toFixed(1)}
-          <span className="ml-1 text-lg font-normal text-zinc-500">L</span>
-        </p>
-      </div>
+      <HeadlineResult label="Required Tank Volume" value={result.requiredTankVolumeLiters.toFixed(1)} unit="L" />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <ResultCard label="Expansion Volume" value={result.expansionVolumeLiters.toFixed(2)} unit="L" />

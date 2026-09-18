@@ -1,3 +1,4 @@
+import { HeadlineResult } from "@/components/ui/HeadlineResult";
 import { ResultCard } from "@/components/ui/ResultCard";
 import type { FireWaterStorageResponse } from "./types";
 
@@ -37,18 +38,12 @@ export function FireWaterStorageResults({ result }: FireWaterStorageResultsProps
         unit="minutes"
       />
 
-      <div className="rounded-lg border border-blue-400 bg-blue-50 p-6 text-center dark:border-blue-500 dark:bg-blue-950/40">
-        <p className="text-sm font-medium text-blue-700 dark:text-blue-400">
-          Required Storage Volume
-        </p>
-        <p className="mt-1 text-4xl font-bold text-blue-900 dark:text-blue-100">
-          {result.requiredStorageVolumeGallons.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-          <span className="ml-1 text-lg font-normal text-blue-700 dark:text-blue-400">gallons</span>
-        </p>
-        <p className="mt-1 text-sm text-blue-700 dark:text-blue-400">
-          {volumeLitres.toLocaleString(undefined, { maximumFractionDigits: 0 })} liters
-        </p>
-      </div>
+      <HeadlineResult
+        label="Required Storage Volume"
+        value={result.requiredStorageVolumeGallons.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+        unit="gallons"
+        secondaryValue={`${volumeLitres.toLocaleString(undefined, { maximumFractionDigits: 0 })} liters`}
+      />
     </div>
   );
 }
