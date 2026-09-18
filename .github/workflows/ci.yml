@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Superseded PR pushes get cancelled; runs on main always finish.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      # src/lib/config.ts throws at import time without this. The value is only baked into the
+      # build output here, never used to call anything.
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8080
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24 # matches the Dockerfile's node:24-alpine
+          cache: npm
+
+      - run: npm ci
+
+      # Runs `next typegen` first: global helpers like LayoutProps live in generated .next/types,
+      # which a fresh checkout doesn't have.
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
