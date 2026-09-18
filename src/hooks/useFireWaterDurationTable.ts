@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ApiError } from "@/lib/api-client";
 import { getFireWaterDurationTable } from "@/lib/reference-api";
 import type { FireWaterDurationTableRow } from "@/features/fire-water-storage/types";
+import { EMPTY_LIST, useReferenceData } from "./useReferenceData";
 
 interface UseFireWaterDurationTableResult {
   rows: FireWaterDurationTableRow[];
@@ -19,33 +18,10 @@ interface UseFireWaterDurationTableResult {
  * useMotorFlcTable's single-table role.
  */
 export function useFireWaterDurationTable(): UseFireWaterDurationTableResult {
-  const [rows, setRows] = useState<FireWaterDurationTableRow[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const result = await getFireWaterDurationTable();
-        if (cancelled) return;
-        setRows(result);
-      } catch (err) {
-        if (cancelled) return;
-        setError(err instanceof ApiError ? err.message : "Failed to load reference table.");
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return { rows, isLoading, error };
+  const { data, isLoading, error } = useReferenceData(
+    "fire-water-duration-table",
+    getFireWaterDurationTable,
+    "Failed to load reference table.",
+  );
+  return { rows: data ?? EMPTY_LIST, isLoading, error };
 }

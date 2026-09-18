@@ -1,18 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ApiError } from "@/lib/api-client";
 import { getConductorDcResistanceTable, getConductorImpedanceTable } from "@/lib/reference-api";
 import type {
   ConductorDcResistanceTableRow,
   ConductorImpedanceTableRow,
 } from "@/features/voltage-drop/types";
+import { EMPTY_LIST, useReferenceData } from "./useReferenceData";
 
-interface UseConductorReferenceTablesResult {
+interface ConductorReferenceTables {
   impedanceRows: ConductorImpedanceTableRow[];
   dcResistanceRows: ConductorDcResistanceTableRow[];
+}
+
+interface UseConductorReferenceTablesResult extends ConductorReferenceTables {
   isLoading: boolean;
   error: string | null;
+}
+
+const EMPTY: ConductorReferenceTables = { impedanceRows: EMPTY_LIST, dcResistanceRows: EMPTY_LIST };
+
+async function load(): Promise<ConductorReferenceTables> {
+  const [impedanceRows, dcResistanceRows] = await Promise.all([
+    getConductorImpedanceTable(),
+    getConductorDcResistanceTable(),
+  ]);
+  return { impedanceRows, dcResistanceRows };
 }
 
 /**
@@ -23,38 +35,10 @@ interface UseConductorReferenceTablesResult {
  * under src/hooks/ since future calculators citing the same PEC tables will want it too.
  */
 export function useConductorReferenceTables(): UseConductorReferenceTablesResult {
-  const [impedanceRows, setImpedanceRows] = useState<ConductorImpedanceTableRow[]>([]);
-  const [dcResistanceRows, setDcResistanceRows] = useState<ConductorDcResistanceTableRow[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const [impedance, dcResistance] = await Promise.all([
-          getConductorImpedanceTable(),
-          getConductorDcResistanceTable(),
-        ]);
-        if (cancelled) return;
-        setImpedanceRows(impedance);
-        setDcResistanceRows(dcResistance);
-      } catch (err) {
-        if (cancelled) return;
-        setError(err instanceof ApiError ? err.message : "Failed to load reference tables.");
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return { impedanceRows, dcResistanceRows, isLoading, error };
+  const { data, isLoading, error } = useReferenceData(
+    "conductor-reference-tables",
+    load,
+    "Failed to load reference tables.",
+  );
+  return { ...(data ?? EMPTY), isLoading, error };
 }

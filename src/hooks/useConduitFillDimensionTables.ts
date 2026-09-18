@@ -1,18 +1,33 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ApiError } from "@/lib/api-client";
 import { getConductorDimensionTable, getConduitDimensionTable } from "@/lib/reference-api";
 import type {
   ConductorDimensionTableRow,
   ConduitDimensionTableRow,
 } from "@/features/conduit-fill/types";
+import { EMPTY_LIST, useReferenceData } from "./useReferenceData";
 
-interface UseConduitFillDimensionTablesResult {
+interface ConduitFillDimensionTables {
   conductorDimensionRows: ConductorDimensionTableRow[];
   conduitDimensionRows: ConduitDimensionTableRow[];
+}
+
+interface UseConduitFillDimensionTablesResult extends ConduitFillDimensionTables {
   isLoading: boolean;
   error: string | null;
+}
+
+const EMPTY: ConduitFillDimensionTables = {
+  conductorDimensionRows: EMPTY_LIST,
+  conduitDimensionRows: EMPTY_LIST,
+};
+
+async function load(): Promise<ConduitFillDimensionTables> {
+  const [conductorDimensionRows, conduitDimensionRows] = await Promise.all([
+    getConductorDimensionTable(),
+    getConduitDimensionTable(),
+  ]);
+  return { conductorDimensionRows, conduitDimensionRows };
 }
 
 /**
@@ -22,42 +37,10 @@ interface UseConduitFillDimensionTablesResult {
  * Mirrors useConductorReferenceTables' role for voltage drop.
  */
 export function useConduitFillDimensionTables(): UseConduitFillDimensionTablesResult {
-  const [conductorDimensionRows, setConductorDimensionRows] = useState<
-    ConductorDimensionTableRow[]
-  >([]);
-  const [conduitDimensionRows, setConduitDimensionRows] = useState<ConduitDimensionTableRow[]>(
-    [],
+  const { data, isLoading, error } = useReferenceData(
+    "conduit-fill-dimension-tables",
+    load,
+    "Failed to load reference tables.",
   );
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const [conductorRows, conduitRows] = await Promise.all([
-          getConductorDimensionTable(),
-          getConduitDimensionTable(),
-        ]);
-        if (cancelled) return;
-        setConductorDimensionRows(conductorRows);
-        setConduitDimensionRows(conduitRows);
-      } catch (err) {
-        if (cancelled) return;
-        setError(err instanceof ApiError ? err.message : "Failed to load reference tables.");
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return { conductorDimensionRows, conduitDimensionRows, isLoading, error };
+  return { ...(data ?? EMPTY), isLoading, error };
 }

@@ -1,14 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ApiError } from "@/lib/api-client";
 import { getConduitFillTypes, getInsulationTypes } from "@/lib/reference-api";
+import { EMPTY_LIST, useReferenceData } from "./useReferenceData";
 
-interface UseConduitFillReferenceDataResult {
+interface ConduitFillReferenceData {
   insulationTypes: string[];
   conduitFillTypes: string[];
+}
+
+interface UseConduitFillReferenceDataResult extends ConduitFillReferenceData {
   isLoading: boolean;
   error: string | null;
+}
+
+const EMPTY: ConduitFillReferenceData = { insulationTypes: EMPTY_LIST, conduitFillTypes: EMPTY_LIST };
+
+async function load(): Promise<ConduitFillReferenceData> {
+  const [insulationTypes, conduitFillTypes] = await Promise.all([
+    getInsulationTypes(),
+    getConduitFillTypes(),
+  ]);
+  return { insulationTypes, conduitFillTypes };
 }
 
 /**
@@ -18,38 +30,10 @@ interface UseConduitFillReferenceDataResult {
  * useConductorFillSizes instead.
  */
 export function useConduitFillReferenceData(): UseConduitFillReferenceDataResult {
-  const [insulationTypes, setInsulationTypes] = useState<string[]>([]);
-  const [conduitFillTypes, setConduitFillTypes] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const [insulation, conduits] = await Promise.all([
-          getInsulationTypes(),
-          getConduitFillTypes(),
-        ]);
-        if (cancelled) return;
-        setInsulationTypes(insulation);
-        setConduitFillTypes(conduits);
-      } catch (err) {
-        if (cancelled) return;
-        setError(err instanceof ApiError ? err.message : "Failed to load reference data.");
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return { insulationTypes, conduitFillTypes, isLoading, error };
+  const { data, isLoading, error } = useReferenceData(
+    "conduit-fill-reference-data",
+    load,
+    "Failed to load reference data.",
+  );
+  return { ...(data ?? EMPTY), isLoading, error };
 }

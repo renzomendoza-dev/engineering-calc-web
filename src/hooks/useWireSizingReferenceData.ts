@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ApiError } from "@/lib/api-client";
 import {
   getConductorMaterials,
   getConduitMaterials,
@@ -9,14 +7,36 @@ import {
   getTerminationTempRatings,
 } from "@/lib/reference-api";
 import type { ConductorMaterial, ConduitMaterial } from "@/features/voltage-drop/types";
+import { EMPTY_LIST, useReferenceData } from "./useReferenceData";
 
-interface UseWireSizingReferenceDataResult {
+interface WireSizingReferenceData {
   insulationTypes: string[];
   conductorMaterials: ConductorMaterial[];
   conduitMaterials: ConduitMaterial[];
   terminationTempRatings: number[];
+}
+
+interface UseWireSizingReferenceDataResult extends WireSizingReferenceData {
   isLoading: boolean;
   error: string | null;
+}
+
+const EMPTY: WireSizingReferenceData = {
+  insulationTypes: EMPTY_LIST,
+  conductorMaterials: EMPTY_LIST,
+  conduitMaterials: EMPTY_LIST,
+  terminationTempRatings: EMPTY_LIST,
+};
+
+async function load(): Promise<WireSizingReferenceData> {
+  const [insulationTypes, conductorMaterials, conduitMaterials, terminationTempRatings] =
+    await Promise.all([
+      getInsulationTypes(),
+      getConductorMaterials(),
+      getConduitMaterials(),
+      getTerminationTempRatings(),
+    ]);
+  return { insulationTypes, conductorMaterials, conduitMaterials, terminationTempRatings };
 }
 
 /**
@@ -27,51 +47,10 @@ interface UseWireSizingReferenceDataResult {
  * temperature ratings (new to this feature).
  */
 export function useWireSizingReferenceData(): UseWireSizingReferenceDataResult {
-  const [insulationTypes, setInsulationTypes] = useState<string[]>([]);
-  const [conductorMaterials, setConductorMaterials] = useState<ConductorMaterial[]>([]);
-  const [conduitMaterials, setConduitMaterials] = useState<ConduitMaterial[]>([]);
-  const [terminationTempRatings, setTerminationTempRatings] = useState<number[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const [insulation, conductorMats, conduitMats, terminationRatings] = await Promise.all([
-          getInsulationTypes(),
-          getConductorMaterials(),
-          getConduitMaterials(),
-          getTerminationTempRatings(),
-        ]);
-        if (cancelled) return;
-        setInsulationTypes(insulation);
-        setConductorMaterials(conductorMats);
-        setConduitMaterials(conduitMats);
-        setTerminationTempRatings(terminationRatings);
-      } catch (err) {
-        if (cancelled) return;
-        setError(err instanceof ApiError ? err.message : "Failed to load reference data.");
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return {
-    insulationTypes,
-    conductorMaterials,
-    conduitMaterials,
-    terminationTempRatings,
-    isLoading,
-    error,
-  };
+  const { data, isLoading, error } = useReferenceData(
+    "wire-sizing-reference-data",
+    load,
+    "Failed to load reference data.",
+  );
+  return { ...(data ?? EMPTY), isLoading, error };
 }

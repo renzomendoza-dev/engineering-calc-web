@@ -1,20 +1,37 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ApiError } from "@/lib/api-client";
 import { getConductorMaterials, getConductorSizes, getConduitMaterials } from "@/lib/reference-api";
 import type {
   ConductorMaterial,
   ConductorSizeOption,
   ConduitMaterial,
 } from "@/features/voltage-drop/types";
+import { EMPTY_LIST, useReferenceData } from "./useReferenceData";
 
-interface UseConductorReferenceDataResult {
+interface ConductorReferenceData {
   conductorSizes: ConductorSizeOption[];
   conductorMaterials: ConductorMaterial[];
   conduitMaterials: ConduitMaterial[];
+}
+
+interface UseConductorReferenceDataResult extends ConductorReferenceData {
   isLoading: boolean;
   error: string | null;
+}
+
+const EMPTY: ConductorReferenceData = {
+  conductorSizes: EMPTY_LIST,
+  conductorMaterials: EMPTY_LIST,
+  conduitMaterials: EMPTY_LIST,
+};
+
+async function load(): Promise<ConductorReferenceData> {
+  const [conductorSizes, conductorMaterials, conduitMaterials] = await Promise.all([
+    getConductorSizes(),
+    getConductorMaterials(),
+    getConduitMaterials(),
+  ]);
+  return { conductorSizes, conductorMaterials, conduitMaterials };
 }
 
 /**
@@ -24,41 +41,10 @@ interface UseConductorReferenceDataResult {
  * under src/hooks/ rather than a single feature folder.
  */
 export function useConductorReferenceData(): UseConductorReferenceDataResult {
-  const [conductorSizes, setConductorSizes] = useState<ConductorSizeOption[]>([]);
-  const [conductorMaterials, setConductorMaterials] = useState<ConductorMaterial[]>([]);
-  const [conduitMaterials, setConduitMaterials] = useState<ConduitMaterial[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const [sizes, materials, conduits] = await Promise.all([
-          getConductorSizes(),
-          getConductorMaterials(),
-          getConduitMaterials(),
-        ]);
-        if (cancelled) return;
-        setConductorSizes(sizes);
-        setConductorMaterials(materials);
-        setConduitMaterials(conduits);
-      } catch (err) {
-        if (cancelled) return;
-        setError(err instanceof ApiError ? err.message : "Failed to load reference data.");
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return { conductorSizes, conductorMaterials, conduitMaterials, isLoading, error };
+  const { data, isLoading, error } = useReferenceData(
+    "conductor-reference-data",
+    load,
+    "Failed to load reference data.",
+  );
+  return { ...(data ?? EMPTY), isLoading, error };
 }

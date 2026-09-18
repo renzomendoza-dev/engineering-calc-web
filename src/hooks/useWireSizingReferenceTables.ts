@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ApiError } from "@/lib/api-client";
 import {
   getAmbientTempCorrectionTable,
   getAmpacityTable,
@@ -14,14 +12,36 @@ import type {
   ConductorCountAdjustmentTableRow,
   InsulationTypeTempRatingTableRow,
 } from "@/features/wire-sizing/types";
+import { EMPTY_LIST, useReferenceData } from "./useReferenceData";
 
-interface UseWireSizingReferenceTablesResult {
+interface WireSizingReferenceTables {
   ampacityRows: AmpacityTableRow[];
   insulationTempRatingRows: InsulationTypeTempRatingTableRow[];
   ambientTempCorrectionRows: AmbientTempCorrectionTableRow[];
   conductorCountAdjustmentRows: ConductorCountAdjustmentTableRow[];
+}
+
+interface UseWireSizingReferenceTablesResult extends WireSizingReferenceTables {
   isLoading: boolean;
   error: string | null;
+}
+
+const EMPTY: WireSizingReferenceTables = {
+  ampacityRows: EMPTY_LIST,
+  insulationTempRatingRows: EMPTY_LIST,
+  ambientTempCorrectionRows: EMPTY_LIST,
+  conductorCountAdjustmentRows: EMPTY_LIST,
+};
+
+async function load(): Promise<WireSizingReferenceTables> {
+  const [ampacityRows, insulationTempRatingRows, ambientTempCorrectionRows, conductorCountAdjustmentRows] =
+    await Promise.all([
+      getAmpacityTable(),
+      getInsulationTypeTempRatingTable(),
+      getAmbientTempCorrectionTable(),
+      getConductorCountAdjustmentTable(),
+    ]);
+  return { ampacityRows, insulationTempRatingRows, ambientTempCorrectionRows, conductorCountAdjustmentRows };
 }
 
 /**
@@ -31,58 +51,10 @@ interface UseWireSizingReferenceTablesResult {
  * useConductorReferenceTables' role for voltage drop.
  */
 export function useWireSizingReferenceTables(): UseWireSizingReferenceTablesResult {
-  const [ampacityRows, setAmpacityRows] = useState<AmpacityTableRow[]>([]);
-  const [insulationTempRatingRows, setInsulationTempRatingRows] = useState<
-    InsulationTypeTempRatingTableRow[]
-  >([]);
-  const [ambientTempCorrectionRows, setAmbientTempCorrectionRows] = useState<
-    AmbientTempCorrectionTableRow[]
-  >([]);
-  const [conductorCountAdjustmentRows, setConductorCountAdjustmentRows] = useState<
-    ConductorCountAdjustmentTableRow[]
-  >([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const [ampacity, insulationTempRating, ambientTempCorrection, conductorCountAdjustment] =
-          await Promise.all([
-            getAmpacityTable(),
-            getInsulationTypeTempRatingTable(),
-            getAmbientTempCorrectionTable(),
-            getConductorCountAdjustmentTable(),
-          ]);
-        if (cancelled) return;
-        setAmpacityRows(ampacity);
-        setInsulationTempRatingRows(insulationTempRating);
-        setAmbientTempCorrectionRows(ambientTempCorrection);
-        setConductorCountAdjustmentRows(conductorCountAdjustment);
-      } catch (err) {
-        if (cancelled) return;
-        setError(err instanceof ApiError ? err.message : "Failed to load reference tables.");
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return {
-    ampacityRows,
-    insulationTempRatingRows,
-    ambientTempCorrectionRows,
-    conductorCountAdjustmentRows,
-    isLoading,
-    error,
-  };
+  const { data, isLoading, error } = useReferenceData(
+    "wire-sizing-reference-tables",
+    load,
+    "Failed to load reference tables.",
+  );
+  return { ...(data ?? EMPTY), isLoading, error };
 }

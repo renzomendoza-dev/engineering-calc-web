@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ApiError } from "@/lib/api-client";
 import { getPipeMaterials } from "@/lib/reference-api";
 import type { PipeMaterialOption } from "@/features/pipe-velocity/types";
+import { EMPTY_LIST, useReferenceData } from "./useReferenceData";
 
 interface UsePipeMaterialsResult {
   materials: PipeMaterialOption[];
@@ -16,33 +15,10 @@ interface UsePipeMaterialsResult {
  * pipe velocity/sizing calculator's dropdowns.
  */
 export function usePipeMaterials(): UsePipeMaterialsResult {
-  const [materials, setMaterials] = useState<PipeMaterialOption[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const result = await getPipeMaterials();
-        if (cancelled) return;
-        setMaterials(result);
-      } catch (err) {
-        if (cancelled) return;
-        setError(err instanceof ApiError ? err.message : "Failed to load reference data.");
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return { materials, isLoading, error };
+  const { data, isLoading, error } = useReferenceData(
+    "pipe-materials",
+    getPipeMaterials,
+    "Failed to load reference data.",
+  );
+  return { materials: data ?? EMPTY_LIST, isLoading, error };
 }

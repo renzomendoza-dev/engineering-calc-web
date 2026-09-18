@@ -1,15 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ApiError } from "@/lib/api-client";
 import { getLockedRotorPolyphaseTable, getLockedRotorSinglePhaseTable } from "@/lib/reference-api";
 import type { LockedRotorTableRow } from "@/features/locked-rotor/types";
+import { EMPTY_LIST, useReferenceData } from "./useReferenceData";
 
-interface UseLockedRotorTablesResult {
+interface LockedRotorTables {
   singlePhaseRows: LockedRotorTableRow[];
   polyphaseRows: LockedRotorTableRow[];
+}
+
+interface UseLockedRotorTablesResult extends LockedRotorTables {
   isLoading: boolean;
   error: string | null;
+}
+
+const EMPTY: LockedRotorTables = { singlePhaseRows: EMPTY_LIST, polyphaseRows: EMPTY_LIST };
+
+async function load(): Promise<LockedRotorTables> {
+  const [singlePhaseRows, polyphaseRows] = await Promise.all([
+    getLockedRotorSinglePhaseTable(),
+    getLockedRotorPolyphaseTable(),
+  ]);
+  return { singlePhaseRows, polyphaseRows };
 }
 
 /**
@@ -18,38 +30,10 @@ interface UseLockedRotorTablesResult {
  * purposes only.
  */
 export function useLockedRotorTables(): UseLockedRotorTablesResult {
-  const [singlePhaseRows, setSinglePhaseRows] = useState<LockedRotorTableRow[]>([]);
-  const [polyphaseRows, setPolyphaseRows] = useState<LockedRotorTableRow[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const [singlePhase, polyphase] = await Promise.all([
-          getLockedRotorSinglePhaseTable(),
-          getLockedRotorPolyphaseTable(),
-        ]);
-        if (cancelled) return;
-        setSinglePhaseRows(singlePhase);
-        setPolyphaseRows(polyphase);
-      } catch (err) {
-        if (cancelled) return;
-        setError(err instanceof ApiError ? err.message : "Failed to load reference tables.");
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return { singlePhaseRows, polyphaseRows, isLoading, error };
+  const { data, isLoading, error } = useReferenceData(
+    "locked-rotor-tables",
+    load,
+    "Failed to load reference tables.",
+  );
+  return { ...(data ?? EMPTY), isLoading, error };
 }

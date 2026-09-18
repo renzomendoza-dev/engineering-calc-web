@@ -1,54 +1,38 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ApiError } from "@/lib/api-client";
 import { getMotorClasses, getMotorPhaseTypes } from "@/lib/reference-api";
+import { EMPTY_LIST, useReferenceData } from "./useReferenceData";
 
-interface UseMotorReferenceDataResult {
+interface MotorReferenceData {
   motorPhaseTypes: string[];
   motorClasses: string[];
+}
+
+interface UseMotorReferenceDataResult extends MotorReferenceData {
   isLoading: boolean;
   error: string | null;
+}
+
+const EMPTY: MotorReferenceData = { motorPhaseTypes: EMPTY_LIST, motorClasses: EMPTY_LIST };
+
+async function load(): Promise<MotorReferenceData> {
+  const [motorPhaseTypes, motorClasses] = await Promise.all([getMotorPhaseTypes(), getMotorClasses()]);
+  return { motorPhaseTypes, motorClasses };
 }
 
 /**
  * Fetches motor phase types and motor classes once on mount — neither depends on user
  * input. Horsepower ratings and voltages are deliberately NOT part of this hook: they're
  * dependent lookups (horsepower depends on phaseType + motorClass, voltage depends on
- * horsepower too), fetched directly inside MotorFlcForm via local effects that re-run as
- * those upstream fields change — same reasoning as conduit fill's per-row
+ * horsepower too), fetched by useMotorHorsepowerRatings and useMotorVoltages, which re-fetch
+ * as those upstream fields change — same reasoning as conduit fill's per-row
  * useConductorFillSizes being separate from its mount-once reference hook.
  */
 export function useMotorReferenceData(): UseMotorReferenceDataResult {
-  const [motorPhaseTypes, setMotorPhaseTypes] = useState<string[]>([]);
-  const [motorClasses, setMotorClasses] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const [phaseTypes, classes] = await Promise.all([getMotorPhaseTypes(), getMotorClasses()]);
-        if (cancelled) return;
-        setMotorPhaseTypes(phaseTypes);
-        setMotorClasses(classes);
-      } catch (err) {
-        if (cancelled) return;
-        setError(err instanceof ApiError ? err.message : "Failed to load reference data.");
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return { motorPhaseTypes, motorClasses, isLoading, error };
+  const { data, isLoading, error } = useReferenceData(
+    "motor-reference-data",
+    load,
+    "Failed to load reference data.",
+  );
+  return { ...(data ?? EMPTY), isLoading, error };
 }
