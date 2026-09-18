@@ -17,6 +17,10 @@ import {
   type DuctSizingRequest,
   type DuctSizingResponse,
 } from "./types";
+import { FormErrorBanner } from "@/components/ui/FormErrorBanner";
+import { RadioGroupField } from "@/components/ui/RadioGroupField";
+import { FRICTION_FACTOR_METHOD_HINT, FRICTION_FACTOR_METHOD_OPTIONS } from "@/lib/frictionFactorMethod";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 const defaultValues: DuctSizingFormInput = {
   method: "EQUAL_FRICTION",
@@ -155,68 +159,40 @@ export function DuctSizingForm({ onResult, onShapeChange, onMethodChange }: Duct
           </p>
         )}
 
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Friction Factor Method</span>
-          <div className="flex gap-4">
-            <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-              <input type="radio" value="SWAMEE_JAIN" className="h-4 w-4" {...register("frictionMethod")} />
-              Swamee-Jain (fast)
-            </label>
-            <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-              <input type="radio" value="COLEBROOK_WHITE" className="h-4 w-4" {...register("frictionMethod")} />
-              Colebrook-White (more precise)
-            </label>
-          </div>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Colebrook-White solves the implicit friction-factor equation by iterating to a
-            converged answer — more exact, but takes marginally longer. Swamee-Jain is a direct
-            (non-iterative) approximation of Colebrook-White, accurate to within about 1% for
-            typical turbulent flow.
-          </p>
-        </div>
+        <RadioGroupField
+          legend="Friction Factor Method"
+          options={FRICTION_FACTOR_METHOD_OPTIONS}
+          hint={FRICTION_FACTOR_METHOD_HINT}
+          {...register("frictionMethod")}
+        />
       </div>
 
       <div className="flex flex-col gap-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
         <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Duct Shape</h3>
-        <div className="flex gap-4">
-          <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-            <input type="radio" value="ROUND" className="h-4 w-4" {...register("shape")} />
-            Round
-          </label>
-          <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-            <input type="radio" value="RECTANGULAR" className="h-4 w-4" {...register("shape")} />
-            Rectangular
-          </label>
-        </div>
+        {/* The <h3> above labels this group on screen; the legend repeats it for screen readers. */}
+        <RadioGroupField
+          legend="Duct Shape"
+          hideLegend
+          options={[
+            { value: "ROUND", label: "Round" },
+            { value: "RECTANGULAR", label: "Rectangular" },
+          ]}
+          {...register("shape")}
+        />
 
         {isRectangular && (
           <div className="flex flex-col gap-3">
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
               Duct dimensions shown in mm, following HVAC industry convention.
             </p>
-            <div className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Fixed Dimension</span>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-                  <input
-                    type="radio"
-                    value="WIDTH"
-                    className="h-4 w-4"
-                    {...register("fixedDimensionType")}
-                  />
-                  Width
-                </label>
-                <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-                  <input
-                    type="radio"
-                    value="HEIGHT"
-                    className="h-4 w-4"
-                    {...register("fixedDimensionType")}
-                  />
-                  Height
-                </label>
-              </div>
-            </div>
+            <RadioGroupField
+              legend="Fixed Dimension"
+              options={[
+                { value: "WIDTH", label: "Width" },
+                { value: "HEIGHT", label: "Height" },
+              ]}
+              {...register("fixedDimensionType")}
+            />
             <NumberField
               label={watch("fixedDimensionType") === "WIDTH" ? "Duct Width" : "Duct Height"}
               unit="mm"
@@ -229,16 +205,15 @@ export function DuctSizingForm({ onResult, onShapeChange, onMethodChange }: Duct
 
       <div className="flex flex-col gap-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
         <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Sizing Method</h3>
-        <div className="flex gap-4">
-          <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-            <input type="radio" value="EQUAL_FRICTION" className="h-4 w-4" {...register("method")} />
-            Equal Friction
-          </label>
-          <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-            <input type="radio" value="VELOCITY" className="h-4 w-4" {...register("method")} />
-            Velocity
-          </label>
-        </div>
+        <RadioGroupField
+          legend="Sizing Method"
+          hideLegend
+          options={[
+            { value: "EQUAL_FRICTION", label: "Equal Friction" },
+            { value: "VELOCITY", label: "Velocity" },
+          ]}
+          {...register("method")}
+        />
 
         {isVelocity ? (
           <div className="flex flex-col gap-3">
@@ -263,19 +238,9 @@ export function DuctSizingForm({ onResult, onShapeChange, onMethodChange }: Duct
         )}
       </div>
 
-      {generalError && (
-        <div className="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400">
-          {generalError}
-        </div>
-      )}
+      <FormErrorBanner message={generalError} />
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="self-start rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {isSubmitting ? "Calculating…" : "Calculate"}
-      </button>
+      <SubmitButton isSubmitting={isSubmitting} />
     </form>
   );
 }

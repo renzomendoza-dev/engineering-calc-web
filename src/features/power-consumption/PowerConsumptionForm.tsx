@@ -14,6 +14,9 @@ import {
   type PowerConsumptionFormValues,
 } from "./schema";
 import type { PowerConsumptionRequest, PowerConsumptionResponse } from "./types";
+import { FormErrorBanner } from "@/components/ui/FormErrorBanner";
+import { RadioGroupField } from "@/components/ui/RadioGroupField";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 const CIRCUIT_TYPE_LABELS: Record<CircuitType, string> = {
   DC: "DC",
@@ -142,23 +145,15 @@ export function PowerConsumptionForm({ onResult }: PowerConsumptionFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Input Mode</span>
-        <div className="flex flex-wrap gap-4">
-          <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-            <input type="radio" value="DIRECT_WATTAGE" className="h-4 w-4" {...register("mode")} />
-            Direct Wattage
-          </label>
-          <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-            <input type="radio" value="VOLTAGE_CURRENT" className="h-4 w-4" {...register("mode")} />
-            Voltage &amp; Current
-          </label>
-          <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-            <input type="radio" value="HORSEPOWER" className="h-4 w-4" {...register("mode")} />
-            Horsepower
-          </label>
-        </div>
-      </div>
+      <RadioGroupField
+        legend="Input Mode"
+        options={[
+          { value: "DIRECT_WATTAGE", label: "Direct Wattage" },
+          { value: "VOLTAGE_CURRENT", label: "Voltage & Current" },
+          { value: "HORSEPOWER", label: "Horsepower" },
+        ]}
+        {...register("mode")}
+      />
 
       {mode === "DIRECT_WATTAGE" && (
         <NumberField
@@ -215,19 +210,14 @@ export function PowerConsumptionForm({ onResult }: PowerConsumptionFormProps) {
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Operating Runtime</span>
-        <div className="flex flex-wrap gap-4">
-          <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-            <input type="radio" value="simple" className="h-4 w-4" {...register("runtimeEntryMode")} />
-            Enter total hours directly
-          </label>
-          <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-            <input type="radio" value="helper" className="h-4 w-4" {...register("runtimeEntryMode")} />
-            Calculate from hours/day
-          </label>
-        </div>
-      </div>
+      <RadioGroupField
+        legend="Operating Runtime"
+        options={[
+          { value: "simple", label: "Enter total hours directly" },
+          { value: "helper", label: "Calculate from hours/day" },
+        ]}
+        {...register("runtimeEntryMode")}
+      />
 
       {runtimeEntryMode === "simple" ? (
         <NumberField
@@ -266,19 +256,9 @@ export function PowerConsumptionForm({ onResult }: PowerConsumptionFormProps) {
         {...register("pricePerKwh")}
       />
 
-      {generalError && (
-        <div className="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400">
-          {generalError}
-        </div>
-      )}
+      <FormErrorBanner message={generalError} />
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="self-start rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {isSubmitting ? "Calculating…" : "Calculate"}
-      </button>
+      <SubmitButton isSubmitting={isSubmitting} />
     </form>
   );
 }

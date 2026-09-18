@@ -20,6 +20,8 @@ import type {
   MotorFlcRequest,
   MotorFlcResponse,
 } from "./types";
+import { FormErrorBanner } from "@/components/ui/FormErrorBanner";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 const CIRCUIT_TYPE_LABELS: Record<(typeof CIRCUIT_TYPES)[number], string> = {
   DC: "DC",
@@ -458,19 +460,9 @@ export function MotorFlcForm({ onResult }: MotorFlcFormProps) {
         </div>
       )}
 
-      {generalError && (
-        <div className="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400">
-          {generalError}
-        </div>
-      )}
+      <FormErrorBanner message={generalError} />
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="self-start rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {isSubmitting ? "Calculating…" : "Calculate"}
-      </button>
+      <SubmitButton isSubmitting={isSubmitting} />
     </form>
   );
 }

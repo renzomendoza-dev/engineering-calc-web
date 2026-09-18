@@ -8,8 +8,12 @@ import { DiameterSpecInput } from "@/components/DiameterSpecInput";
 import { apiPost } from "@/lib/api-client";
 import { useApiFormError } from "@/hooks/useApiFormError";
 import { toDiameterSpecRequest } from "@/lib/diameterSpec";
+import { FRICTION_FACTOR_METHOD_HINT, FRICTION_FACTOR_METHOD_OPTIONS } from "@/lib/frictionFactorMethod";
 import { pressureLossSchema, FLOW_RATE_UNITS, type PressureLossFormInput, type PressureLossFormValues } from "./schema";
 import { FLUIDS, type PipePressureLossRequest, type PipePressureLossResponse } from "./types";
+import { FormErrorBanner } from "@/components/ui/FormErrorBanner";
+import { RadioGroupField } from "@/components/ui/RadioGroupField";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 const fluidOptions: SelectOption[] = FLUIDS.map((f) => ({ value: f.key, label: f.label }));
 const flowRateUnitOptions: SelectOption[] = FLOW_RATE_UNITS.map((value) => ({ value, label: value }));
@@ -106,39 +110,16 @@ export function PressureLossForm({ onResult }: PressureLossFormProps) {
         {...register("pipeLengthMeters")}
       />
 
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Friction Factor Method</span>
-        <div className="flex gap-4">
-          <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-            <input type="radio" value="SWAMEE_JAIN" className="h-4 w-4" {...register("method")} />
-            Swamee-Jain (fast)
-          </label>
-          <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-            <input type="radio" value="COLEBROOK_WHITE" className="h-4 w-4" {...register("method")} />
-            Colebrook-White (more precise)
-          </label>
-        </div>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          Colebrook-White solves the implicit friction-factor equation by iterating to a
-          converged answer — more exact, but takes marginally longer. Swamee-Jain is a direct
-          (non-iterative) approximation of Colebrook-White, accurate to within about 1% for
-          typical turbulent flow.
-        </p>
-      </div>
+      <RadioGroupField
+        legend="Friction Factor Method"
+        options={FRICTION_FACTOR_METHOD_OPTIONS}
+        hint={FRICTION_FACTOR_METHOD_HINT}
+        {...register("method")}
+      />
 
-      {generalError && (
-        <div className="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400">
-          {generalError}
-        </div>
-      )}
+      <FormErrorBanner message={generalError} />
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="self-start rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {isSubmitting ? "Calculating…" : "Calculate"}
-      </button>
+      <SubmitButton isSubmitting={isSubmitting} />
     </form>
   );
 }

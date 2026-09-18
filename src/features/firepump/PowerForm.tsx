@@ -9,6 +9,9 @@ import { useApiFormError } from "@/hooks/useApiFormError";
 import { PumpCurvePointsInput } from "./PumpCurvePointsInput";
 import { powerSchema, type PowerFormInput, type PowerFormValues } from "./schema";
 import type { FirePumpPowerRequest, FirePumpPowerResponse } from "./types";
+import { FormErrorBanner } from "@/components/ui/FormErrorBanner";
+import { RadioGroupField } from "@/components/ui/RadioGroupField";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 const EMPTY_CURVE_POINTS = [
   { flowGpm: 0, pressurePsi: 0 },
@@ -92,23 +95,17 @@ export function PowerForm({ onResult }: PowerFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <div className="flex gap-4">
-          <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            <input type="radio" value="RATED_POINT_ONLY" className="h-4 w-4" {...register("inputType")} />
-            Rated point only
-          </label>
-          <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            <input type="radio" value="FULL_CURVE" className="h-4 w-4" {...register("inputType")} />
-            Full curve
-          </label>
-        </div>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          Rated point only evaluates power at a single operating point — quick, but doesn&apos;t
-          check the overload (150% flow) point. Full curve evaluates both, giving a more
-          reliable driver size.
-        </p>
-      </div>
+      <RadioGroupField
+        legend="Pump data to evaluate"
+        hideLegend
+        emphasizeOptions
+        options={[
+          { value: "RATED_POINT_ONLY", label: "Rated point only" },
+          { value: "FULL_CURVE", label: "Full curve" },
+        ]}
+        hint="Rated point only evaluates power at a single operating point — quick, but doesn't check the overload (150% flow) point. Full curve evaluates both, giving a more reliable driver size."
+        {...register("inputType")}
+      />
 
       {inputType === "RATED_POINT_ONLY" ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -171,19 +168,9 @@ export function PowerForm({ onResult }: PowerFormProps) {
         />
       </div>
 
-      {generalError && (
-        <div className="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400">
-          {generalError}
-        </div>
-      )}
+      <FormErrorBanner message={generalError} />
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="self-start rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {isSubmitting ? "Calculating…" : "Calculate"}
-      </button>
+      <SubmitButton isSubmitting={isSubmitting} />
     </form>
   );
 }

@@ -7,6 +7,9 @@ import { apiPost } from "@/lib/api-client";
 import { useApiFormError } from "@/hooks/useApiFormError";
 import { expansionTankSchema, type ExpansionTankFormInput, type ExpansionTankFormValues } from "./schema";
 import type { ExpansionTankRequest, ExpansionTankResponse } from "./types";
+import { FormErrorBanner } from "@/components/ui/FormErrorBanner";
+import { RadioGroupField } from "@/components/ui/RadioGroupField";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 const defaultValues: ExpansionTankFormInput = {
   systemType: "DOMESTIC_WATER_HEATER",
@@ -71,19 +74,14 @@ export function ExpansionTankForm({ onResult }: ExpansionTankFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">System Type</span>
-        <div className="flex gap-4">
-          <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-            <input type="radio" value="DOMESTIC_WATER_HEATER" className="h-4 w-4" {...register("systemType")} />
-            Domestic Water Heater
-          </label>
-          <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-            <input type="radio" value="HYDRONIC_HEATING" className="h-4 w-4" {...register("systemType")} />
-            Hydronic Heating
-          </label>
-        </div>
-      </div>
+      <RadioGroupField
+        legend="System Type"
+        options={[
+          { value: "DOMESTIC_WATER_HEATER", label: "Domestic Water Heater" },
+          { value: "HYDRONIC_HEATING", label: "Hydronic Heating" },
+        ]}
+        {...register("systemType")}
+      />
 
       <NumberField
         label={`${vesselVolumeLabel} (L)`}
@@ -161,19 +159,9 @@ export function ExpansionTankForm({ onResult }: ExpansionTankFormProps) {
         {...register("altitudeMeters")}
       />
 
-      {generalError && (
-        <div className="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400">
-          {generalError}
-        </div>
-      )}
+      <FormErrorBanner message={generalError} />
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="self-start rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {isSubmitting ? "Calculating…" : "Calculate"}
-      </button>
+      <SubmitButton isSubmitting={isSubmitting} />
     </form>
   );
 }

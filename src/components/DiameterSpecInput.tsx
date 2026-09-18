@@ -10,6 +10,7 @@ import type {
   UseFormWatch,
 } from "react-hook-form";
 import { NumberField } from "@/components/ui/NumberField";
+import { RadioGroupField } from "@/components/ui/RadioGroupField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
 import { usePipeMaterials } from "@/hooks/usePipeMaterials";
 import { RAW_DIAMETER_UNITS } from "@/lib/diameterSpec";
@@ -105,16 +106,16 @@ export function DiameterSpecInput<T extends FieldValues>({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex gap-4">
-        <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          <input type="radio" value="standard" className="h-4 w-4" {...register(fieldName("diameterSource"))} />
-          Standard pipe size
-        </label>
-        <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          <input type="radio" value="custom" className="h-4 w-4" {...register(fieldName("diameterSource"))} />
-          Custom diameter
-        </label>
-      </div>
+      <RadioGroupField
+        legend="Pipe diameter"
+        hideLegend
+        emphasizeOptions
+        options={[
+          { value: "standard", label: "Standard pipe size" },
+          { value: "custom", label: "Custom diameter" },
+        ]}
+        {...register(fieldName("diameterSource"))}
+      />
 
       {diameterSource === "standard" ? (
         <div className="flex flex-col gap-4">

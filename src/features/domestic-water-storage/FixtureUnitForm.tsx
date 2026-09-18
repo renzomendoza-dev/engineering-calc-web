@@ -7,6 +7,9 @@ import { apiPost } from "@/lib/api-client";
 import { useApiFormError } from "@/hooks/useApiFormError";
 import { fixtureUnitSchema, type FixtureUnitFormInput, type FixtureUnitFormValues } from "./schema";
 import type { DomesticWaterStorageRequest, DomesticWaterStorageResponse } from "./types";
+import { FormErrorBanner } from "@/components/ui/FormErrorBanner";
+import { RadioGroupField } from "@/components/ui/RadioGroupField";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 const defaultValues: FixtureUnitFormInput = {
   totalFixtureUnits: 0,
@@ -64,19 +67,14 @@ export function FixtureUnitForm({ onResult }: FixtureUnitFormProps) {
         {...register("totalFixtureUnits")}
       />
 
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">System Type</span>
-        <div className="flex gap-4">
-          <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-            <input type="radio" value="FLUSH_TANK" className="h-4 w-4" {...register("systemType")} />
-            Predominantly flush tanks
-          </label>
-          <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-            <input type="radio" value="FLUSH_VALVE" className="h-4 w-4" {...register("systemType")} />
-            Predominantly flushometer valves
-          </label>
-        </div>
-      </div>
+      <RadioGroupField
+        legend="System Type"
+        options={[
+          { value: "FLUSH_TANK", label: "Predominantly flush tanks" },
+          { value: "FLUSH_VALVE", label: "Predominantly flushometer valves" },
+        ]}
+        {...register("systemType")}
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <NumberField
@@ -94,19 +92,9 @@ export function FixtureUnitForm({ onResult }: FixtureUnitFormProps) {
         />
       </div>
 
-      {generalError && (
-        <div className="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400">
-          {generalError}
-        </div>
-      )}
+      <FormErrorBanner message={generalError} />
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="self-start rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {isSubmitting ? "Calculating…" : "Calculate"}
-      </button>
+      <SubmitButton isSubmitting={isSubmitting} />
     </form>
   );
 }

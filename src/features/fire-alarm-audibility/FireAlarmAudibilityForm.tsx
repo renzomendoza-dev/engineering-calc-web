@@ -16,6 +16,9 @@ import type {
   FireAlarmAudibilityResponse,
   FireAlarmNotificationMode,
 } from "./types";
+import { FormErrorBanner } from "@/components/ui/FormErrorBanner";
+import { RadioGroupField } from "@/components/ui/RadioGroupField";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 const defaultValues: FireAlarmAudibilityFormInput = {
   mode: "PUBLIC",
@@ -77,28 +80,18 @@ export function FireAlarmAudibilityForm({ onResult, onModeChange }: FireAlarmAud
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap gap-4">
-          <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            <input type="radio" value="PUBLIC" className="h-4 w-4" {...register("mode")} />
-            Public Mode
-          </label>
-          <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            <input type="radio" value="PRIVATE" className="h-4 w-4" {...register("mode")} />
-            Private Mode
-          </label>
-          <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            <input type="radio" value="SLEEPING" className="h-4 w-4" {...register("mode")} />
-            Sleeping Area
-          </label>
-        </div>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          Public mode requires the greater of average ambient +15 dB or 60-second max ambient
-          +5 dB. Private mode uses narrower +10 dB / +5 dB offsets (e.g. staff-alert-only
-          zones). Sleeping areas require a 75 dBA absolute floor at the pillow, overridden
-          upward if the relative rule would demand more.
-        </p>
-      </div>
+      <RadioGroupField
+        legend="Notification mode"
+        hideLegend
+        emphasizeOptions
+        options={[
+          { value: "PUBLIC", label: "Public Mode" },
+          { value: "PRIVATE", label: "Private Mode" },
+          { value: "SLEEPING", label: "Sleeping Area" },
+        ]}
+        hint="Public mode requires the greater of average ambient +15 dB or 60-second max ambient +5 dB. Private mode uses narrower +10 dB / +5 dB offsets (e.g. staff-alert-only zones). Sleeping areas require a 75 dBA absolute floor at the pillow, overridden upward if the relative rule would demand more."
+        {...register("mode")}
+      />
 
       <NumberField
         label="Appliance SPL at Reference Distance"
@@ -138,19 +131,9 @@ export function FireAlarmAudibilityForm({ onResult, onModeChange }: FireAlarmAud
         />
       </div>
 
-      {generalError && (
-        <div className="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400">
-          {generalError}
-        </div>
-      )}
+      <FormErrorBanner message={generalError} />
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="self-start rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {isSubmitting ? "Calculating…" : "Calculate"}
-      </button>
+      <SubmitButton isSubmitting={isSubmitting} />
     </form>
   );
 }
