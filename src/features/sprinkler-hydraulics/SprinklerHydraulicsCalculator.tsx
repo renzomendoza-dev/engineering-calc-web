@@ -47,7 +47,13 @@ export function SprinklerHydraulicsCalculator() {
     // live calculation depends on knowing when the input became valid.
     mode: "onChange",
   });
-  const { reset, setError, trigger, watch } = form;
+  const {
+    reset,
+    setError,
+    trigger,
+    watch,
+    formState: { isDirty },
+  } = form;
   const [step, setStep] = useState<StepId>("project");
   const [restored, setRestored] = useState(false);
   const [confirmingClear, setConfirmingClear] = useState(false);
@@ -66,7 +72,10 @@ export function SprinklerHydraulicsCalculator() {
   // any earlier would make the first client render disagree with the server's HTML.
   useEffect(() => {
     const draft = loadDraft();
-    if (draft) reset(draft);
+    // keepDefaultValues leaves the blank form as the baseline react-hook-form compares against,
+    // so a restored draft still counts as dirty — which is what tells the save effect below that
+    // there is something worth keeping.
+    if (draft) reset(draft, { keepDefaultValues: true });
     setRestored(true);
   }, [reset]);
 
@@ -76,8 +85,15 @@ export function SprinklerHydraulicsCalculator() {
     // Before the restore has run the form still holds the defaults; writing them would overwrite
     // the very draft that's about to be loaded.
     if (!restored) return;
+    // An untouched form holds nothing worth restoring, so nothing is stored for it — which is
+    // also what keeps "Clear saved inputs" cleared, rather than immediately writing the blank
+    // form back under the same key.
+    if (!isDirty) {
+      clearDraft();
+      return;
+    }
     saveDraft(debouncedSerialized);
-  }, [debouncedSerialized, restored]);
+  }, [debouncedSerialized, isDirty, restored]);
 
   // useEffectEvent keeps these out of the dependency list: both close over state setters that
   // change identity every render, and the effect should run when the error changes, nothing else.
