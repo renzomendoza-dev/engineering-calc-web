@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SPRINKLER_FORM } from "./defaults";
 import { sprinklerHydraulicsSchema, STEPS, STEP_FIELDS, type SprinklerFormInput } from "./schema";
 
 /**
@@ -87,6 +88,84 @@ describe("sprinklerHydraulicsSchema", () => {
       "waterSupply.residualPressurePsi",
     ]);
     expect(issuePaths(formInput({ waterSupply: { ...supply, residualPressurePsi: "0" } }))).toEqual([]);
+  });
+
+  /**
+   * REGRESSION: choosing a cistern left Next refusing to move, with no message.
+   *
+   * The form's defaults are deliberately 0 (so a fresh form can't fire a calculation), and a
+   * per-field `.positive()` on the *inactive* supply block failed on those zeros -- on fields not
+   * even on screen. The tests above use hand-filled blank strings, which sail through
+   * optionalNumber, so they never exercised the real starting state. These start from
+   * DEFAULT_SPRINKLER_FORM and fill in only what the user must measure on steps 1, 2 and 4.
+   */
+  describe("from the form's real defaults", () => {
+    const filledNetwork: SprinklerFormInput = {
+      ...DEFAULT_SPRINKLER_FORM,
+      sprinklers: [{ nodeId: "S1", kFactor: 5.6, coverageAreaSqFt: 130 }],
+      segments: [
+        { ...DEFAULT_SPRINKLER_FORM.segments[0], pipeLengthFt: 10 },
+      ],
+    };
+
+    it("is incomplete as shipped: the measured quantities are still zero", () => {
+      expect(issuePaths(DEFAULT_SPRINKLER_FORM).length).toBeGreaterThan(0);
+    });
+
+    it("is valid with a cistern, even though both supply blocks still hold their default zeros", () => {
+      expect(issuePaths({ ...filledNetwork, supplySource: "NONE" })).toEqual([]);
+    });
+
+    it("blocks a flow test until its own figures are entered, and not on the tank's zero height", () => {
+      // A set, not a sequence: the default residual of 0 is fine on its own and is reported only
+      // as "below static" once the zero static is known, which comes after the flow check.
+      expect(issuePaths({ ...filledNetwork, supplySource: "FLOW_TEST" }).sort()).toEqual([
+        "waterSupply.flowAtResidualGpm",
+        "waterSupply.residualPressurePsi",
+        "waterSupply.staticPressurePsi",
+      ]);
+
+      expect(
+        issuePaths({
+          ...filledNetwork,
+          supplySource: "FLOW_TEST",
+          waterSupply: { staticPressurePsi: 80, residualPressurePsi: 60, flowAtResidualGpm: 1000 },
+        }),
+      ).toEqual([]);
+    });
+
+    it("blocks a gravity tank until its height is entered, and not on the flow test's zeros", () => {
+      expect(issuePaths({ ...filledNetwork, supplySource: "GRAVITY_TANK" })).toEqual([
+        "gravityTank.waterLevelHeightFt",
+      ]);
+
+      expect(
+        issuePaths({
+          ...filledNetwork,
+          supplySource: "GRAVITY_TANK",
+          gravityTank: { waterLevelHeightFt: 80, outletRuns: [] },
+        }),
+      ).toEqual([]);
+    });
+
+    it("does not validate a tank's pipe rows when the tank is not the source", () => {
+      // A half-entered row left behind after switching away must not block a city main.
+      const strandedRow = {
+        pipeMaterial: "",
+        schedule: "",
+        nominalSize: "",
+        cFactor: 0,
+        pipeLengthFt: 0,
+        fittings: [],
+      };
+      expect(
+        issuePaths({
+          ...filledNetwork,
+          supplySource: "NONE",
+          gravityTank: { waterLevelHeightFt: 0, outletRuns: [strandedRow] },
+        }),
+      ).toEqual([]);
+    });
   });
 
   describe("water supply source", () => {

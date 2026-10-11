@@ -31,13 +31,20 @@ const segmentSchema = z.object({
   fittings: z.array(fittingSchema),
 });
 
-/** A gravity tank's outlet piping: like a segment without the network or the elevation. */
+/**
+ * A gravity tank's outlet piping: like a segment without the network or the elevation.
+ *
+ * Lenient on purpose. These rows belong to the gravity tank source, and a form set to a city main
+ * or a cistern still carries them; strict row rules here would block a calculation over pipe that
+ * is not part of it. The superRefine in sprinklerHydraulicsSchema applies the real rules, to these
+ * rows only when GRAVITY_TANK is the chosen source.
+ */
 const supplyPipeRunSchema = z.object({
-  pipeMaterial: z.string().min(1, "Required"),
+  pipeMaterial: z.string(),
   schedule: z.string().optional(),
-  nominalSize: z.string().min(1, "Required"),
-  cFactor: z.coerce.number().positive("Must be positive"),
-  pipeLengthFt: z.coerce.number().min(0, "Cannot be negative"),
+  nominalSize: z.string(),
+  cFactor: optionalNumber(z.coerce.number()),
+  pipeLengthFt: optionalNumber(z.coerce.number()),
   fittings: z.array(fittingSchema),
 });
 
@@ -73,15 +80,21 @@ export const sprinklerHydraulicsSchema = z
     // FORM-ONLY: picks which block below is sent. "NONE" sends no supply at all, which the API
     // answers with the demand figures and a null margin and verdict.
     supplySource: z.enum(["FLOW_TEST", "GRAVITY_TANK", "NONE"], "Choose where the water comes from"),
-    // Each block's fields are optional here and required by the superRefine below only for the
-    // chosen source: a blank tank height must not block a flow-test calculation.
+    // Both blocks are always present in the form, but only the chosen source's is real. So the
+    // fields here accept any number (or blank), and the superRefine below applies the actual
+    // rules -- required, positive, below static -- to the block that is in use and to nothing else.
+    //
+    // Constraining them here instead is what broke choosing a cistern: the form's defaults are
+    // deliberately 0 (so a fresh form can't fire a calculation), and a `.positive()` on the
+    // inactive block's 0 failed "Must be positive" on a field that isn't on screen, so Next
+    // refused to move and there was no message to explain it.
     waterSupply: z.object({
-      staticPressurePsi: optionalNumber(z.coerce.number().positive("Must be positive")),
-      residualPressurePsi: optionalNumber(z.coerce.number().min(0, "Cannot be negative")),
-      flowAtResidualGpm: optionalNumber(z.coerce.number().positive("Must be positive")),
+      staticPressurePsi: optionalNumber(z.coerce.number()),
+      residualPressurePsi: optionalNumber(z.coerce.number()),
+      flowAtResidualGpm: optionalNumber(z.coerce.number()),
     }),
     gravityTank: z.object({
-      waterLevelHeightFt: optionalNumber(z.coerce.number().positive("Must be positive")),
+      waterLevelHeightFt: optionalNumber(z.coerce.number()),
       outletRuns: z.array(supplyPipeRunSchema),
     }),
 
@@ -101,18 +114,29 @@ export const sprinklerHydraulicsSchema = z
       });
     }
 
-    // Only the chosen source's fields are required, and only its rules apply.
+    // Only the chosen source's block is validated. "NONE" validates neither: a cistern awaiting a
+    // pump is a complete, valid calculation with no supply figures behind it at all.
+    const requirePositive = (path: (string | number)[], value: number | undefined, message: string) => {
+      if (value === undefined) {
+        ctx.addIssue({ code: "custom", path, message: "Required" });
+      } else if (!(value > 0)) {
+        ctx.addIssue({ code: "custom", path, message });
+      }
+    };
+
     if (data.supplySource === "FLOW_TEST") {
       const { staticPressurePsi, residualPressurePsi, flowAtResidualGpm } = data.waterSupply;
-      if (staticPressurePsi === undefined) {
-        ctx.addIssue({ code: "custom", path: ["waterSupply", "staticPressurePsi"], message: "Required" });
-      }
+      requirePositive(["waterSupply", "staticPressurePsi"], staticPressurePsi, "Must be positive");
       if (residualPressurePsi === undefined) {
         ctx.addIssue({ code: "custom", path: ["waterSupply", "residualPressurePsi"], message: "Required" });
+      } else if (residualPressurePsi < 0) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["waterSupply", "residualPressurePsi"],
+          message: "Cannot be negative",
+        });
       }
-      if (flowAtResidualGpm === undefined) {
-        ctx.addIssue({ code: "custom", path: ["waterSupply", "flowAtResidualGpm"], message: "Required" });
-      }
+      requirePositive(["waterSupply", "flowAtResidualGpm"], flowAtResidualGpm, "Must be positive");
       // calc-core's SupplyCurve requires the residual to sit below the static pressure.
       if (
         staticPressurePsi !== undefined &&
@@ -127,11 +151,36 @@ export const sprinklerHydraulicsSchema = z
       }
     }
 
-    if (data.supplySource === "GRAVITY_TANK" && data.gravityTank.waterLevelHeightFt === undefined) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["gravityTank", "waterLevelHeightFt"],
-        message: "Required — a tank at or below the connection is not a gravity supply",
+    if (data.supplySource === "GRAVITY_TANK") {
+      const { waterLevelHeightFt, outletRuns } = data.gravityTank;
+      if (waterLevelHeightFt === undefined) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["gravityTank", "waterLevelHeightFt"],
+          message: "Required — a tank at or below the connection is not a gravity supply",
+        });
+      } else if (!(waterLevelHeightFt > 0)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["gravityTank", "waterLevelHeightFt"],
+          message: "Must be positive — a tank at or below the connection is not a gravity supply",
+        });
+      }
+
+      outletRuns.forEach((run, index) => {
+        const at = (field: string) => ["gravityTank", "outletRuns", index, field];
+        if (!run.pipeMaterial.trim()) {
+          ctx.addIssue({ code: "custom", path: at("pipeMaterial"), message: "Required" });
+        }
+        if (!run.nominalSize.trim()) {
+          ctx.addIssue({ code: "custom", path: at("nominalSize"), message: "Required" });
+        }
+        requirePositive(at("cFactor"), run.cFactor, "Must be positive");
+        if (run.pipeLengthFt === undefined) {
+          ctx.addIssue({ code: "custom", path: at("pipeLengthFt"), message: "Required" });
+        } else if (run.pipeLengthFt < 0) {
+          ctx.addIssue({ code: "custom", path: at("pipeLengthFt"), message: "Cannot be negative" });
+        }
       });
     }
 

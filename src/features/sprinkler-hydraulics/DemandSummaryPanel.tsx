@@ -127,10 +127,14 @@ export function DemandSummaryPanel({ state, hasError }: DemandSummaryPanelProps)
                   {dimmed && <PassBadge passes={result.passes!} />}
                 </>
               ) : (
-                <div className="rounded-md border border-zinc-200 p-2 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-                  No water supply given, so there is no margin or verdict — the demand above is
-                  what a pump or supply has to meet.
-                </div>
+                // Only while the result is current: once the input has changed this describes a
+                // supply choice the user may have just left, and would contradict the status line.
+                !dimmed && (
+                  <div className="rounded-md border border-zinc-200 p-2 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+                    No water supply given, so there is no margin or verdict — the demand above is
+                    what a pump or supply has to meet.
+                  </div>
+                )
               )}
             </dl>
           ) : (

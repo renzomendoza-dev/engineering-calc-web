@@ -86,8 +86,9 @@ function toWaterSupply(values: SprinklerFormValues): WaterSupplyRequest | null {
                   pipeMaterial: run.pipeMaterial,
                   schedule: orNull(run.schedule),
                   nominalSize: run.nominalSize,
-                  cFactor: run.cFactor,
-                  pipeLengthFt: run.pipeLengthFt,
+                  // Defined by the time this runs: the schema requires both for this source.
+                  cFactor: run.cFactor ?? 0,
+                  pipeLengthFt: run.pipeLengthFt ?? 0,
                   fittings:
                     run.fittings.length > 0
                       ? run.fittings.map((fitting) => ({
