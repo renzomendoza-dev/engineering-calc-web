@@ -1,3 +1,5 @@
+import { formatApiText } from "@/lib/apiText";
+
 interface CalculationWarningsProps {
   warnings: string[];
 }
@@ -23,7 +25,7 @@ export function CalculationWarnings({ warnings }: CalculationWarningsProps) {
       </p>
       <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-sm text-amber-700 dark:text-amber-400">
         {warnings.map((warning) => (
-          <li key={warning}>{warning}</li>
+          <li key={warning}>{formatApiText(warning)}</li>
         ))}
       </ul>
     </div>

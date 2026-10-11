@@ -1,4 +1,5 @@
 import { ApiError, isGenericValidationMessage } from "@/lib/api-client";
+import { formatApiText } from "@/lib/apiText";
 
 export const UNEXPECTED_ERROR_MESSAGE = "Something went wrong. Please try again.";
 
@@ -31,9 +32,12 @@ export function humanizeFieldName(field: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-/** Adds a closing period unless the message already ends a sentence, so joined messages don't run together. */
+/**
+ * Adds a closing period unless the message already ends a sentence, so joined messages don't run
+ * together, and renders calc-core's ASCII double hyphens as dashes (see formatApiText).
+ */
 export function asSentence(message: string): string {
-  const trimmed = message.trim();
+  const trimmed = formatApiText(message.trim());
   return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
 }
 

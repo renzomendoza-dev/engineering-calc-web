@@ -1,4 +1,5 @@
 import { ResultCard } from "@/components/ui/ResultCard";
+import { formatApiText } from "@/lib/apiText";
 import type { FirePumpPowerResponse } from "./types";
 
 const HEADER_CELL = "whitespace-nowrap py-1 pr-4 font-medium last:pr-0";
@@ -17,7 +18,7 @@ export function PowerResults({ result }: PowerResultsProps) {
           since skipping the 150% check is a real under-sizing risk. */}
       {result.driverSizingNote && (
         <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400">
-          {result.driverSizingNote}
+          {formatApiText(result.driverSizingNote)}
         </div>
       )}
 

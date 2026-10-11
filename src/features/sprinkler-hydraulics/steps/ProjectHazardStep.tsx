@@ -4,6 +4,7 @@ import { NumberField } from "@/components/ui/NumberField";
 import { RadioGroupField } from "@/components/ui/RadioGroupField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
+import { formatApiText } from "@/lib/apiText";
 import { CONFIDENCE_LABELS, HAZARD_LABELS, SYSTEM_TYPE_LABELS, UNITS } from "../labels";
 import type { StepProps } from "../stepProps";
 import { SPRINKLER_HAZARDS, SPRINKLER_SYSTEM_TYPES, type SprinklerHazard } from "../types";
@@ -129,7 +130,9 @@ export function ProjectHazardStep({ form, reference }: StepProps) {
               ` ${CONFIDENCE_LABELS[preset.confidence] ?? preset.confidence}.`}
           </p>
           {preset.sourceNote && (
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{preset.sourceNote}</p>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              {formatApiText(preset.sourceNote)}
+            </p>
           )}
         </div>
       )}

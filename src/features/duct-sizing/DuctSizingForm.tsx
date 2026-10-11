@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
 import { apiPost } from "@/lib/api-client";
+import { formatApiText } from "@/lib/apiText";
 import { useApiFormError } from "@/hooks/useApiFormError";
 import { useDuctRoughnessMaterials } from "@/hooks/useDuctRoughnessMaterials";
 import { DuctVelocitySuggestionHelper } from "./DuctVelocitySuggestionHelper";
@@ -155,7 +156,7 @@ export function DuctSizingForm({ onResult, onShapeChange, onMethodChange }: Duct
         />
         {selectedMaterialHasExtraCaveat && selectedMaterialCaveatNote && (
           <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400">
-            {selectedMaterialCaveatNote}
+            {formatApiText(selectedMaterialCaveatNote)}
           </p>
         )}
 
