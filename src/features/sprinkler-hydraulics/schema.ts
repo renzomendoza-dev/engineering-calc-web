@@ -31,6 +31,16 @@ const segmentSchema = z.object({
   fittings: z.array(fittingSchema),
 });
 
+/** A gravity tank's outlet piping: like a segment without the network or the elevation. */
+const supplyPipeRunSchema = z.object({
+  pipeMaterial: z.string().min(1, "Required"),
+  schedule: z.string().optional(),
+  nominalSize: z.string().min(1, "Required"),
+  cFactor: z.coerce.number().positive("Must be positive"),
+  pipeLengthFt: z.coerce.number().min(0, "Cannot be negative"),
+  fittings: z.array(fittingSchema),
+});
+
 const sprinklerRowSchema = z.object({
   nodeId: z.string().min(1, "Required"),
   kFactor: z.coerce.number().positive("Must be positive"),
@@ -60,10 +70,19 @@ export const sprinklerHydraulicsSchema = z
     assumedStartPressurePsi: z.coerce.number().min(0, "Cannot be negative"),
 
     // --- step 3: water supply ---
+    // FORM-ONLY: picks which block below is sent. "NONE" sends no supply at all, which the API
+    // answers with the demand figures and a null margin and verdict.
+    supplySource: z.enum(["FLOW_TEST", "GRAVITY_TANK", "NONE"], "Choose where the water comes from"),
+    // Each block's fields are optional here and required by the superRefine below only for the
+    // chosen source: a blank tank height must not block a flow-test calculation.
     waterSupply: z.object({
-      staticPressurePsi: z.coerce.number().positive("Must be positive"),
-      residualPressurePsi: z.coerce.number().min(0, "Cannot be negative"),
-      flowAtResidualGpm: z.coerce.number().positive("Must be positive"),
+      staticPressurePsi: optionalNumber(z.coerce.number().positive("Must be positive")),
+      residualPressurePsi: optionalNumber(z.coerce.number().min(0, "Cannot be negative")),
+      flowAtResidualGpm: optionalNumber(z.coerce.number().positive("Must be positive")),
+    }),
+    gravityTank: z.object({
+      waterLevelHeightFt: optionalNumber(z.coerce.number().positive("Must be positive")),
+      outletRuns: z.array(supplyPipeRunSchema),
     }),
 
     // --- step 4: pipe network ---
@@ -82,12 +101,37 @@ export const sprinklerHydraulicsSchema = z
       });
     }
 
-    // calc-core's SupplyCurve requires the residual to sit below the static pressure.
-    if (data.waterSupply.residualPressurePsi >= data.waterSupply.staticPressurePsi) {
+    // Only the chosen source's fields are required, and only its rules apply.
+    if (data.supplySource === "FLOW_TEST") {
+      const { staticPressurePsi, residualPressurePsi, flowAtResidualGpm } = data.waterSupply;
+      if (staticPressurePsi === undefined) {
+        ctx.addIssue({ code: "custom", path: ["waterSupply", "staticPressurePsi"], message: "Required" });
+      }
+      if (residualPressurePsi === undefined) {
+        ctx.addIssue({ code: "custom", path: ["waterSupply", "residualPressurePsi"], message: "Required" });
+      }
+      if (flowAtResidualGpm === undefined) {
+        ctx.addIssue({ code: "custom", path: ["waterSupply", "flowAtResidualGpm"], message: "Required" });
+      }
+      // calc-core's SupplyCurve requires the residual to sit below the static pressure.
+      if (
+        staticPressurePsi !== undefined &&
+        residualPressurePsi !== undefined &&
+        residualPressurePsi >= staticPressurePsi
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["waterSupply", "residualPressurePsi"],
+          message: "Must be below the static pressure",
+        });
+      }
+    }
+
+    if (data.supplySource === "GRAVITY_TANK" && data.gravityTank.waterLevelHeightFt === undefined) {
       ctx.addIssue({
         code: "custom",
-        path: ["waterSupply", "residualPressurePsi"],
-        message: "Must be below the static pressure",
+        path: ["gravityTank", "waterLevelHeightFt"],
+        message: "Required — a tank at or below the connection is not a gravity supply",
       });
     }
 
@@ -136,7 +180,7 @@ export const STEP_LABELS: Record<StepId, string> = {
 export const STEP_FIELDS: Record<StepId, readonly (keyof SprinklerFormInput)[]> = {
   project: ["projectName", "systemType", "hazard", "densityGpmPerSqFt", "designAreaSqFt", "hoseStreamGpm"],
   design: ["defaultKFactor", "defaultPipeMaterial", "defaultSchedule", "defaultCFactor", "assumedStartPressurePsi"],
-  supply: ["waterSupply"],
+  supply: ["supplySource", "waterSupply", "gravityTank"],
   network: ["sprinklers", "segments", "deviceLosses", "hoseStreamNodeId"],
   results: [],
 };

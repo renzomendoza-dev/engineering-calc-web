@@ -21,7 +21,9 @@ function formValues(overrides: Partial<SprinklerFormInput> = {}) {
     defaultSchedule: "SCH40",
     defaultCFactor: "120",
     assumedStartPressurePsi: "7",
+    supplySource: "FLOW_TEST",
     waterSupply: { staticPressurePsi: "80", residualPressurePsi: "60", flowAtResidualGpm: "1000" },
+    gravityTank: { waterLevelHeightFt: "", outletRuns: [] },
     sprinklers: [{ nodeId: " S1 ", kFactor: "5.6", coverageAreaSqFt: "130" }],
     segments: [
       {
@@ -94,7 +96,11 @@ describe("toSprinklerRequest", () => {
       hoseStreamNodeId: "RISER",
       assumedStartPressurePsi: 7,
       sprinklers: [{ nodeId: "S1", kFactor: 5.6, coverageAreaSqFt: 130 }],
-      waterSupply: { staticPressurePsi: 80, residualPressurePsi: 60, flowAtResidualGpm: 1000 },
+      waterSupply: {
+        source: "FLOW_TEST",
+        flowTest: { staticPressurePsi: 80, residualPressurePsi: 60, flowAtResidualGpm: 1000 },
+        gravityTank: null,
+      },
       deviceLosses: [{ name: "Alarm valve", pressureLossPsi: 5 }],
     });
     expect(request.segments[0]).toMatchObject({
@@ -107,6 +113,64 @@ describe("toSprinklerRequest", () => {
       pipeLengthFt: 10,
       elevationChangeFt: 0,
     });
+  });
+
+  it("sends the gravity tank block, and only that block, for a tank supply", () => {
+    const request = toSprinklerRequest(
+      formValues({
+        supplySource: "GRAVITY_TANK",
+        gravityTank: {
+          waterLevelHeightFt: "80",
+          outletRuns: [
+            {
+              pipeMaterial: "BI",
+              schedule: "SCH40",
+              nominalSize: "3",
+              cFactor: "120",
+              pipeLengthFt: "150",
+              fittings: [],
+            },
+          ],
+        },
+      }),
+    );
+
+    expect(request.waterSupply).toEqual({
+      source: "GRAVITY_TANK",
+      flowTest: null,
+      gravityTank: {
+        waterLevelHeightFt: 80,
+        outletRuns: [
+          {
+            pipeMaterial: "BI",
+            schedule: "SCH40",
+            nominalSize: "3",
+            cFactor: 120,
+            pipeLengthFt: 150,
+            fittings: null,
+          },
+        ],
+      },
+    });
+  });
+
+  it("sends no supply at all for a source with no pressure of its own", () => {
+    // A cistern or ground-level tank: the API answers with the demand and a null verdict.
+    const request = toSprinklerRequest(formValues({ supplySource: "NONE" }));
+    expect(request.waterSupply).toBeNull();
+    // The demand side is untouched by the choice.
+    expect(request.sprinklers).toHaveLength(1);
+    expect(request.segments).toHaveLength(1);
+  });
+
+  it("omits an empty outlet run list rather than sending []", () => {
+    const request = toSprinklerRequest(
+      formValues({
+        supplySource: "GRAVITY_TANK",
+        gravityTank: { waterLevelHeightFt: "40", outletRuns: [] },
+      }),
+    );
+    expect(request.waterSupply?.gravityTank?.outletRuns).toBeNull();
   });
 
   it("sends null, not an empty string, for an omitted hose stream node", () => {

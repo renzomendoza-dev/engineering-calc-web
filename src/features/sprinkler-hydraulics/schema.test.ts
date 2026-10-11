@@ -20,11 +20,13 @@ function formInput(overrides: Partial<SprinklerFormInput> = {}): SprinklerFormIn
     defaultCFactor: "120",
     assumedStartPressurePsi: "7",
 
+    supplySource: "FLOW_TEST",
     waterSupply: {
       staticPressurePsi: "80",
       residualPressurePsi: "60",
       flowAtResidualGpm: "1000",
     },
+    gravityTank: { waterLevelHeightFt: "", outletRuns: [] },
 
     sprinklers: [{ nodeId: "S1", kFactor: "5.6", coverageAreaSqFt: "130" }],
     segments: [
@@ -85,6 +87,89 @@ describe("sprinklerHydraulicsSchema", () => {
       "waterSupply.residualPressurePsi",
     ]);
     expect(issuePaths(formInput({ waterSupply: { ...supply, residualPressurePsi: "0" } }))).toEqual([]);
+  });
+
+  describe("water supply source", () => {
+    const blankFlowTest = { staticPressurePsi: "", residualPressurePsi: "", flowAtResidualGpm: "" };
+
+    it("requires the flow test figures only for a flow-tested source", () => {
+      expect(issuePaths(formInput({ supplySource: "FLOW_TEST", waterSupply: blankFlowTest }))).toEqual([
+        "waterSupply.staticPressurePsi",
+        "waterSupply.residualPressurePsi",
+        "waterSupply.flowAtResidualGpm",
+      ]);
+    });
+
+    it("requires a tank height only for a gravity tank, and ignores the flow test fields", () => {
+      expect(
+        issuePaths(
+          formInput({
+            supplySource: "GRAVITY_TANK",
+            waterSupply: blankFlowTest,
+            gravityTank: { waterLevelHeightFt: "", outletRuns: [] },
+          }),
+        ),
+      ).toEqual(["gravityTank.waterLevelHeightFt"]);
+
+      expect(
+        issuePaths(
+          formInput({
+            supplySource: "GRAVITY_TANK",
+            waterSupply: blankFlowTest,
+            gravityTank: { waterLevelHeightFt: "80", outletRuns: [] },
+          }),
+        ),
+      ).toEqual([]);
+    });
+
+    it("requires neither block when there is no supply", () => {
+      // A cistern awaiting a pump: the demand is still a complete, valid calculation.
+      expect(
+        issuePaths(
+          formInput({
+            supplySource: "NONE",
+            waterSupply: blankFlowTest,
+            gravityTank: { waterLevelHeightFt: "", outletRuns: [] },
+          }),
+        ),
+      ).toEqual([]);
+    });
+
+    it("applies the residual-below-static rule only to a flow test", () => {
+      const inverted = { staticPressurePsi: "60", residualPressurePsi: "80", flowAtResidualGpm: "1000" };
+      expect(issuePaths(formInput({ supplySource: "FLOW_TEST", waterSupply: inverted }))).toEqual([
+        "waterSupply.residualPressurePsi",
+      ]);
+      expect(
+        issuePaths(
+          formInput({
+            supplySource: "NONE",
+            waterSupply: inverted,
+          }),
+        ),
+      ).toEqual([]);
+    });
+
+    it("validates a tank's outlet runs like any other pipe", () => {
+      expect(
+        issuePaths(
+          formInput({
+            supplySource: "GRAVITY_TANK",
+            gravityTank: {
+              waterLevelHeightFt: "80",
+              outletRuns: [
+                { pipeMaterial: "", schedule: "SCH40", nominalSize: "", cFactor: "0", pipeLengthFt: "-1", fittings: [] },
+              ],
+            },
+          }),
+        ),
+      ).toEqual([
+        "gravityTank.outletRuns.0.pipeMaterial",
+        "gravityTank.outletRuns.0.nominalSize",
+        "gravityTank.outletRuns.0.cFactor",
+        "gravityTank.outletRuns.0.pipeLengthFt",
+      ]);
+    });
   });
 
   it("rejects a segment that starts and ends at the same node", () => {

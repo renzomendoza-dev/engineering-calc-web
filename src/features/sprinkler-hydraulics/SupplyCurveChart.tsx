@@ -34,13 +34,20 @@ function formatAxisTick(value: number, max: number): string {
  * the response.
  */
 export function SupplyCurveChart({ result }: SupplyCurveChartProps) {
-  const { supplyCurve, totalDemandFlowGpm, requiredPressureAtSupplyPsi, availablePressureAtDemandPsi } =
-    result;
+  const {
+    supplyCurve,
+    totalDemandFlowGpm,
+    requiredPressureAtSupplyPsi,
+    availablePressureAtDemandPsi,
+    safetyMarginPsi,
+  } = result;
 
-  if (supplyCurve.length < 2) {
+  // No supply means no curve and no margin: there is nothing to plot the demand against, and the
+  // caller hides this section entirely. The guard also narrows the nullable figures below.
+  if (supplyCurve.length < 2 || availablePressureAtDemandPsi == null || safetyMarginPsi == null) {
     return (
       <p className="text-sm text-zinc-500 dark:text-zinc-400">
-        The response did not include enough supply curve points to plot.
+        There is no supply curve to plot for this calculation.
       </p>
     );
   }
@@ -202,7 +209,7 @@ export function SupplyCurveChart({ result }: SupplyCurveChartProps) {
               : "fill-red-700 text-[11px] dark:fill-red-400"
           }
         >
-          {`Margin ${formatPressure(result.safetyMarginPsi)} ${UNITS.pressure}`}
+          {`Margin ${formatPressure(safetyMarginPsi)} ${UNITS.pressure}`}
         </text>
       </svg>
 

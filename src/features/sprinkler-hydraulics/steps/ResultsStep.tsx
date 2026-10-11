@@ -39,18 +39,30 @@ export function ResultsStep({ state }: ResultsStepProps) {
         </p>
       )}
 
-      <HeadlineResult
-        label="Safety margin"
-        value={formatPressure(result.safetyMarginPsi)}
-        unit={UNITS.pressure}
-        secondaryValue={`${formatPercent(result.safetyMarginPercent)}% of the available pressure`}
-        note={
-          result.passes
-            ? "The water supply meets the system demand."
-            : "The water supply does not meet the system demand."
-        }
-        tone={result.passes ? "emerald" : "blue"}
-      />
+      {/* With no supply there is no margin to headline, so the figure a pump or supply has to
+          meet takes its place -- rather than a blank card or a verdict nobody asked for. */}
+      {result.passes == null ? (
+        <HeadlineResult
+          label="Required pressure at the supply"
+          value={formatPressure(result.requiredPressureAtSupplyPsi)}
+          unit={UNITS.pressure}
+          secondaryValue={`at ${formatFlow(result.totalDemandFlowGpm)} ${UNITS.flow}`}
+          note="No water supply was given, so there is no margin or verdict. This is what the supply or pump has to deliver."
+        />
+      ) : (
+        <HeadlineResult
+          label="Safety margin"
+          value={formatPressure(result.safetyMarginPsi!)}
+          unit={UNITS.pressure}
+          secondaryValue={`${formatPercent(result.safetyMarginPercent!)}% of the available pressure`}
+          note={
+            result.passes
+              ? "The water supply meets the system demand."
+              : "The water supply does not meet the system demand."
+          }
+          tone={result.passes ? "emerald" : "blue"}
+        />
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <ResultCard
@@ -65,13 +77,17 @@ export function ResultsStep({ state }: ResultsStepProps) {
         />
         <ResultCard
           label="Available pressure at that flow"
-          value={formatPressure(result.availablePressureAtDemandPsi)}
-          unit={UNITS.pressure}
-          tone={result.passes ? "default" : "warning"}
+          value={
+            result.availablePressureAtDemandPsi == null
+              ? "—"
+              : formatPressure(result.availablePressureAtDemandPsi)
+          }
+          unit={result.availablePressureAtDemandPsi == null ? undefined : UNITS.pressure}
+          tone={result.passes === false ? "warning" : "default"}
           note={
-            result.passes
-              ? undefined
-              : "Below the required pressure — the supply cannot deliver this demand."
+            result.passes === false
+              ? "Below the required pressure — the supply cannot deliver this demand."
+              : undefined
           }
         />
       </div>
@@ -83,12 +99,15 @@ export function ResultsStep({ state }: ResultsStepProps) {
         <SegmentWorksheetTable segments={result.segments} />
       </section>
 
-      <section className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-          Supply curve and demand
-        </h3>
-        <SupplyCurveChart result={result} />
-      </section>
+      {/* Nothing to plot a demand against when no supply was given. */}
+      {result.supplyCurve.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+            Supply curve and demand
+          </h3>
+          <SupplyCurveChart result={result} />
+        </section>
+      )}
 
       <SprinklerFormulas />
 

@@ -1,5 +1,9 @@
 import type { SprinklerFormValues } from "./schema";
-import type { FittingEquivalentLengthTableRow, SprinklerHydraulicRequest } from "./types";
+import type {
+  FittingEquivalentLengthTableRow,
+  SprinklerHydraulicRequest,
+  WaterSupplyRequest,
+} from "./types";
 
 /** Empty string -> null, so an untouched optional text field isn't sent as "". */
 function orNull(value: string | undefined): string | null {
@@ -47,11 +51,7 @@ export function toSprinklerRequest(values: SprinklerFormValues): SprinklerHydrau
             }))
           : null,
     })),
-    waterSupply: {
-      staticPressurePsi: values.waterSupply.staticPressurePsi,
-      residualPressurePsi: values.waterSupply.residualPressurePsi,
-      flowAtResidualGpm: values.waterSupply.flowAtResidualGpm,
-    },
+    waterSupply: toWaterSupply(values),
     deviceLosses:
       values.deviceLosses.length > 0
         ? values.deviceLosses.map((device) => ({
@@ -60,6 +60,58 @@ export function toSprinklerRequest(values: SprinklerFormValues): SprinklerHydrau
           }))
         : null,
   };
+}
+
+/**
+ * The supply block the API expects for the chosen source, or null for "none yet".
+ *
+ * Null is a real answer, not a missing one: the API calculates the demand and returns a null
+ * margin and verdict, which is the honest result for a cistern or tank awaiting a pump. Only the
+ * chosen source's block is sent; the other is null, which the API requires.
+ */
+function toWaterSupply(values: SprinklerFormValues): WaterSupplyRequest | null {
+  switch (values.supplySource) {
+    case "NONE":
+      return null;
+    case "GRAVITY_TANK":
+      return {
+        source: "GRAVITY_TANK",
+        flowTest: null,
+        gravityTank: {
+          // Non-null by the time this runs: the schema requires it for this source.
+          waterLevelHeightFt: values.gravityTank.waterLevelHeightFt ?? 0,
+          outletRuns:
+            values.gravityTank.outletRuns.length > 0
+              ? values.gravityTank.outletRuns.map((run) => ({
+                  pipeMaterial: run.pipeMaterial,
+                  schedule: orNull(run.schedule),
+                  nominalSize: run.nominalSize,
+                  cFactor: run.cFactor,
+                  pipeLengthFt: run.pipeLengthFt,
+                  fittings:
+                    run.fittings.length > 0
+                      ? run.fittings.map((fitting) => ({
+                          fittingType: orNull(fitting.fittingType),
+                          quantity: fitting.quantity,
+                          explicitEquivalentLengthFt: fitting.explicitEquivalentLengthFt ?? null,
+                        }))
+                      : null,
+                }))
+              : null,
+        },
+      };
+    case "FLOW_TEST":
+    default:
+      return {
+        source: "FLOW_TEST",
+        flowTest: {
+          staticPressurePsi: values.waterSupply.staticPressurePsi ?? 0,
+          residualPressurePsi: values.waterSupply.residualPressurePsi ?? 0,
+          flowAtResidualGpm: values.waterSupply.flowAtResidualGpm ?? 0,
+        },
+        gravityTank: null,
+      };
+  }
 }
 
 /**

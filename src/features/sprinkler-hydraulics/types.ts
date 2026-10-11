@@ -47,11 +47,42 @@ export interface RemoteAreaSprinklerRequest {
   coverageAreaSqFt: number;
 }
 
-/** Mirrors calc-api's WaterSupplyDto. There is no supply-elevation field: elevation enters only through each segment's elevationChangeFt. */
-export interface WaterSupplyRequest {
+/** Mirrors calc-api's WaterSupplySourceDto. A source with no pressure of its own is not a variant: that system sends no waterSupply at all. */
+export const WATER_SUPPLY_SOURCES = ["FLOW_TEST", "GRAVITY_TANK"] as const;
+export type WaterSupplySource = (typeof WATER_SUPPLY_SOURCES)[number];
+
+/** Mirrors calc-api's FlowTestSupplyDto. There is no supply-elevation field: elevation enters only through each segment's elevationChangeFt. */
+export interface FlowTestSupplyRequest {
   staticPressurePsi: number;
   residualPressurePsi: number;
   flowAtResidualGpm: number;
+}
+
+/**
+ * Mirrors calc-api's SupplyPipeRunDto — one pipe run from a gravity tank to the connection.
+ * No node ids (the supply side is one path, not a tree) and no elevation change: the tank's
+ * height is stated once on the tank, and repeating it here would count the same head twice.
+ */
+export interface SupplyPipeRunRequest {
+  pipeMaterial: string;
+  schedule: string | null;
+  nominalSize: string;
+  cFactor: number;
+  pipeLengthFt: number;
+  fittings: SegmentFittingRequest[] | null;
+}
+
+/** Mirrors calc-api's GravityTankSupplyDto. With no outletRuns the full head is credited at every flow, which the API warns about. */
+export interface GravityTankSupplyRequest {
+  waterLevelHeightFt: number;
+  outletRuns: SupplyPipeRunRequest[] | null;
+}
+
+/** Mirrors calc-api's WaterSupplyDto. `source` says which block is filled in; the other is null. */
+export interface WaterSupplyRequest {
+  source: WaterSupplySource;
+  flowTest: FlowTestSupplyRequest | null;
+  gravityTank: GravityTankSupplyRequest | null;
 }
 
 /** Mirrors calc-api's DeviceLossDto. */
@@ -71,7 +102,8 @@ export interface SprinklerHydraulicRequest {
   assumedStartPressurePsi: number;
   sprinklers: RemoteAreaSprinklerRequest[];
   segments: SprinklerPipeSegmentRequest[];
-  waterSupply: WaterSupplyRequest;
+  /** Null for a system with no pressurised source yet — the demand is still calculated. */
+  waterSupply: WaterSupplyRequest | null;
   deviceLosses: DeviceLossRequest[] | null;
 }
 
@@ -106,15 +138,21 @@ export interface SupplyCurvePoint {
   availablePressurePsi: number;
 }
 
-/** Mirrors calc-api's SprinklerHydraulicResponse field-for-field. */
+/**
+ * Mirrors calc-api's SprinklerHydraulicResponse field-for-field.
+ *
+ * The four supply-dependent figures are null when the request carried no water supply — `passes`
+ * especially: null is "nobody asked", not "it failed", and the UI must not collapse the two.
+ */
 export interface SprinklerHydraulicResponse {
   segments: SegmentFlowRow[];
   totalDemandFlowGpm: number;
   requiredPressureAtSupplyPsi: number;
-  availablePressureAtDemandPsi: number;
-  safetyMarginPsi: number;
-  safetyMarginPercent: number;
-  passes: boolean;
+  availablePressureAtDemandPsi: number | null;
+  safetyMarginPsi: number | null;
+  safetyMarginPercent: number | null;
+  passes: boolean | null;
+  /** Empty when there is no supply to plot. */
   supplyCurve: SupplyCurvePoint[];
   warnings: string[];
 }

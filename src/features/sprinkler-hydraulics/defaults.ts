@@ -23,10 +23,16 @@ export const DEFAULT_SPRINKLER_FORM: SprinklerFormInput = {
   defaultCFactor: 120,
   assumedStartPressurePsi: 7,
 
+  // A city main is the common case, so the form opens on it; the other sources are a click away.
+  supplySource: "FLOW_TEST",
   waterSupply: {
     staticPressurePsi: 0,
     residualPressurePsi: 0,
     flowAtResidualGpm: 0,
+  },
+  gravityTank: {
+    waterLevelHeightFt: 0,
+    outletRuns: [],
   },
 
   sprinklers: [{ nodeId: "S1", kFactor: 5.6, coverageAreaSqFt: 0 }],

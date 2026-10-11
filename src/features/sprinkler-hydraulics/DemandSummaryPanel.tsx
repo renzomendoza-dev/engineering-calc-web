@@ -34,6 +34,17 @@ function statusText(state: SprinklerCalculationState, hasError: boolean): string
 }
 
 /**
+ * Whether the result answers "does the supply meet the demand".
+ *
+ * A calculation run with no water supply returns null for the margin and the verdict: the demand
+ * figures are complete, but nothing was compared against them. That is not a failure, so nothing
+ * red is shown for it -- the panel simply says what it does and doesn't know.
+ */
+function hasVerdict(result: SprinklerCalculationState["result"]): boolean {
+  return result?.passes != null;
+}
+
+/**
  * The running result, visible on every step: a sidebar on large screens, a compact fixed bar on
  * small ones. Every figure is the API's; nothing is recomputed here, and nothing is shown unless
  * a response produced it.
@@ -45,6 +56,7 @@ export function DemandSummaryPanel({ state, hasError }: DemandSummaryPanelProps)
   const { result, isStale, isComplete } = state;
   const status = statusText(state, hasError);
   const dimmed = result !== null && (isStale || !isComplete);
+  const verdict = hasVerdict(result);
 
   return (
     <>
@@ -56,7 +68,7 @@ export function DemandSummaryPanel({ state, hasError }: DemandSummaryPanelProps)
         <div className="flex flex-col gap-4 rounded-lg border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Demand summary</h2>
-            {result && !dimmed && <PassBadge passes={result.passes} />}
+            {result && verdict && !dimmed && <PassBadge passes={result.passes!} />}
           </div>
 
           {status && (
@@ -85,32 +97,41 @@ export function DemandSummaryPanel({ state, hasError }: DemandSummaryPanelProps)
                   <span className="text-sm font-normal text-zinc-500">{UNITS.pressure}</span>
                 </dd>
               </div>
-              <div>
-                <dt className="text-zinc-500 dark:text-zinc-400">
-                  Available pressure at that flow
-                </dt>
-                <dd className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-                  {formatPressure(result.availablePressureAtDemandPsi)}{" "}
-                  <span className="text-sm font-normal text-zinc-500">{UNITS.pressure}</span>
-                </dd>
-              </div>
-              <div>
-                <dt className="text-zinc-500 dark:text-zinc-400">Safety margin</dt>
-                <dd
-                  className={`text-lg font-semibold ${
-                    result.passes
-                      ? "text-emerald-700 dark:text-emerald-400"
-                      : "text-red-700 dark:text-red-400"
-                  }`}
-                >
-                  {formatPressure(result.safetyMarginPsi)}{" "}
-                  <span className="text-sm font-normal text-zinc-500">{UNITS.pressure}</span>
-                  <span className="ml-2 text-sm font-normal text-zinc-500">
-                    ({formatPercent(result.safetyMarginPercent)}%)
-                  </span>
-                </dd>
-              </div>
-              {dimmed && result && <PassBadge passes={result.passes} />}
+              {verdict ? (
+                <>
+                  <div>
+                    <dt className="text-zinc-500 dark:text-zinc-400">
+                      Available pressure at that flow
+                    </dt>
+                    <dd className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+                      {formatPressure(result.availablePressureAtDemandPsi!)}{" "}
+                      <span className="text-sm font-normal text-zinc-500">{UNITS.pressure}</span>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-zinc-500 dark:text-zinc-400">Safety margin</dt>
+                    <dd
+                      className={`text-lg font-semibold ${
+                        result.passes
+                          ? "text-emerald-700 dark:text-emerald-400"
+                          : "text-red-700 dark:text-red-400"
+                      }`}
+                    >
+                      {formatPressure(result.safetyMarginPsi!)}{" "}
+                      <span className="text-sm font-normal text-zinc-500">{UNITS.pressure}</span>
+                      <span className="ml-2 text-sm font-normal text-zinc-500">
+                        ({formatPercent(result.safetyMarginPercent!)}%)
+                      </span>
+                    </dd>
+                  </div>
+                  {dimmed && <PassBadge passes={result.passes!} />}
+                </>
+              ) : (
+                <div className="rounded-md border border-zinc-200 p-2 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+                  No water supply given, so there is no margin or verdict — the demand above is
+                  what a pump or supply has to meet.
+                </div>
+              )}
             </dl>
           ) : (
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -138,21 +159,29 @@ export function DemandSummaryPanel({ state, hasError }: DemandSummaryPanelProps)
                   {formatPressure(result.requiredPressureAtSupplyPsi)} {UNITS.pressure}
                 </p>
               </div>
-              <div className={`flex-none ${dimmed ? "opacity-50" : ""}`}>
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Margin</p>
-                <p
-                  className={`text-sm font-semibold ${
-                    result.passes
-                      ? "text-emerald-700 dark:text-emerald-400"
-                      : "text-red-700 dark:text-red-400"
-                  }`}
-                >
-                  {formatPressure(result.safetyMarginPsi)} {UNITS.pressure}
+              {verdict ? (
+                <>
+                  <div className={`flex-none ${dimmed ? "opacity-50" : ""}`}>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Margin</p>
+                    <p
+                      className={`text-sm font-semibold ${
+                        result.passes
+                          ? "text-emerald-700 dark:text-emerald-400"
+                          : "text-red-700 dark:text-red-400"
+                      }`}
+                    >
+                      {formatPressure(result.safetyMarginPsi!)} {UNITS.pressure}
+                    </p>
+                  </div>
+                  <div className={`flex-none ${dimmed ? "opacity-50" : ""}`}>
+                    <PassBadge passes={result.passes!} />
+                  </div>
+                </>
+              ) : (
+                <p className="flex-none text-[11px] text-zinc-500 dark:text-zinc-400">
+                  No supply — demand only
                 </p>
-              </div>
-              <div className={`flex-none ${dimmed ? "opacity-50" : ""}`}>
-                <PassBadge passes={result.passes} />
-              </div>
+              )}
             </>
           ) : (
             <p className="flex-none text-xs text-zinc-500 dark:text-zinc-400">
