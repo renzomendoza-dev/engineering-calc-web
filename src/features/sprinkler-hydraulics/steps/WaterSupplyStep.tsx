@@ -74,6 +74,7 @@ export function WaterSupplyStep({ form }: StepProps) {
           label="Static pressure"
           unit={UNITS.pressure}
           hint="With no flow."
+          tooltip="Read from a cap gauge on the hydrant nearest your connection, with nothing flowing. It applies at that hydrant's elevation: correct it by 0.433 psi per foot if your connection sits higher or lower."
           error={errors.waterSupply?.staticPressurePsi?.message}
           {...register("waterSupply.staticPressurePsi")}
         />
@@ -81,6 +82,7 @@ export function WaterSupplyStep({ form }: StepProps) {
           label="Residual pressure"
           unit={UNITS.pressure}
           hint="Measured while the test flow below is running."
+          tooltip="Read from the same gauge while a second, downstream hydrant is flowing. Flow enough to pull the pressure at least 25% below static — a small drop fits the curve to almost nothing. Most authorities want a test less than a year old, and some require a derate before you design to it."
           error={errors.waterSupply?.residualPressurePsi?.message}
           {...register("waterSupply.residualPressurePsi")}
         />
@@ -88,6 +90,7 @@ export function WaterSupplyStep({ form }: StepProps) {
           label="Flow at residual pressure"
           unit={UNITS.flow}
           hint="The flow that was running during the test."
+          tooltip="Measured at the flowing hydrant with a pitot gauge: Q = 29.83 × c × d² × √p, where d is the outlet diameter in inches, p the pitot pressure in psi, and c is 0.9 for a smooth outlet, 0.8 square-edged, 0.7 projecting. A diffuser with a built-in meter reads it directly."
           error={errors.waterSupply?.flowAtResidualGpm?.message}
           {...register("waterSupply.flowAtResidualGpm")}
         />
