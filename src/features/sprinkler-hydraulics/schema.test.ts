@@ -21,6 +21,10 @@ function formInput(overrides: Partial<SprinklerFormInput> = {}): SprinklerFormIn
     defaultCFactor: "120",
     assumedStartPressurePsi: "7",
 
+    quickResponseSprinklers: false,
+    ceilingHeightFt: "",
+    sprinklerSpacingFt: "",
+    branchSpacingFt: "",
     supplySource: "FLOW_TEST",
     waterSupply: {
       staticPressurePsi: "80",

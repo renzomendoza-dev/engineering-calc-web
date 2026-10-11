@@ -25,8 +25,10 @@ import { StepNav } from "./StepNav";
 import { DesignDataStep } from "./steps/DesignDataStep";
 import { PipeNetworkStep } from "./steps/PipeNetworkStep";
 import { ProjectHazardStep } from "./steps/ProjectHazardStep";
+import { RemoteAreaStep } from "./steps/RemoteAreaStep";
 import { ResultsStep } from "./steps/ResultsStep";
 import { WaterSupplyStep } from "./steps/WaterSupplyStep";
+import { useRemoteAreaPlan } from "./useRemoteAreaPlan";
 import { useSprinklerCalculation } from "./useSprinklerCalculation";
 
 /** Long enough that a draft isn't written on every keystroke, short enough to survive a reload. */
@@ -63,6 +65,12 @@ export function SprinklerHydraulicsCalculator() {
 
   const values = watch();
   const calculation = useSprinklerCalculation(values, reference.fittings);
+  // The hazard's published maximum coverage per sprinkler, so the plan can flag spacing that
+  // exceeds it. Null while the preset table loads: the plan then just doesn't check.
+  const maxCoverage =
+    reference.hazardPresets.find((preset) => preset.hazard === values.hazard)
+      ?.maxCoverageSqFtPerSprinkler ?? null;
+  const plan = useRemoteAreaPlan(values, maxCoverage);
   const { generalError, setGeneralError, handleApiError } = useApiFormError(
     setError,
     DEFAULT_SPRINKLER_FORM,
@@ -130,7 +138,7 @@ export function SprinklerHydraulicsCalculator() {
     setConfirmingClear(false);
   }
 
-  const stepProps = { form, reference, materials, materialsLoading };
+  const stepProps = { form, reference, materials, materialsLoading, plan };
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
@@ -147,6 +155,7 @@ export function SprinklerHydraulicsCalculator() {
 
           {step === "project" && <ProjectHazardStep {...stepProps} />}
           {step === "design" && <DesignDataStep {...stepProps} />}
+          {step === "remote" && <RemoteAreaStep {...stepProps} />}
           {step === "supply" && <WaterSupplyStep {...stepProps} />}
           {step === "network" && <PipeNetworkStep {...stepProps} />}
           {step === "results" && <ResultsStep state={calculation} />}

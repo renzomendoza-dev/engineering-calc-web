@@ -8,6 +8,7 @@ import { formatApiText } from "@/lib/apiText";
 import { CONFIDENCE_LABELS, HAZARD_LABELS, SYSTEM_TYPE_LABELS, UNITS } from "../labels";
 import type { StepProps } from "../stepProps";
 import { SPRINKLER_HAZARDS, SPRINKLER_SYSTEM_TYPES, type SprinklerHazard } from "../types";
+import { stepNumber } from "../schema";
 
 const SYSTEM_TYPE_OPTIONS = SPRINKLER_SYSTEM_TYPES.map((value) => ({
   value,
@@ -59,7 +60,7 @@ export function ProjectHazardStep({ form, reference }: StepProps) {
       <RadioGroupField
         legend="System type"
         options={SYSTEM_TYPE_OPTIONS}
-        hint="Dry and preaction systems normally use a lower pipe C factor than a wet system (step 2)."
+        hint={`Dry and preaction systems normally use a lower pipe C factor than a wet system (step ${stepNumber("design")}).`}
         {...register("systemType")}
       />
 
@@ -99,7 +100,7 @@ export function ProjectHazardStep({ form, reference }: StepProps) {
         <NumberField
           label="Hose stream allowance"
           unit={UNITS.flow}
-          hint="Added at the hose stream node (step 4). Enter 0 if no allowance applies."
+          hint={`Added at the hose stream node (step ${stepNumber("network")}). Enter 0 if no allowance applies.`}
           error={errors.hoseStreamGpm?.message}
           {...register("hoseStreamGpm")}
         />

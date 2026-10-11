@@ -20,7 +20,7 @@ export function SprinklerFormulas() {
         <FormulaBlock
           label="Sprinkler discharge"
           tex="Q = K\sqrt{P}"
-          description="Flow from one sprinkler, in gpm, from its K factor and the pressure at it, in psi. The most remote sprinkler starts at the assumed pressure from step 2; every sprinkler after it discharges at whatever pressure the network gives it."
+          description="Flow from one sprinkler, in gpm, from its K factor and the pressure at it, in psi. The most remote sprinkler starts at the greater of the pressure its flow needs and the minimum operating pressure; every sprinkler after it discharges at whatever pressure the network gives it."
         />
         <FormulaBlock
           label="Hazen-Williams friction loss"

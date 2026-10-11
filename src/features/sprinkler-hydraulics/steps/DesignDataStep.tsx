@@ -5,6 +5,7 @@ import { SelectField, type SelectOption } from "@/components/ui/SelectField";
 import { CONFIDENCE_LABELS, UNITS, humanizeCode } from "../labels";
 import { materialOptions, scheduleOptions } from "../pipeOptions";
 import type { StepProps } from "../stepProps";
+import { stepNumber } from "../schema";
 
 interface QuickPicksProps {
   label: string;
@@ -33,7 +34,7 @@ function QuickPicks({ label, picks, onPick }: QuickPicksProps) {
 }
 
 /**
- * Step 2. These are the defaults new pipe segments and sprinklers start from — every one of them
+ * These are the defaults new pipe segments and sprinklers start from — every one of them
  * stays editable per row in step 4, because the API requires a C factor and a size on each
  * segment and a K factor on each sprinkler. Only the assumed starting pressure is sent as a
  * single value for the whole calculation.
@@ -80,7 +81,7 @@ export function DesignDataStep({ form, reference, materials, materialsLoading }:
       <div className="flex flex-col gap-2">
         <NumberField
           label="Default sprinkler K factor"
-          hint="Pre-fills new sprinklers in step 4; each one can be changed there."
+          hint={`Pre-fills new sprinklers in step ${stepNumber("network")}; each one can be changed there.`}
           error={errors.defaultKFactor?.message}
           {...register("defaultKFactor")}
         />
@@ -128,7 +129,7 @@ export function DesignDataStep({ form, reference, materials, materialsLoading }:
       <div className="flex flex-col gap-2">
         <NumberField
           label="Default Hazen-Williams C factor"
-          hint="Pre-fills new pipe segments in step 4. The published values below are the ones that apply to the system type chosen in step 1."
+          hint={`Pre-fills new pipe segments in step ${stepNumber("network")}. The published values below are the ones that apply to the system type chosen in step ${stepNumber("project")}.`}
           error={errors.defaultCFactor?.message}
           {...register("defaultCFactor")}
         />
@@ -140,9 +141,9 @@ export function DesignDataStep({ form, reference, materials, materialsLoading }:
       </div>
 
       <NumberField
-        label="Assumed pressure at the starting sprinkler"
+        label="Starting pressure at the most remote sprinkler"
         unit={UNITS.pressure}
-        hint="The calculation starts at the most remote sprinkler with this pressure and works back to the supply."
+        hint={`The calculation starts at the most remote sprinkler at the greatest of: the pressure its share of the design density needs, this figure, and the minimum operating pressure. Raising this raises the start; it can never take it below the minimum. The remote area step (${stepNumber("remote")}) shows which one governs.`}
         error={errors.assumedStartPressurePsi?.message}
         {...register("assumedStartPressurePsi")}
       />

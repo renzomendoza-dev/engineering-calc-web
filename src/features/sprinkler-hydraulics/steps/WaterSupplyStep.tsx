@@ -6,6 +6,7 @@ import { RadioGroupField } from "@/components/ui/RadioGroupField";
 import { UNITS } from "../labels";
 import { SupplyPipeRunsInput } from "../SupplyPipeRunsInput";
 import type { StepProps } from "../stepProps";
+import { stepNumber } from "../schema";
 
 /**
  * Step 3. The three figures a flow test gives, which the API turns into the supply curve the
@@ -154,7 +155,7 @@ export function WaterSupplyStep({ form, materials, materialsLoading }: StepProps
       <div className="flex flex-col gap-2 text-sm text-zinc-500 dark:text-zinc-400">
         <p>
           Height between the supply and the sprinklers is not entered here — it goes in as each
-          pipe segment&apos;s elevation change in step 4.
+          pipe segment&apos;s elevation change in step {stepNumber("network")}.
         </p>
         <p>
           This step is about pressure at a flow, not how much water there is. Nothing here checks

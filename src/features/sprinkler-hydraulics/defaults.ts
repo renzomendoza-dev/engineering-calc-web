@@ -23,6 +23,13 @@ export const DEFAULT_SPRINKLER_FORM: SprinklerFormInput = {
   defaultCFactor: 120,
   assumedStartPressurePsi: 7,
 
+  // Remote area plan: nothing assumed. Spacing and ceiling height are measured, not defaulted, and
+  // a blank plan simply doesn't compute -- it never blocks the hydraulic calculation.
+  quickResponseSprinklers: false,
+  ceilingHeightFt: "",
+  sprinklerSpacingFt: "",
+  branchSpacingFt: "",
+
   // A city main is the common case, so the form opens on it; the other sources are a click away.
   supplySource: "FLOW_TEST",
   waterSupply: {

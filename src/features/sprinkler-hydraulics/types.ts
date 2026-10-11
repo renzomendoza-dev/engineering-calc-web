@@ -214,3 +214,47 @@ export interface FittingEquivalentLengthTableRow {
   confidence: string;
   equivalentLengthFtByNominalSize: Record<string, number>;
 }
+
+/**
+ * Mirrors calc-api's RemoteAreaPlanRequest. Not part of the hydraulic request: the plan tells the
+ * designer how many sprinklers to list, and the hydraulic calculation takes whatever is listed.
+ * `ceilingHeightFt` is required when `quickResponseSprinklers` is true.
+ */
+export interface RemoteAreaPlanRequest {
+  designAreaSqFt: number;
+  densityGpmPerSqFt: number;
+  kFactor: number;
+  sprinklerSpacingFt: number;
+  branchSpacingFt: number;
+  quickResponseSprinklers: boolean;
+  ceilingHeightFt: number | null;
+  maxCoveragePerSprinklerSqFt: number | null;
+}
+
+/**
+ * Mirrors calc-api's RemoteAreaPlanResponse field-for-field, in the order the work is done by
+ * hand: area, rectangle, counts, first sprinkler. Every figure is the API's; the counts are
+ * rounded up there, so the plan is never smaller than the design area.
+ */
+export interface RemoteAreaPlanResponse {
+  baseDesignAreaSqFt: number;
+  reductionPercent: number;
+  reductionApplied: boolean;
+  adjustedDesignAreaSqFt: number;
+  remoteAreaLengthFt: number;
+  remoteAreaWidthFt: number;
+  coveragePerSprinklerSqFt: number;
+  sprinklersPerBranch: number;
+  branchLines: number;
+  totalSprinklers: number;
+  totalProtectedAreaSqFt: number;
+  minimumFlowPerSprinklerGpm: number;
+  pressureForMinimumFlowPsi: number;
+  minimumOperatingPressurePsi: number;
+  firstSprinklerPressurePsi: number;
+  firstSprinklerFlowGpm: number;
+  floorGoverned: boolean;
+  rulesConfidence: string;
+  notes: string[];
+  warnings: string[];
+}

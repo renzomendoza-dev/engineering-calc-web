@@ -3,7 +3,7 @@ import { optionalNumber } from "@/lib/zodHelpers";
 import { SPRINKLER_HAZARDS, SPRINKLER_SYSTEM_TYPES } from "./types";
 
 /**
- * One schema for the whole five-step input. Steps validate subsets of it (see STEP_FIELDS) so
+ * One schema for the whole multi-step input. Steps validate subsets of it (see STEP_FIELDS) so
  * moving between steps never revalidates — or resets — fields the user hasn't reached yet.
  *
  * Fields the API doesn't take are marked FORM-ONLY below: the project name (labelling, and the
@@ -76,7 +76,16 @@ export const sprinklerHydraulicsSchema = z
     defaultCFactor: z.coerce.number().positive("Must be positive"), // FORM-ONLY
     assumedStartPressurePsi: z.coerce.number().min(0, "Cannot be negative"),
 
-    // --- step 3: water supply ---
+    // --- step 3: remote area (FORM-ONLY: these drive the layout plan, never the hydraulic request) ---
+    // Deliberately lenient. The plan is guidance for how many sprinklers to list, so a blank or
+    // half-finished plan must not stop the hydraulic calculation -- the same lesson as the supply
+    // blocks below. The plan simply doesn't compute until its figures are in.
+    quickResponseSprinklers: z.boolean(),
+    ceilingHeightFt: optionalNumber(z.coerce.number().positive("Must be positive")),
+    sprinklerSpacingFt: optionalNumber(z.coerce.number().positive("Must be positive")),
+    branchSpacingFt: optionalNumber(z.coerce.number().positive("Must be positive")),
+
+    // --- step 4: water supply ---
     // FORM-ONLY: picks which block below is sent. "NONE" sends no supply at all, which the API
     // answers with the demand figures and a null margin and verdict.
     supplySource: z.enum(["FLOW_TEST", "GRAVITY_TANK", "NONE"], "Choose where the water comes from"),
@@ -98,7 +107,7 @@ export const sprinklerHydraulicsSchema = z
       outletRuns: z.array(supplyPipeRunSchema),
     }),
 
-    // --- step 4: pipe network ---
+    // --- step 5: pipe network ---
     sprinklers: z.array(sprinklerRowSchema).min(1, "Add at least one flowing sprinkler"),
     segments: z.array(segmentSchema).min(1, "Add at least one pipe segment"),
     deviceLosses: z.array(deviceLossSchema),
@@ -211,12 +220,13 @@ export type SprinklerFormInput = z.input<typeof sprinklerHydraulicsSchema>;
 /** Post-coercion shape, the only thing request.ts maps from. */
 export type SprinklerFormValues = z.output<typeof sprinklerHydraulicsSchema>;
 
-export const STEPS = ["project", "design", "supply", "network", "results"] as const;
+export const STEPS = ["project", "design", "remote", "supply", "network", "results"] as const;
 export type StepId = (typeof STEPS)[number];
 
 export const STEP_LABELS: Record<StepId, string> = {
   project: "Project & hazard",
   design: "Design data",
+  remote: "Remote area",
   supply: "Water supply",
   network: "Pipe network",
   results: "Results",
@@ -229,7 +239,16 @@ export const STEP_LABELS: Record<StepId, string> = {
 export const STEP_FIELDS: Record<StepId, readonly (keyof SprinklerFormInput)[]> = {
   project: ["projectName", "systemType", "hazard", "densityGpmPerSqFt", "designAreaSqFt", "hoseStreamGpm"],
   design: ["defaultKFactor", "defaultPipeMaterial", "defaultSchedule", "defaultCFactor", "assumedStartPressurePsi"],
+  remote: ["quickResponseSprinklers", "ceilingHeightFt", "sprinklerSpacingFt", "branchSpacingFt"],
   supply: ["supplySource", "waterSupply", "gravityTank"],
   network: ["sprinklers", "segments", "deviceLosses", "hoseStreamNodeId"],
   results: [],
 };
+
+/**
+ * A step's position as the user sees it, counted from 1. Used wherever text points at another
+ * step, so adding a step can't leave "see step 4" pointing at the wrong one.
+ */
+export function stepNumber(step: StepId): number {
+  return STEPS.indexOf(step) + 1;
+}
