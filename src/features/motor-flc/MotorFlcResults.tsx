@@ -8,6 +8,9 @@ interface MotorFlcResultsProps {
 }
 
 function MotorFlcSummary({ flc }: { flc: MotorFlcResponse }) {
+  // The two differ only where calc-core applied the synchronous power factor multiplier, which
+  // the published table defines against its own 100% power factor values. For every other motor
+  // the published figure is used as-is, so saying anything about power factor would be wrong.
   const wasAdjusted = flc.baseFlcAmps !== flc.flcAmps;
 
   return (
@@ -16,10 +19,18 @@ function MotorFlcSummary({ flc }: { flc: MotorFlcResponse }) {
         label="Full-Load Current"
         value={flc.flcAmps.toFixed(2)}
         unit="A"
-        note={wasAdjusted ? `Adjusted from ${flc.baseFlcAmps.toFixed(2)} A at unity power factor.` : undefined}
+        note={
+          wasAdjusted
+            ? `Adjusted from the published ${flc.baseFlcAmps.toFixed(2)} A, which the table gives at 100% power factor, by the synchronous motor power factor multiplier.`
+            : undefined
+        }
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <ResultCard label="Base FLC" value={flc.baseFlcAmps.toFixed(2)} unit="A" />
+        <ResultCard
+          label={wasAdjusted ? "Published FLC at 100% power factor" : "Published FLC"}
+          value={flc.baseFlcAmps.toFixed(2)}
+          unit="A"
+        />
         <ResultCard
           label="Minimum Conductor Ampacity"
           value={flc.minimumConductorAmpacity.toFixed(2)}
