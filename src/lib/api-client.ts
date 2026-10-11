@@ -98,6 +98,7 @@ async function parseErrorBody(response: Response): Promise<ApiError> {
 export async function apiPost<TRequest, TResponse>(
   path: string,
   body: TRequest,
+  options?: { signal?: AbortSignal },
 ): Promise<TResponse> {
   let response: Response;
   try {
@@ -105,8 +106,15 @@ export async function apiPost<TRequest, TResponse>(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      signal: options?.signal,
     });
-  } catch {
+  } catch (err) {
+    // An abort is the caller superseding its own request (see the sprinkler form's live
+    // recalculation), not a failure to show the user — it propagates unchanged so the caller can
+    // recognise it and stay silent. Everything else is a genuine connection problem.
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw err;
+    }
     throw new ApiError(0, "Unable to reach the server. Check your connection and try again.");
   }
 

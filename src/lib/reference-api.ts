@@ -28,6 +28,12 @@ import type {
   DuctRoughnessTableRow,
   DuctVelocityLimitTableRow,
 } from "@/features/duct-sizing/types";
+import type {
+  FittingEquivalentLengthTableRow,
+  HazardPresetTableRow,
+  SprinklerCFactorTableRow,
+  SprinklerKFactorTableRow,
+} from "@/features/sprinkler-hydraulics/types";
 
 /**
  * Wraps calc-api's electrical reference endpoints
@@ -237,4 +243,34 @@ export function getDuctRoughnessTable(): Promise<DuctRoughnessTableRow[]> {
  */
 export function getDuctVelocityLimitsTable(): Promise<DuctVelocityLimitTableRow[]> {
   return apiGet<DuctVelocityLimitTableRow[]>("/api/mechanical/reference/duct-velocity-limits-table");
+}
+
+/**
+ * NFPA 13 design presets (density, design area, hose stream, duration) by hazard classification —
+ * the usual starting design point for each density/area curve, not the only valid one, so the
+ * sprinkler form pre-fills from these and lets the user override.
+ */
+export function getSprinklerHazardPresetsTable(): Promise<HazardPresetTableRow[]> {
+  return apiGet<HazardPresetTableRow[]>("/api/mechanical/reference/sprinkler-hazard-presets-table");
+}
+
+/** Published nominal sprinkler K-factors, for the sprinkler K dropdown. */
+export function getSprinklerKFactorsTable(): Promise<SprinklerKFactorTableRow[]> {
+  return apiGet<SprinklerKFactorTableRow[]>("/api/mechanical/reference/sprinkler-k-factors-table");
+}
+
+/** Published Hazen-Williams C factors by pipe type and wet/dry/preaction service. */
+export function getSprinklerCFactorsTable(): Promise<SprinklerCFactorTableRow[]> {
+  return apiGet<SprinklerCFactorTableRow[]>("/api/mechanical/reference/sprinkler-c-factors-table");
+}
+
+/**
+ * Fitting equivalent lengths keyed by nominal size. An empty map means the published table isn't
+ * entered yet for that fitting, in which case the caller must collect an explicit length — see
+ * fittingNeedsExplicitLength in the sprinkler feature.
+ */
+export function getSprinklerFittingEquivalentLengthsTable(): Promise<FittingEquivalentLengthTableRow[]> {
+  return apiGet<FittingEquivalentLengthTableRow[]>(
+    "/api/mechanical/reference/sprinkler-fitting-equivalent-lengths-table",
+  );
 }

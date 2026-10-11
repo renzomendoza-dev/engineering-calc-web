@@ -1,0 +1,77 @@
+"use client";
+
+import { HeadlineResult } from "@/components/ui/HeadlineResult";
+import { ResultCard } from "@/components/ui/ResultCard";
+import { formatFlow, formatPercent, formatPressure } from "../format";
+import { UNITS } from "../labels";
+import type { SprinklerCalculationState } from "../useSprinklerCalculation";
+
+interface ResultsStepProps {
+  state: SprinklerCalculationState;
+}
+
+/**
+ * Step 5. The same figures as the summary panel, in full. Every value is read straight from the
+ * response — the margin, the percentage and the verdict are the API's, not recomputed here.
+ */
+export function ResultsStep({ state }: ResultsStepProps) {
+  const { result, isStale, isComplete } = state;
+
+  if (!result) {
+    return (
+      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        No result yet. Go back through the steps and fill in the design figures, the water supply
+        flow test and the pipe network; the calculation runs as soon as the input is complete.
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      {(isStale || !isComplete) && (
+        <p className="rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
+          {isComplete
+            ? "The input has changed since this result — it is being recalculated."
+            : "The input is no longer complete, so this result is from the last complete version."}
+        </p>
+      )}
+
+      <HeadlineResult
+        label="Safety margin"
+        value={formatPressure(result.safetyMarginPsi)}
+        unit={UNITS.pressure}
+        secondaryValue={`${formatPercent(result.safetyMarginPercent)}% of the available pressure`}
+        note={
+          result.passes
+            ? "The water supply meets the system demand."
+            : "The water supply does not meet the system demand."
+        }
+        tone={result.passes ? "emerald" : "blue"}
+      />
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <ResultCard
+          label="Total demand flow"
+          value={formatFlow(result.totalDemandFlowGpm)}
+          unit={UNITS.flow}
+        />
+        <ResultCard
+          label="Required pressure at the supply"
+          value={formatPressure(result.requiredPressureAtSupplyPsi)}
+          unit={UNITS.pressure}
+        />
+        <ResultCard
+          label="Available pressure at that flow"
+          value={formatPressure(result.availablePressureAtDemandPsi)}
+          unit={UNITS.pressure}
+          tone={result.passes ? "default" : "warning"}
+          note={
+            result.passes
+              ? undefined
+              : "Below the required pressure — the supply cannot deliver this demand."
+          }
+        />
+      </div>
+    </div>
+  );
+}

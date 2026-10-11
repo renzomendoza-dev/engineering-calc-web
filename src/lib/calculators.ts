@@ -150,6 +150,14 @@ export const calculators: CalculatorConfig[] = [
     status: "available",
   },
   {
+    name: "Fire Sprinkler Hydraulic Calculation",
+    description:
+      "Remote-area demand, friction loss per segment, and safety margin against the water supply curve.",
+    category: "Mechanical",
+    href: "/mechanical/sprinkler/hydraulics",
+    status: "available",
+  },
+  {
     name: "Fire Water Storage",
     description: "Required fire water storage volume from rated pump flow and NFPA 13 hazard classification duration.",
     category: "Mechanical",
