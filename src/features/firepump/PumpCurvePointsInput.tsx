@@ -78,18 +78,24 @@ export function PumpCurvePointsInput<T extends FieldValues>({
       <div className="flex flex-col gap-2">
         {fields.map((field, index) => (
           <div key={field.id} className="flex items-end gap-2">
-            <NumberField
-              label={`Flow ${index + 1}`}
-              unit="GPM"
-              error={rowErrors?.[index]?.flowGpm?.message}
-              {...register(`${name}.${index}.flowGpm` as Path<T>)}
-            />
-            <NumberField
-              label={`Pressure ${index + 1}`}
-              unit="psi"
-              error={rowErrors?.[index]?.pressurePsi?.message}
-              {...register(`${name}.${index}.pressurePsi` as Path<T>)}
-            />
+            {/* min-w-0 lets each field shrink below a number input's ~200px intrinsic width, so
+                the row fits a phone screen instead of pushing the page wider. */}
+            <div className="min-w-0 flex-1">
+              <NumberField
+                label={`Flow ${index + 1}`}
+                unit="GPM"
+                error={rowErrors?.[index]?.flowGpm?.message}
+                {...register(`${name}.${index}.flowGpm` as Path<T>)}
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <NumberField
+                label={`Pressure ${index + 1}`}
+                unit="psi"
+                error={rowErrors?.[index]?.pressurePsi?.message}
+                {...register(`${name}.${index}.pressurePsi` as Path<T>)}
+              />
+            </div>
             <button
               type="button"
               onClick={() => remove(index)}

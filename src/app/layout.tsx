@@ -27,7 +27,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      {/* pb-24 keeps the fixed unit-converter button (56px, 24px from the bottom) from
+          permanently covering the last content on the page when scrolled to the end. */}
+      <body className="min-h-full flex flex-col pb-24">
         <Header />
         {children}
         <ConversionFab />

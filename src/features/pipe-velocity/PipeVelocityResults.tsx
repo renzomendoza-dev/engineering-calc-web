@@ -45,7 +45,7 @@ export function PipeVelocityResults({ result }: PipeVelocityResultsProps) {
             <select
               value={speedUnit}
               onChange={(event) => setSpeedUnit(event.target.value as (typeof SPEED_DISPLAY_UNITS)[number])}
-              className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+              className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-base sm:text-sm dark:border-zinc-700 dark:bg-zinc-950"
             >
               {SPEED_DISPLAY_UNITS.map((unit) => (
                 <option key={unit} value={unit}>
@@ -60,7 +60,7 @@ export function PipeVelocityResults({ result }: PipeVelocityResultsProps) {
               <select
                 value={lengthUnit}
                 onChange={(event) => setLengthUnit(event.target.value as (typeof LENGTH_DISPLAY_UNITS)[number])}
-                className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+                className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-base sm:text-sm dark:border-zinc-700 dark:bg-zinc-950"
               >
                 {LENGTH_DISPLAY_UNITS.map((unit) => (
                   <option key={unit} value={unit}>

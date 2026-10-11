@@ -80,7 +80,7 @@ export function LockedRotorForm({ onResult }: LockedRotorFormProps) {
           type="text"
           placeholder="e.g. 1/4, 1 1/2, 10"
           aria-invalid={!!errors.horsepowerLabel}
-          className={`rounded-md border px-3 py-2 text-sm shadow-sm outline-none transition-colors bg-white dark:bg-zinc-950 ${
+          className={`rounded-md border px-3 py-2 text-base shadow-sm outline-none transition-colors bg-white sm:text-sm dark:bg-zinc-950 ${
             errors.horsepowerLabel
               ? "border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500"
               : "border-zinc-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-700"

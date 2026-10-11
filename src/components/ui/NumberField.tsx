@@ -21,6 +21,9 @@ interface NumberFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "
  * on touch/keyboard-only input. `tooltip` is the opt-in alternative for longer text where
  * always-visible would be too much clutter — its trigger still supports click/tap, not just
  * hover, for the same reason.
+ *
+ * The input is text-base (16px) below the sm breakpoint: iOS Safari zooms the whole page in when
+ * a field smaller than 16px is focused. Same on every text-like field in the app.
  */
 export const NumberField = forwardRef<HTMLInputElement, NumberFieldProps>(
   ({ label, unit, error, hint, tooltip, id, className, ...inputProps }, ref) => {
@@ -45,7 +48,7 @@ export const NumberField = forwardRef<HTMLInputElement, NumberFieldProps>(
           step="any"
           aria-invalid={!!error}
           aria-describedby={error ? `${fieldId}-error` : undefined}
-          className={`rounded-md border px-3 py-2 text-sm shadow-sm outline-none transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-400 dark:disabled:bg-zinc-900 dark:disabled:text-zinc-600 ${
+          className={`rounded-md border px-3 py-2 text-base shadow-sm outline-none sm:text-sm transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-400 dark:disabled:bg-zinc-900 dark:disabled:text-zinc-600 ${
             error
               ? "border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500"
               : "border-zinc-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-700"

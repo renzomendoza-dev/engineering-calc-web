@@ -42,7 +42,7 @@ export function ConversionField({
             value={value}
             disabled={readOnly}
             onChange={(event) => onValueChange?.(event.target.value)}
-            className="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-zinc-100 disabled:text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:disabled:bg-zinc-900 dark:disabled:text-zinc-400"
+            className="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-2 text-base shadow-sm sm:text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-zinc-100 disabled:text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:disabled:bg-zinc-900 dark:disabled:text-zinc-400"
           >
             {valueOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -59,13 +59,13 @@ export function ConversionField({
             value={value}
             readOnly={readOnly}
             onChange={(event) => onValueChange?.(event.target.value)}
-            className="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 read-only:bg-zinc-100 read-only:text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:read-only:bg-zinc-900 dark:read-only:text-zinc-400"
+            className="flex-1 rounded-md border border-zinc-300 bg-white px-3 py-2 text-base shadow-sm sm:text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 read-only:bg-zinc-100 read-only:text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:read-only:bg-zinc-900 dark:read-only:text-zinc-400"
           />
         )}
         <select
           value={unit}
           onChange={(event) => onUnitChange(event.target.value)}
-          className="w-24 rounded-md border border-zinc-300 bg-white px-2 py-2 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-950"
+          className="w-24 rounded-md border border-zinc-300 bg-white px-2 py-2 text-base shadow-sm sm:text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-950"
         >
           {unitOptions.map((option) => (
             <option key={option.value} value={option.value}>
