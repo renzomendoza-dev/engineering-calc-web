@@ -43,3 +43,29 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  # Catches the frontend's mirrored types drifting from calc-api's DTOs -- a field added to a DTO
+  # and never mirrored here breaks nothing in either repo's own checks, so neither repo can catch
+  # it alone. Its own job: it needs the backend checked out, and a backend-side failure shouldn't
+  # read as this app's typecheck or tests failing.
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      # CALC_API_READ_TOKEN is only needed while renzomendoza-dev/engineering-calc is private;
+      # for a public repo the default token is enough. Without a valid token the checkout fails
+      # loudly rather than the check passing on a missing backend (see --require below).
+      - name: Check out calc-api
+        uses: actions/checkout@v7
+        with:
+          repository: renzomendoza-dev/engineering-calc
+          path: calc-api-source
+          token: ${{ secrets.CALC_API_READ_TOKEN || github.token }}
+
+      - name: Check the API contract
+        run: npm run check:contract -- --api ./calc-api-source --require

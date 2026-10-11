@@ -12,7 +12,7 @@ export interface ConduitFillRequest {
 }
 
 /**
- * Mirrors calc-api's PracticalFillAdvisory field-for-field. A field-experience pull-ease
+ * Mirrors calc-api's PracticalFillAdvisoryDto field-for-field. A field-experience pull-ease
  * heuristic — explicitly NOT a PEC code compliance result — so it must stay visually and
  * semantically distinct from the legal fill-compliance fields on ConduitFillResponse.
  */

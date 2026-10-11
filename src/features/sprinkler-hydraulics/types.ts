@@ -135,19 +135,35 @@ export interface HazardPresetTableRow {
   sourceNote: string | null;
 }
 
-/** Mirrors calc-api's SprinklerKFactorEntryDto. orificeNominal is null where the orifice isn't confirmed. */
+/**
+ * Mirrors calc-api's SprinklerKFactorEntryDto. `threadType` is the published thread size, not an
+ * orifice size — an earlier version of this type called it `orificeNominal`, which the backend
+ * corrected. The range fields bound the actual K a listed sprinkler may carry under this nominal
+ * value; they are null where the standard doesn't publish them.
+ */
 export interface SprinklerKFactorTableRow {
   nominalK: number;
-  orificeNominal: string | null;
+  nominalKLpmBar: number | null;
+  kFactorRangeMinGpm: number | null;
+  kFactorRangeMaxGpm: number | null;
+  percentOfK56Discharge: number | null;
+  threadType: string | null;
   label: string;
   confidence: string;
 }
 
-/** Mirrors calc-api's SprinklerCFactorEntryDto. systemType is "ANY" where C doesn't vary with service. */
+/**
+ * Mirrors calc-api's SprinklerCFactorEntryDto. systemType is "ANY" where C doesn't vary with
+ * service. The epsilon figures are the absolute roughness NFPA 13's annex pairs with each C value,
+ * passed through for display only — Hazen-Williams takes C, not roughness — and are null where the
+ * annex gives none.
+ */
 export interface SprinklerCFactorTableRow {
   pipeType: string;
   systemType: string;
   cFactor: number;
+  epsilonFactorInch: number | null;
+  epsilonFactorMm: number | null;
   label: string;
   confidence: string;
   sourceNote: string | null;

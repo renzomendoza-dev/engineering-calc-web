@@ -26,7 +26,7 @@ export const OCCUPANCY_TYPES = [
   { value: "RESTAURANT_ASSEMBLY", label: "Restaurant / assembly (per person, transient use)" },
 ] as const;
 
-/** Mirrors calc-api's SystemTypeDto enum. */
+/** Mirrors calc-api's FlushSystemTypeDto enum. */
 export const SYSTEM_TYPES = ["FLUSH_TANK", "FLUSH_VALVE"] as const;
 export type SystemType = (typeof SYSTEM_TYPES)[number];
 
