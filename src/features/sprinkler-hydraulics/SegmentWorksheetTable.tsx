@@ -1,5 +1,6 @@
 import { UNITS } from "./labels";
 import {
+  formatAdjustment,
   formatDiameter,
   formatFlow,
   formatFrictionRate,
@@ -65,6 +66,9 @@ export function SegmentWorksheetTable({ segments }: SegmentWorksheetTableProps) 
                 Fittings ({UNITS.length})
               </th>
               <th scope="col" className={HEADER_CELL}>
+                C adj.
+              </th>
+              <th scope="col" className={HEADER_CELL}>
                 Total ({UNITS.length})
               </th>
               <th scope="col" className={HEADER_CELL}>
@@ -100,6 +104,7 @@ export function SegmentWorksheetTable({ segments }: SegmentWorksheetTableProps) 
                 <td className={DATA_CELL}>{formatPlain(row.cFactor)}</td>
                 <td className={DATA_CELL}>{formatLength(row.pipeLengthFt)}</td>
                 <td className={DATA_CELL}>{formatLength(row.fittingEquivalentLengthFt)}</td>
+                <td className={DATA_CELL}>{formatAdjustment(row.fittingCFactorAdjustment)}</td>
                 <td className={DATA_CELL}>{formatLength(row.totalLengthFt)}</td>
                 <td className={DATA_CELL}>{formatFrictionRate(row.frictionLossPsiPerFoot)}</td>
                 <td className={DATA_CELL}>{formatPressure(row.frictionLossPsi)}</td>
@@ -116,7 +121,10 @@ export function SegmentWorksheetTable({ segments }: SegmentWorksheetTableProps) 
       <p className="text-xs text-zinc-500 dark:text-zinc-400">
         Scroll sideways for the remaining columns. &ldquo;End pressure&rdquo; is the pressure at
         that segment&apos;s downstream node; any device losses are added after the last row to give
-        the pressure required at the supply.
+        the pressure required at the supply. &ldquo;C adj.&rdquo; is the factor the equivalent
+        lengths looked up from NFPA 13&apos;s chart were rescaled by for this segment&apos;s C
+        factor — 1.0000 at C&nbsp;=&nbsp;120, and on any segment whose fitting lengths were all
+        typed in.
       </p>
     </div>
   );

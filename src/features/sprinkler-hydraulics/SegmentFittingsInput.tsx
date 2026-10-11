@@ -16,10 +16,13 @@ interface SegmentFittingsInputProps {
 }
 
 /**
- * Fittings on one pipe segment. The equivalent length comes from the published table when it has
- * a value for this fitting at this pipe size; where it doesn't, the field for an explicit length
- * appears instead — the API rejects a fitting it can't resolve, so asking here is the only way the
- * request can succeed. (At the moment no fitting publishes lengths, so the field always shows.)
+ * Fittings on one pipe segment. The equivalent length comes from NFPA 13's published chart when it
+ * has a value for this fitting at this pipe size; where it doesn't — the chart leaves plenty of
+ * combinations blank — the field for an explicit length appears instead, since the API rejects a
+ * fitting it can't resolve.
+ *
+ * The two paths behave differently downstream, so they say so: a chart lookup is rescaled for the
+ * segment's C factor by the calculation, while a length typed in here is used exactly as entered.
  */
 export function SegmentFittingsInput({ form, segmentIndex, fittings }: SegmentFittingsInputProps) {
   const {
@@ -81,15 +84,17 @@ export function SegmentFittingsInput({ form, segmentIndex, fittings }: SegmentFi
                   unit={UNITS.length}
                   hint={
                     fittingType
-                      ? "No published equivalent length for this fitting at this pipe size — enter the value from the manufacturer or the standard."
-                      : "Enter the equivalent length, or choose a fitting type above."
+                      ? "NFPA 13's chart publishes no length for this fitting at this pipe size — enter the value from the manufacturer or the standard. It is used exactly as entered, with no C factor rescaling, so give the length for this segment's pipe."
+                      : "Enter the equivalent length, or choose a fitting type above. A length entered here is used exactly as given, with no C factor rescaling."
                   }
                   error={rowErrors?.explicitEquivalentLengthFt?.message}
                   {...register(`segments.${segmentIndex}.fittings.${index}.explicitEquivalentLengthFt`)}
                 />
               ) : (
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Published equivalent length: {published} {UNITS.length} each.
+                  Published equivalent length: {published} {UNITS.length} each, in feet of
+                  C&nbsp;=&nbsp;120 pipe (NFPA 13 Table 27.2.3.1.1). The calculation rescales it
+                  for this segment&apos;s C factor and reports the factor it used in the worksheet.
                 </p>
               )}
             </RowCard>

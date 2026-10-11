@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatAdjustment,
   formatDiameter,
   formatFlow,
   formatFrictionRate,
@@ -43,6 +44,16 @@ describe("display formatting", () => {
   it("writes C factors and quantities without forced decimals", () => {
     expect(formatPlain(120)).toBe("120");
     expect(formatPlain(149.5)).toBe("149.5");
+  });
+
+  it("shows the fitting C-factor adjustment close enough to recognise NFPA's printed factors", () => {
+    // (C/120)^1.85 for C = 100, 130, 140 and 150; the standard prints 0.713, 1.16, 1.33 and 1.51.
+    expect(formatAdjustment(0.7136983534505362)).toBe("0.7137");
+    expect(formatAdjustment(1.1595850017042688)).toBe("1.1596");
+    expect(formatAdjustment(1.3299548846207213)).toBe("1.3300");
+    expect(formatAdjustment(1.5110865783110726)).toBe("1.5111");
+    // Unadjusted: C = 120 itself, and any segment whose fitting lengths were all typed in.
+    expect(formatAdjustment(1)).toBe("1.0000");
   });
 
   it("writes a nominal size key as an inch measurement", () => {

@@ -43,6 +43,15 @@ export function formatFrictionRate(value: number): string {
 }
 
 /**
+ * The fitting C-factor multiplier, to four decimals. (C/120)^1.85 at C = 100 is 0.7137, which the
+ * standard prints rounded to 0.713 — at three decimals it would read 0.714 and look like a
+ * mismatch with the published figure, so the exact factor is shown instead.
+ */
+export function formatAdjustment(value: number): string {
+  return fixed(value, 4);
+}
+
+/**
  * The API echoes the catalog's nominal size key ("1", "1-1/4"), which is a size in inches written
  * without its unit. Adding the inch mark is formatting, not a lookup, so it can't disagree with
  * the catalog the way a re-derived label could — and the row's own inside diameter states the

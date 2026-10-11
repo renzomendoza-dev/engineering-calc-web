@@ -84,7 +84,14 @@ export interface SegmentFlowRow {
   insideDiameterInch: number;
   cFactor: number;
   pipeLengthFt: number;
+  /** Total for this segment's fittings, already rescaled by fittingCFactorAdjustment. */
   fittingEquivalentLengthFt: number;
+  /**
+   * The multiplier calc-core applied to lengths looked up from NFPA 13's chart, which is
+   * published in feet of C = 120 pipe: (C / 120)^1.85. It is 1.0 when the segment is C = 120, and
+   * also when every fitting on it carried an explicit length, since those are never rescaled.
+   */
+  fittingCFactorAdjustment: number;
   totalLengthFt: number;
   frictionLossPsiPerFoot: number;
   frictionLossPsi: number;
