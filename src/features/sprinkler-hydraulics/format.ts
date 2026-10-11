@@ -42,6 +42,16 @@ export function formatFrictionRate(value: number): string {
   return fixed(value, 4);
 }
 
+/**
+ * The API echoes the catalog's nominal size key ("1", "1-1/4"), which is a size in inches written
+ * without its unit. Adding the inch mark is formatting, not a lookup, so it can't disagree with
+ * the catalog the way a re-derived label could — and the row's own inside diameter states the
+ * actual dimension.
+ */
+export function formatNominalSize(nominalSize: string): string {
+  return `${nominalSize}"`;
+}
+
 /** C factors and quantities are whole numbers in practice, but don't have to be. */
 export function formatPlain(value: number): string {
   return value.toLocaleString(undefined, { maximumFractionDigits: 2 });

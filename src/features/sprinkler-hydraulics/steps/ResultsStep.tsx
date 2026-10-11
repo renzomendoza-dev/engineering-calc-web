@@ -4,6 +4,9 @@ import { HeadlineResult } from "@/components/ui/HeadlineResult";
 import { ResultCard } from "@/components/ui/ResultCard";
 import { formatFlow, formatPercent, formatPressure } from "../format";
 import { UNITS } from "../labels";
+import { SegmentWorksheetTable } from "../SegmentWorksheetTable";
+import { SprinklerFormulas } from "../SprinklerFormulas";
+import { SupplyCurveChart } from "../SupplyCurveChart";
 import type { SprinklerCalculationState } from "../useSprinklerCalculation";
 
 interface ResultsStepProps {
@@ -71,6 +74,35 @@ export function ResultsStep({ state }: ResultsStepProps) {
               : "Below the required pressure — the supply cannot deliver this demand."
           }
         />
+      </div>
+
+      <section className="flex flex-col gap-3">
+        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+          Friction loss worksheet
+        </h3>
+        <SegmentWorksheetTable segments={result.segments} />
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+          Supply curve and demand
+        </h3>
+        <SupplyCurveChart result={result} />
+      </section>
+
+      <SprinklerFormulas />
+
+      <div className="flex flex-wrap items-center gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+        <button
+          type="button"
+          disabled
+          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Generate report
+        </button>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          Coming soon — a printable calculation sheet isn&apos;t built yet.
+        </p>
       </div>
     </div>
   );
