@@ -3,6 +3,12 @@ import { forwardRef, type SelectHTMLAttributes } from "react";
 export interface SelectOption {
   value: string;
   label: string;
+  /**
+   * Shown but unselectable — for a choice the reference data can't support (e.g. a conductor size
+   * with no AC impedance published). Preferred over dropping the option, so a value the user
+   * expects to see doesn't just disappear; say why in the label.
+   */
+  disabled?: boolean;
 }
 
 interface SelectFieldProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, "children"> {
@@ -43,7 +49,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
           } ${className ?? ""}`}
         >
           {options.map((option) => (
-            <option key={option.value} value={option.value}>
+            <option key={option.value} value={option.value} disabled={option.disabled}>
               {option.label}
             </option>
           ))}

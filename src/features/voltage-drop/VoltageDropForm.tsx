@@ -8,6 +8,8 @@ import { SelectField, type SelectOption } from "@/components/ui/SelectField";
 import { apiPost } from "@/lib/api-client";
 import { useApiFormError } from "@/hooks/useApiFormError";
 import { useConductorReferenceData } from "@/hooks/useConductorReferenceData";
+import { useConductorImpedanceTable } from "@/hooks/useConductorImpedanceTable";
+import { hasAcImpedanceData } from "./acImpedance";
 import { PEC_CITATION, PEC_TABLES } from "@/lib/pec-reference";
 import { voltageDropSchema, type VoltageDropFormInput, type VoltageDropFormValues } from "./schema";
 import { CIRCUIT_TYPES, type VoltageDropRequest, type VoltageDropResponse } from "./types";
@@ -70,8 +72,13 @@ export function VoltageDropForm({ onResult }: VoltageDropFormProps) {
     error: referenceError,
   } = useConductorReferenceData();
 
+  const { impedanceRows } = useConductorImpedanceTable();
+
   const circuitType = watch("circuitType");
   const useCustomImpedance = watch("useCustomImpedance");
+  const conductorMaterial = watch("conductorMaterial");
+  const conduitMaterial = watch("conduitMaterial");
+  const conductorSizeLabel = watch("conductorSizeLabel");
   const isDc = circuitType === "DC";
 
   // Clear the other mode's fields when the impedance mode toggles, so a stale value from
@@ -97,15 +104,51 @@ export function VoltageDropForm({ onResult }: VoltageDropFormProps) {
     }
   }, [isDc, setValue]);
 
+  // Switching material, conduit or circuit type can strand a size that was valid when it was
+  // picked. Clearing it is the honest outcome: the field then asks for a choice again, rather
+  // than keeping a selection the dropdown now shows as unselectable.
+  useEffect(() => {
+    if (
+      conductorSizeLabel &&
+      !isDc &&
+      !useCustomImpedance &&
+      !hasAcImpedanceData(impedanceRows, conductorSizeLabel, conductorMaterial, conduitMaterial)
+    ) {
+      setValue("conductorSizeLabel", "");
+    }
+  }, [
+    conductorSizeLabel,
+    conductorMaterial,
+    conduitMaterial,
+    impedanceRows,
+    isDc,
+    useCustomImpedance,
+    setValue,
+  ]);
+
   const referenceFieldsDisabled = referenceLoading || !!referenceError;
+
+  // An AC calculation resolves R and X from PEC Table 10.1.1.9, which doesn't cover every size the
+  // list offers, nor every material/conduit column of the sizes it does cover. Those combinations
+  // are marked unselectable instead of failing at the API. DC resolves from the DC resistance
+  // table, which covers everything, so nothing is marked there.
+  const usesPublishedAcImpedance = !isDc && !useCustomImpedance;
+  const sizeUnavailable = (label: string) =>
+    usesPublishedAcImpedance &&
+    !hasAcImpedanceData(impedanceRows, label, conductorMaterial, conduitMaterial);
 
   const conductorSizeOptions: SelectOption[] = [
     { value: "", label: referenceLoading ? "Loading…" : "Select a size" },
-    ...conductorSizes.map((size) => ({
-      value: size.label,
-      label: `${size.label} (${size.crossSectionMm2} mm²)`,
-    })),
+    ...conductorSizes.map((size) => {
+      const unavailable = sizeUnavailable(size.label);
+      return {
+        value: size.label,
+        label: `${size.label} (${size.crossSectionMm2} mm²)${unavailable ? " — no AC data published" : ""}`,
+        disabled: unavailable,
+      };
+    }),
   ];
+  const someSizeUnavailable = conductorSizeOptions.some((option) => option.disabled);
   const conductorMaterialOptions: SelectOption[] = [
     { value: "", label: referenceLoading ? "Loading…" : "Select a material" },
     ...conductorMaterials.map((material) => ({ value: material, label: titleCase(material) })),
@@ -230,6 +273,11 @@ export function VoltageDropForm({ onResult }: VoltageDropFormProps) {
             label="Conductor Size"
             options={conductorSizeOptions}
             disabled={referenceFieldsDisabled}
+            hint={
+              someSizeUnavailable
+                ? "Sizes PEC Table 10.1.1.9 doesn't publish for this conductor and conduit combination are listed but can't be selected for an AC circuit."
+                : undefined
+            }
             error={errors.conductorSizeLabel?.message}
             {...register("conductorSizeLabel")}
           />
