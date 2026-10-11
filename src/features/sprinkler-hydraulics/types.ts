@@ -99,7 +99,12 @@ export interface SprinklerHydraulicRequest {
   designAreaSqFt: number;
   hoseStreamGpm: number;
   hoseStreamNodeId: string | null;
-  assumedStartPressurePsi: number;
+  /**
+   * Optional, and can only raise the start: the most remote sprinkler always starts at least at
+   * the pressure its design flow needs and the minimum operating pressure. The form no longer asks
+   * for it, so it is sent as null and those govern.
+   */
+  assumedStartPressurePsi: number | null;
   sprinklers: RemoteAreaSprinklerRequest[];
   segments: SprinklerPipeSegmentRequest[];
   /** Null for a system with no pressurised source yet — the demand is still calculated. */
@@ -218,14 +223,18 @@ export interface FittingEquivalentLengthTableRow {
 /**
  * Mirrors calc-api's RemoteAreaPlanRequest. Not part of the hydraulic request: the plan tells the
  * designer how many sprinklers to list, and the hydraulic calculation takes whatever is listed.
- * `ceilingHeightFt` is required when `quickResponseSprinklers` is true.
+ *
+ * Built to be sent in stages as the form fills in. The first four figures give the area, the flow
+ * per sprinkler and the first sprinkler's pressure; `sprinklerSpacingFt` is only needed for the
+ * layout, and null leaves the layout fields null in the response. `ceilingHeightFt` is required
+ * when `quickResponseSprinklers` is true.
  */
 export interface RemoteAreaPlanRequest {
   designAreaSqFt: number;
   densityGpmPerSqFt: number;
   kFactor: number;
-  sprinklerSpacingFt: number;
-  branchSpacingFt: number;
+  coveragePerSprinklerSqFt: number;
+  sprinklerSpacingFt: number | null;
   quickResponseSprinklers: boolean;
   ceilingHeightFt: number | null;
   maxCoveragePerSprinklerSqFt: number | null;
@@ -233,27 +242,33 @@ export interface RemoteAreaPlanRequest {
 
 /**
  * Mirrors calc-api's RemoteAreaPlanResponse field-for-field, in the order the work is done by
- * hand: area, rectangle, counts, first sprinkler. Every figure is the API's; the counts are
- * rounded up there, so the plan is never smaller than the design area.
+ * hand. Every figure is the API's; the counts are rounded up there, so the plan is never smaller
+ * than the design area.
+ *
+ * Three tiers, available as the request's inputs are: the area and per-sprinkler figures always;
+ * the shape of the remote area from the area alone; and the layout fields from
+ * `branchSpacingFt` to `totalProtectedAreaSqFt` only once the spacing was sent — null before then.
  */
 export interface RemoteAreaPlanResponse {
   baseDesignAreaSqFt: number;
   reductionPercent: number;
   reductionApplied: boolean;
   adjustedDesignAreaSqFt: number;
-  remoteAreaLengthFt: number;
-  remoteAreaWidthFt: number;
   coveragePerSprinklerSqFt: number;
-  sprinklersPerBranch: number;
-  branchLines: number;
-  totalSprinklers: number;
-  totalProtectedAreaSqFt: number;
-  minimumFlowPerSprinklerGpm: number;
-  pressureForMinimumFlowPsi: number;
+  sprinklersForArea: number;
+  flowPerSprinklerGpm: number;
+  pressureForFlowPsi: number;
   minimumOperatingPressurePsi: number;
   firstSprinklerPressurePsi: number;
   firstSprinklerFlowGpm: number;
   floorGoverned: boolean;
+  remoteAreaLengthFt: number;
+  remoteAreaWidthFt: number;
+  branchSpacingFt: number | null;
+  sprinklersPerBranch: number | null;
+  branchLines: number | null;
+  totalSprinklers: number | null;
+  totalProtectedAreaSqFt: number | null;
   rulesConfidence: string;
   notes: string[];
   warnings: string[];

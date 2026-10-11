@@ -18,4 +18,10 @@ export interface StepProps {
    * remote area step so the pipe network step can compare the sprinklers listed against it.
    */
   plan: RemoteAreaPlanState;
+  /**
+   * The restored draft held its pipe network in the previous layout (separate sprinkler and pipe
+   * lists), which can't be mapped onto branches. The network step says so rather than showing an
+   * empty list without explanation.
+   */
+  legacyNetworkDropped: boolean;
 }

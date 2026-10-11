@@ -6,6 +6,20 @@ import { sprinklerHydraulicsSchema, STEPS, STEP_FIELDS, type SprinklerFormInput 
  * The controller test's hand-calculated case, as the form holds it: numeric fields arrive from
  * NumberField as strings.
  */
+/** One run of pipe as the form holds it: numbers arrive from NumberField as strings. */
+function run(overrides: Record<string, unknown> = {}) {
+  return {
+    pipeMaterial: "BI",
+    schedule: "SCH40",
+    nominalSize: "1",
+    cFactor: "120",
+    pipeLengthFt: "10",
+    elevationChangeFt: "0",
+    fittings: [] as { fittingType?: string; quantity: unknown; explicitEquivalentLengthFt?: unknown }[],
+    ...overrides,
+  };
+}
+
 function formInput(overrides: Partial<SprinklerFormInput> = {}): SprinklerFormInput {
   return {
     projectName: "Warehouse A",
@@ -19,12 +33,11 @@ function formInput(overrides: Partial<SprinklerFormInput> = {}): SprinklerFormIn
     defaultPipeMaterial: "BI",
     defaultSchedule: "SCH40",
     defaultCFactor: "120",
-    assumedStartPressurePsi: "7",
+    coveragePerSprinklerSqFt: "130",
 
     quickResponseSprinklers: false,
     ceilingHeightFt: "",
     sprinklerSpacingFt: "",
-    branchSpacingFt: "",
     supplySource: "FLOW_TEST",
     waterSupply: {
       staticPressurePsi: "80",
@@ -33,22 +46,17 @@ function formInput(overrides: Partial<SprinklerFormInput> = {}): SprinklerFormIn
     },
     gravityTank: { waterLevelHeightFt: "", outletRuns: [] },
 
-    sprinklers: [{ nodeId: "S1", kFactor: "5.6", coverageAreaSqFt: "130" }],
-    segments: [
-      {
-        fromNodeId: "S1",
-        toNodeId: "RISER",
-        pipeMaterial: "BI",
-        schedule: "SCH40",
-        nominalSize: "1",
-        cFactor: "120",
-        pipeLengthFt: "10",
-        elevationChangeFt: "0",
-        fittings: [],
-      },
-    ],
+    network: {
+      branches: [
+        {
+          sprinklers: [{ kFactor: "5.6", pipe: run({ nominalSize: "1", pipeLengthFt: "10" }) }],
+          crossMain: run({ nominalSize: "2", pipeLengthFt: "20" }),
+        },
+      ],
+      riser: [],
+    },
     deviceLosses: [{ name: "Alarm valve", pressureLossPsi: "5" }],
-    hoseStreamNodeId: "RISER",
+    hoseStreamNodeId: "TOR",
     ...overrides,
   };
 }
@@ -64,8 +72,9 @@ describe("sprinklerHydraulicsSchema", () => {
     expect(values.densityGpmPerSqFt).toBe(0.1);
     expect(values.designAreaSqFt).toBe(1500);
     expect(values.waterSupply.flowAtResidualGpm).toBe(1000);
-    expect(values.sprinklers[0].kFactor).toBe(5.6);
-    expect(values.segments[0].pipeLengthFt).toBe(10);
+    expect(values.network.branches[0].sprinklers[0].kFactor).toBe(5.6);
+    expect(values.network.branches[0].sprinklers[0].pipe.pipeLengthFt).toBe(10);
+    expect(values.network.branches[0].crossMain.pipeLengthFt).toBe(20);
     expect(values.deviceLosses[0].pressureLossPsi).toBe(5);
   });
 
@@ -78,9 +87,31 @@ describe("sprinklerHydraulicsSchema", () => {
     expect(issuePaths(formInput({ hoseStreamGpm: "0", hoseStreamNodeId: "" }))).toEqual([]);
   });
 
-  it("requires a hose stream node only when the allowance is non-zero", () => {
+  it("requires a hose stream point only when the allowance is non-zero", () => {
     expect(issuePaths(formInput({ hoseStreamNodeId: "" }))).toEqual(["hoseStreamNodeId"]);
     expect(issuePaths(formInput({ hoseStreamNodeId: "   " }))).toEqual(["hoseStreamNodeId"]);
+  });
+
+  it("only accepts a hose stream point that is on the riser as it stands", () => {
+    const withRiser = (runs: number, node: string) =>
+      issuePaths(
+        formInput({
+          network: {
+            ...formInput().network,
+            riser: Array.from({ length: runs }, () => run({ nominalSize: "4" })),
+          },
+          hoseStreamNodeId: node,
+        }),
+      );
+
+    // No riser runs: the top of the riser is the supply connection, and it is the only point.
+    expect(withRiser(0, "TOR")).toEqual([]);
+    expect(withRiser(0, "BOR")).toEqual(["hoseStreamNodeId"]);
+    // Two runs give a middle point; a point from a longer riser that has since been shortened
+    // is refused rather than quietly sent to the API as an unknown node.
+    expect(withRiser(2, "R2")).toEqual([]);
+    expect(withRiser(2, "BOR")).toEqual([]);
+    expect(withRiser(1, "R2")).toEqual(["hoseStreamNodeId"]);
   });
 
   it("requires the residual pressure to sit below the static pressure", () => {
@@ -106,10 +137,20 @@ describe("sprinklerHydraulicsSchema", () => {
   describe("from the form's real defaults", () => {
     const filledNetwork: SprinklerFormInput = {
       ...DEFAULT_SPRINKLER_FORM,
-      sprinklers: [{ nodeId: "S1", kFactor: 5.6, coverageAreaSqFt: 130 }],
-      segments: [
-        { ...DEFAULT_SPRINKLER_FORM.segments[0], pipeLengthFt: 10 },
-      ],
+      network: {
+        ...DEFAULT_SPRINKLER_FORM.network,
+        branches: [
+          {
+            sprinklers: [
+              {
+                ...DEFAULT_SPRINKLER_FORM.network.branches[0].sprinklers[0],
+                pipe: { ...DEFAULT_SPRINKLER_FORM.network.branches[0].sprinklers[0].pipe, pipeLengthFt: 10 },
+              },
+            ],
+            crossMain: { ...DEFAULT_SPRINKLER_FORM.network.branches[0].crossMain, pipeLengthFt: 20 },
+          },
+        ],
+      },
     };
 
     it("is incomplete as shipped: the measured quantities are still zero", () => {
@@ -255,52 +296,85 @@ describe("sprinklerHydraulicsSchema", () => {
     });
   });
 
-  it("rejects a segment that starts and ends at the same node", () => {
-    const [segment] = formInput().segments;
-    expect(issuePaths(formInput({ segments: [{ ...segment, toNodeId: "S1" }] }))).toEqual([
-      "segments.0.toNodeId",
-    ]);
-  });
+  describe("the network", () => {
+    const sprinklerPipePath = "network.branches.0.sprinklers.0.pipe";
 
-  it("allows a negative elevation change (the supply above the sprinklers)", () => {
-    const [segment] = formInput().segments;
-    expect(issuePaths(formInput({ segments: [{ ...segment, elevationChangeFt: "-12" }] }))).toEqual([]);
-  });
+    it("allows a negative rise (the supply above the sprinklers)", () => {
+      const network = formInput().network;
+      const branch = network.branches[0];
+      const crossMain = { ...branch.crossMain, elevationChangeFt: "-12" };
+      expect(issuePaths(formInput({ network: { ...network, branches: [{ ...branch, crossMain }] } }))).toEqual([]);
+    });
 
-  it("needs at least one sprinkler and one segment", () => {
-    expect(issuePaths(formInput({ sprinklers: [] }))).toEqual(["sprinklers"]);
-    expect(issuePaths(formInput({ segments: [] }))).toEqual(["segments"]);
-  });
+    it("needs at least one branch, and a sprinkler on every branch", () => {
+      const network = formInput().network;
+      expect(issuePaths(formInput({ network: { ...network, branches: [] } }))).toEqual(["network.branches"]);
+      expect(
+        issuePaths(
+          formInput({
+            network: { ...network, branches: [{ ...network.branches[0], sprinklers: [] }] },
+          }),
+        ),
+      ).toEqual(["network.branches.0.sprinklers"]);
+    });
 
-  it("requires a fitting to have either a type or an explicit equivalent length", () => {
-    const [segment] = formInput().segments;
-    const withFitting = (fitting: Record<string, unknown>) =>
-      issuePaths(formInput({ segments: [{ ...segment, fittings: [fitting as never] }] }));
+    it("lets the riser be empty: the cross main then ends at the supply", () => {
+      expect(issuePaths(formInput())).toEqual([]);
+    });
 
-    expect(withFitting({ fittingType: "", quantity: "1", explicitEquivalentLengthFt: "" })).toEqual([
-      "segments.0.fittings.0.explicitEquivalentLengthFt",
-    ]);
-    expect(
-      withFitting({ fittingType: "ELBOW_90_STANDARD", quantity: "2", explicitEquivalentLengthFt: "" }),
-    ).toEqual([]);
-    expect(withFitting({ fittingType: "", quantity: "2", explicitEquivalentLengthFt: "5" })).toEqual([]);
-  });
+    it("makes a blank pipe length an error, not a silent zero", () => {
+      // A new pipe starts blank on purpose: a default of 0 would calculate with a zero-length
+      // pipe and give a plausible, wrong, answer.
+      const network = formInput().network;
+      const branch = network.branches[0];
+      const blank = { ...branch.sprinklers[0], pipe: { ...branch.sprinklers[0].pipe, pipeLengthFt: "" } };
+      expect(
+        issuePaths(formInput({ network: { ...network, branches: [{ ...branch, sprinklers: [blank] }] } })),
+      ).toEqual([`${sprinklerPipePath}.pipeLengthFt`]);
+    });
 
-  it("requires a whole, positive fitting quantity", () => {
-    const [segment] = formInput().segments;
-    const fittings = [{ fittingType: "ELBOW_90_STANDARD", quantity: "1.5", explicitEquivalentLengthFt: "" }];
-    expect(issuePaths(formInput({ segments: [{ ...segment, fittings: fittings as never }] }))).toEqual([
-      "segments.0.fittings.0.quantity",
-    ]);
-  });
+    it("reports a pipe's error at that pipe's own path, wherever in the network it is", () => {
+      const network = formInput().network;
+      const bad = run({ pipeLengthFt: "-1" });
+      expect(
+        issuePaths(formInput({ network: { ...network, riser: [bad] }, hoseStreamNodeId: "TOR" })),
+      ).toEqual(["network.riser.0.pipeLengthFt"]);
+      expect(
+        issuePaths(
+          formInput({
+            network: {
+              ...network,
+              branches: [{ ...network.branches[0], crossMain: bad }],
+            },
+          }),
+        ),
+      ).toEqual(["network.branches.0.crossMain.pipeLengthFt"]);
+    });
 
-  it("does not reject a looped network — the API reports network shape", () => {
-    const [segment] = formInput().segments;
-    const loop = [
-      { ...segment, fromNodeId: "S1", toNodeId: "B1" },
-      { ...segment, fromNodeId: "B1", toNodeId: "S1" },
-    ];
-    expect(issuePaths(formInput({ segments: loop }))).toEqual([]);
+    describe("fittings", () => {
+      const withFitting = (fitting: Record<string, unknown>) => {
+        const network = formInput().network;
+        const branch = network.branches[0];
+        const sprinkler = { ...branch.sprinklers[0], pipe: run({ fittings: [fitting] }) };
+        return issuePaths(formInput({ network: { ...network, branches: [{ ...branch, sprinklers: [sprinkler] }] } }));
+      };
+
+      it("requires a fitting to have either a type or an explicit equivalent length", () => {
+        expect(withFitting({ fittingType: "", quantity: "1", explicitEquivalentLengthFt: "" })).toEqual([
+          `${sprinklerPipePath}.fittings.0.explicitEquivalentLengthFt`,
+        ]);
+        expect(
+          withFitting({ fittingType: "ELBOW_90_STANDARD", quantity: "2", explicitEquivalentLengthFt: "" }),
+        ).toEqual([]);
+        expect(withFitting({ fittingType: "", quantity: "2", explicitEquivalentLengthFt: "5" })).toEqual([]);
+      });
+
+      it("requires a whole, positive quantity", () => {
+        expect(
+          withFitting({ fittingType: "ELBOW_90_STANDARD", quantity: "1.5", explicitEquivalentLengthFt: "" }),
+        ).toEqual([`${sprinklerPipePath}.fittings.0.quantity`]);
+      });
+    });
   });
 
   it("covers every form field across the steps exactly once", () => {

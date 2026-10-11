@@ -61,6 +61,11 @@ export function formatNominalSize(nominalSize: string): string {
   return `${nominalSize}"`;
 }
 
+/** ft², to the nearest tenth: a design area is never quoted finer than that. */
+export function formatArea(value: number): string {
+  return value.toLocaleString(undefined, { maximumFractionDigits: 1 });
+}
+
 /** C factors and quantities are whole numbers in practice, but don't have to be. */
 export function formatPlain(value: number): string {
   return value.toLocaleString(undefined, { maximumFractionDigits: 2 });

@@ -11,7 +11,7 @@ import { useSprinklerReferenceData } from "@/hooks/useSprinklerReferenceData";
 import { CalculationWarnings } from "./CalculationWarnings";
 import { DemandSummaryPanel } from "./DemandSummaryPanel";
 import { DEFAULT_SPRINKLER_FORM } from "./defaults";
-import { clearDraft, loadDraft, saveDraft } from "./draft";
+import { clearDraft, loadDraftDetailed, saveDraft } from "./draft";
 import {
   STEPS,
   STEP_FIELDS,
@@ -59,6 +59,9 @@ export function SprinklerHydraulicsCalculator() {
   const [step, setStep] = useState<StepId>("project");
   const [restored, setRestored] = useState(false);
   const [confirmingClear, setConfirmingClear] = useState(false);
+  // True when the restored draft had its network in the previous flat layout, which can't be
+  // carried across. The network step says so once, rather than showing an unexplained empty list.
+  const [legacyNetworkDropped, setLegacyNetworkDropped] = useState(false);
 
   const reference = useSprinklerReferenceData();
   const { materials, isLoading: materialsLoading } = usePipeMaterials();
@@ -79,11 +82,14 @@ export function SprinklerHydraulicsCalculator() {
   // Restoring after mount, not during render: the server renders the defaults, so reading storage
   // any earlier would make the first client render disagree with the server's HTML.
   useEffect(() => {
-    const draft = loadDraft();
+    const draft = loadDraftDetailed();
     // keepDefaultValues leaves the blank form as the baseline react-hook-form compares against,
     // so a restored draft still counts as dirty — which is what tells the save effect below that
     // there is something worth keeping.
-    if (draft) reset(draft, { keepDefaultValues: true });
+    if (draft) {
+      reset(draft.values, { keepDefaultValues: true });
+      setLegacyNetworkDropped(draft.droppedLegacyNetwork);
+    }
     setRestored(true);
   }, [reset]);
 
@@ -128,6 +134,8 @@ export function SprinklerHydraulicsCalculator() {
     }
     setStep(next);
     setConfirmingClear(false);
+    // The notice has been seen once the network step is left; the draft is saved in the new shape.
+    if (next !== "network") setLegacyNetworkDropped(false);
   }
 
   function clearSavedInputs() {
@@ -136,9 +144,17 @@ export function SprinklerHydraulicsCalculator() {
     setGeneralError(null);
     setStep("project");
     setConfirmingClear(false);
+    setLegacyNetworkDropped(false);
   }
 
-  const stepProps = { form, reference, materials, materialsLoading, plan };
+  const stepProps = {
+    form,
+    reference,
+    materials,
+    materialsLoading,
+    plan,
+    legacyNetworkDropped,
+  };
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">

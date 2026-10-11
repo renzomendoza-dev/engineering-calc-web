@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { optionalNumber } from "@/lib/zodHelpers";
+import { optionalNumber, requiredNumber } from "@/lib/zodHelpers";
+import { pipeRuns, riserNodeIds } from "./network";
 import { SPRINKLER_HAZARDS, SPRINKLER_SYSTEM_TYPES } from "./types";
 
 /**
@@ -11,7 +12,9 @@ import { SPRINKLER_HAZARDS, SPRINKLER_SYSTEM_TYPES } from "./types";
  *
  * The cross-field rules here mirror the ones calc-core enforces, so the obvious mistakes are
  * caught before a request goes out. calc-core stays the authority: network shape (the network must
- * be a tree) is NOT checked here — a looped network is reported by the API.
+ * be a tree) is NOT checked here. It cannot be wrong by construction either way: the network is
+ * entered as branches and the node ids are generated (network.ts), so a loop or a dangling node
+ * is not something the form can produce.
  */
 const fittingSchema = z.object({
   fittingType: z.string().optional(),
@@ -19,16 +22,41 @@ const fittingSchema = z.object({
   explicitEquivalentLengthFt: optionalNumber(z.coerce.number().positive("Must be positive")),
 });
 
-const segmentSchema = z.object({
-  fromNodeId: z.string().min(1, "Required"),
-  toNodeId: z.string().min(1, "Required"),
+/**
+ * One run of pipe, with no idea where it connects: that is decided by where it sits in the network
+ * (see network.ts), so there are no node ids to type or to get wrong.
+ *
+ * The length is required rather than defaulted to 0: a pipe has a length, 0 is a figure that must
+ * be typed on purpose, and a fresh form must not calculate on lengths nobody entered.
+ */
+const pipeRunSchema = z.object({
   pipeMaterial: z.string().min(1, "Required"),
   schedule: z.string().optional(),
   nominalSize: z.string().min(1, "Required"),
   cFactor: z.coerce.number().positive("Must be positive"),
-  pipeLengthFt: z.coerce.number().min(0, "Cannot be negative"),
+  pipeLengthFt: requiredNumber(z.coerce.number("Required").min(0, "Cannot be negative")),
   elevationChangeFt: z.coerce.number(),
   fittings: z.array(fittingSchema),
+});
+
+/** A sprinkler and the pipe after it -- the two are one thing, never entered separately. */
+const branchSprinklerSchema = z.object({
+  kFactor: z.coerce.number().positive("Must be positive"),
+  pipe: pipeRunSchema,
+});
+
+/**
+ * One branch line: its sprinklers from the most remote inwards, each with its pipe, then the cross
+ * main that carries it on to the next branch (or to the riser, for the last).
+ */
+const branchSchema = z.object({
+  sprinklers: z.array(branchSprinklerSchema).min(1, "A branch needs at least one sprinkler"),
+  crossMain: pipeRunSchema,
+});
+
+const networkSchema = z.object({
+  branches: z.array(branchSchema).min(1, "Add at least one branch"),
+  riser: z.array(pipeRunSchema),
 });
 
 /**
@@ -48,12 +76,6 @@ const supplyPipeRunSchema = z.object({
   fittings: z.array(fittingSchema),
 });
 
-const sprinklerRowSchema = z.object({
-  nodeId: z.string().min(1, "Required"),
-  kFactor: z.coerce.number().positive("Must be positive"),
-  coverageAreaSqFt: z.coerce.number().positive("Must be positive"),
-});
-
 const deviceLossSchema = z.object({
   name: z.string().min(1, "Required"),
   pressureLossPsi: z.coerce.number().min(0, "Cannot be negative"),
@@ -68,22 +90,30 @@ export const sprinklerHydraulicsSchema = z
     densityGpmPerSqFt: z.coerce.number().positive("Must be positive"),
     designAreaSqFt: z.coerce.number().positive("Must be positive"),
     hoseStreamGpm: z.coerce.number().min(0, "Cannot be negative"),
+    // The area one sprinkler protects, applied to every sprinkler in the pipe network. Required for
+    // the hydraulic calculation, which takes density x coverage as each sprinkler's minimum flow.
+    coveragePerSprinklerSqFt: z.coerce.number().positive("Must be positive"),
+    // Ceiling height reduces the design area for quick-response sprinklers. FORM-ONLY, and lenient
+    // on purpose: it feeds the plan's adjusted area, never the hydraulic request, so a blank or
+    // half-finished figure must not stop the calculation. The plan simply doesn't reduce until the
+    // ceiling is in -- the same lesson as the supply blocks below.
+    quickResponseSprinklers: z.boolean(), // FORM-ONLY
+    ceilingHeightFt: optionalNumber(z.coerce.number().positive("Must be positive")), // FORM-ONLY
 
     // --- step 2: design data ---
     defaultKFactor: z.coerce.number().positive("Must be positive"), // FORM-ONLY (pre-fills rows)
     defaultPipeMaterial: z.string().min(1, "Pipe material is required"), // FORM-ONLY
     defaultSchedule: z.string().optional(), // FORM-ONLY
     defaultCFactor: z.coerce.number().positive("Must be positive"), // FORM-ONLY
-    assumedStartPressurePsi: z.coerce.number().min(0, "Cannot be negative"),
+    // There is no starting pressure input. The most remote sprinkler starts at what its flow needs
+    // -- (density x coverage / K)^2 -- or the minimum operating pressure, whichever is greater, and
+    // the API works that out and says which governed.
 
-    // --- step 3: remote area (FORM-ONLY: these drive the layout plan, never the hydraulic request) ---
-    // Deliberately lenient. The plan is guidance for how many sprinklers to list, so a blank or
-    // half-finished plan must not stop the hydraulic calculation -- the same lesson as the supply
-    // blocks below. The plan simply doesn't compute until its figures are in.
-    quickResponseSprinklers: z.boolean(),
-    ceilingHeightFt: optionalNumber(z.coerce.number().positive("Must be positive")),
-    sprinklerSpacingFt: optionalNumber(z.coerce.number().positive("Must be positive")),
-    branchSpacingFt: optionalNumber(z.coerce.number().positive("Must be positive")),
+    // --- step 3: remote area ---
+    // Spacing ALONG a branch line, FORM-ONLY and lenient like the ceiling height: it only lays the
+    // area out, and the spacing between branches follows from the coverage. Blank means the layout
+    // isn't worked out yet, not that anything is wrong.
+    sprinklerSpacingFt: optionalNumber(z.coerce.number().positive("Must be positive")), // FORM-ONLY
 
     // --- step 4: water supply ---
     // FORM-ONLY: picks which block below is sent. "NONE" sends no supply at all, which the API
@@ -108,19 +138,30 @@ export const sprinklerHydraulicsSchema = z
     }),
 
     // --- step 5: pipe network ---
-    sprinklers: z.array(sprinklerRowSchema).min(1, "Add at least one flowing sprinkler"),
-    segments: z.array(segmentSchema).min(1, "Add at least one pipe segment"),
+    // Branch by branch, sprinkler by sprinkler, each with its pipe -- see network.ts.
+    network: networkSchema,
     deviceLosses: z.array(deviceLossSchema),
     hoseStreamNodeId: z.string().optional(),
   })
   .superRefine((data, ctx) => {
-    // calc-core requires the hose stream node whenever the allowance is non-zero.
-    if (data.hoseStreamGpm > 0 && !data.hoseStreamNodeId?.trim()) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["hoseStreamNodeId"],
-        message: "Required when a hose stream allowance is given",
-      });
+    // calc-core requires the hose stream node whenever the allowance is non-zero. It is added at a
+    // point on the riser, picked from the ones the network actually has: removing a riser run
+    // takes its point with it, and a choice that no longer exists must be said, not guessed at.
+    if (data.hoseStreamGpm > 0) {
+      const choice = data.hoseStreamNodeId?.trim();
+      if (!choice) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["hoseStreamNodeId"],
+          message: "Required when a hose stream allowance is given",
+        });
+      } else if (!riserNodeIds(data.network.riser.length).includes(choice)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["hoseStreamNodeId"],
+          message: "Choose a point on the riser",
+        });
+      }
     }
 
     // Only the chosen source's block is validated. "NONE" validates neither: a cistern awaiting a
@@ -193,25 +234,20 @@ export const sprinklerHydraulicsSchema = z
       });
     }
 
-    data.segments.forEach((segment, index) => {
-      if (segment.fromNodeId.trim() && segment.fromNodeId.trim() === segment.toNodeId.trim()) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["segments", index, "toNodeId"],
-          message: "Must differ from the upstream node",
-        });
-      }
-      // calc-core's SegmentFitting needs either a type to look up or an explicit length.
-      segment.fittings.forEach((fitting, fittingIndex) => {
+    // calc-core's SegmentFitting needs either a type to look up or an explicit length. Every pipe
+    // in the network can carry fittings, wherever it sits, so this walks them all; the path it
+    // reports is the field's own, which is where the message appears.
+    for (const { path, run } of pipeRuns(data.network)) {
+      run.fittings.forEach((fitting, fittingIndex) => {
         if (!fitting.fittingType?.trim() && fitting.explicitEquivalentLengthFt === undefined) {
           ctx.addIssue({
             code: "custom",
-            path: ["segments", index, "fittings", fittingIndex, "explicitEquivalentLengthFt"],
+            path: [...path.split("."), "fittings", fittingIndex, "explicitEquivalentLengthFt"],
             message: "Choose a fitting type or enter an equivalent length",
           });
         }
       });
-    });
+    }
   });
 
 /** Pre-coercion shape react-hook-form edits (numeric fields arrive as strings). */
@@ -237,11 +273,21 @@ export const STEP_LABELS: Record<StepId, string> = {
  * reaching it means every input step already passed.
  */
 export const STEP_FIELDS: Record<StepId, readonly (keyof SprinklerFormInput)[]> = {
-  project: ["projectName", "systemType", "hazard", "densityGpmPerSqFt", "designAreaSqFt", "hoseStreamGpm"],
-  design: ["defaultKFactor", "defaultPipeMaterial", "defaultSchedule", "defaultCFactor", "assumedStartPressurePsi"],
-  remote: ["quickResponseSprinklers", "ceilingHeightFt", "sprinklerSpacingFt", "branchSpacingFt"],
+  project: [
+    "projectName",
+    "systemType",
+    "hazard",
+    "densityGpmPerSqFt",
+    "designAreaSqFt",
+    "hoseStreamGpm",
+    "coveragePerSprinklerSqFt",
+    "quickResponseSprinklers",
+    "ceilingHeightFt",
+  ],
+  design: ["defaultKFactor", "defaultPipeMaterial", "defaultSchedule", "defaultCFactor"],
+  remote: ["sprinklerSpacingFt"],
   supply: ["supplySource", "waterSupply", "gravityTank"],
-  network: ["sprinklers", "segments", "deviceLosses", "hoseStreamNodeId"],
+  network: ["network", "deviceLosses", "hoseStreamNodeId"],
   results: [],
 };
 

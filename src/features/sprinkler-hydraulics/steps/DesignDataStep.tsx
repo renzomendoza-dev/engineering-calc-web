@@ -2,8 +2,9 @@
 
 import { NumberField } from "@/components/ui/NumberField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
-import { CONFIDENCE_LABELS, UNITS, humanizeCode } from "../labels";
+import { CONFIDENCE_LABELS, humanizeCode } from "../labels";
 import { materialOptions, scheduleOptions } from "../pipeOptions";
+import { StartingPressureReadout } from "../PlanReadouts";
 import type { StepProps } from "../stepProps";
 import { stepNumber } from "../schema";
 
@@ -35,11 +36,13 @@ function QuickPicks({ label, picks, onPick }: QuickPicksProps) {
 
 /**
  * These are the defaults new pipe segments and sprinklers start from — every one of them
- * stays editable per row in step 4, because the API requires a C factor and a size on each
- * segment and a K factor on each sprinkler. Only the assumed starting pressure is sent as a
- * single value for the whole calculation.
+ * stays editable per row in the pipe network step, because the API requires a C factor and a size
+ * on each segment and a K factor on each sprinkler.
+ *
+ * The starting pressure is shown here but not asked for: it is a consequence of the K factor and
+ * the flow per sprinkler, so it is read out as calculated.
  */
-export function DesignDataStep({ form, reference, materials, materialsLoading }: StepProps) {
+export function DesignDataStep({ form, reference, materials, materialsLoading, plan }: StepProps) {
   const {
     register,
     setValue,
@@ -140,13 +143,19 @@ export function DesignDataStep({ form, reference, materials, materialsLoading }:
         />
       </div>
 
-      <NumberField
-        label="Starting pressure at the most remote sprinkler"
-        unit={UNITS.pressure}
-        hint={`The calculation starts at the most remote sprinkler at the greatest of: the pressure its share of the design density needs, this figure, and the minimum operating pressure. Raising this raises the start; it can never take it below the minimum. The remote area step (${stepNumber("remote")}) shows which one governs.`}
-        error={errors.assumedStartPressurePsi?.message}
-        {...register("assumedStartPressurePsi")}
-      />
+      <section className="flex flex-col gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+            Starting pressure
+          </h3>
+          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+            Worked out, not entered: the most remote sprinkler starts at the pressure its flow needs
+            at this K factor, or the minimum operating pressure if that is lower. It follows the K
+            factor above and the coverage and density in step {stepNumber("project")}.
+          </p>
+        </div>
+        <StartingPressureReadout plan={plan} kFactor={String(watch("defaultKFactor") ?? "")} />
+      </section>
     </div>
   );
 }

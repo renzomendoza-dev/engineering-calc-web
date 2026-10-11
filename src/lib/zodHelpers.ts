@@ -9,3 +9,13 @@ import { z } from "zod";
 export function optionalNumber<T extends z.ZodTypeAny>(schema: T) {
   return z.preprocess((val) => (val === "" ? undefined : val), schema.optional());
 }
+
+/**
+ * The opposite of optionalNumber: a blank input is "not entered yet", reported as required, not
+ * quietly coerced to 0. Used for measured quantities where 0 is a legitimate answer but must be
+ * *typed* -- a pipe length, say -- so an untouched field blocks the calculation instead of
+ * standing in for a real figure.
+ */
+export function requiredNumber<T extends z.ZodTypeAny>(schema: T) {
+  return z.preprocess((val) => (val === "" || val === null ? undefined : val), schema);
+}

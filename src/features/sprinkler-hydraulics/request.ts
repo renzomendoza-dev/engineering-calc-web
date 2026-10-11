@@ -1,3 +1,4 @@
+import { buildNetwork, pipeRuns } from "./network";
 import type { SprinklerFormValues } from "./schema";
 import type {
   FittingEquivalentLengthTableRow,
@@ -14,12 +15,17 @@ function orNull(value: string | undefined): string | null {
 /**
  * Form values -> API request body. Pure, and the only place the form's shape meets the API's.
  *
- * Drops the form-only fields (project name and the design defaults that pre-fill rows), trims node
- * ids, and omits empty fitting/device lists the way the backend documents as "may be omitted".
- * No arithmetic happens here: each row's C factor is already a concrete value, pre-filled from the
- * step 2 default and overridable per row, because the API requires one per segment.
+ * Drops the form-only fields (project name and the design defaults that pre-fill rows) and omits
+ * empty fitting/device lists the way the backend documents as "may be omitted". No arithmetic
+ * happens here: each pipe's C factor is already a concrete value, pre-filled from the step 2
+ * default and overridable per pipe, because the API requires one per segment.
+ *
+ * The network is the one real translation: the form holds branches with their sprinklers and pipes,
+ * and buildNetwork lays that out as the API's sprinklers and segments with generated node ids.
  */
 export function toSprinklerRequest(values: SprinklerFormValues): SprinklerHydraulicRequest {
+  const network = buildNetwork(values.network);
+
   return {
     systemType: values.systemType,
     hazard: values.hazard,
@@ -27,30 +33,16 @@ export function toSprinklerRequest(values: SprinklerFormValues): SprinklerHydrau
     designAreaSqFt: values.designAreaSqFt,
     hoseStreamGpm: values.hoseStreamGpm,
     hoseStreamNodeId: orNull(values.hoseStreamNodeId),
-    assumedStartPressurePsi: values.assumedStartPressurePsi,
-    sprinklers: values.sprinklers.map((sprinkler) => ({
-      nodeId: sprinkler.nodeId.trim(),
+    // Not asked for: the start is the design flow's pressure or the minimum operating pressure,
+    // whichever is greater, and the API works that out.
+    assumedStartPressurePsi: null,
+    sprinklers: network.sprinklers.map((sprinkler) => ({
+      nodeId: sprinkler.nodeId,
       kFactor: sprinkler.kFactor,
-      coverageAreaSqFt: sprinkler.coverageAreaSqFt,
+      // Every sprinkler covers the same area, entered once in step 1.
+      coverageAreaSqFt: values.coveragePerSprinklerSqFt,
     })),
-    segments: values.segments.map((segment) => ({
-      fromNodeId: segment.fromNodeId.trim(),
-      toNodeId: segment.toNodeId.trim(),
-      pipeMaterial: segment.pipeMaterial,
-      schedule: orNull(segment.schedule),
-      nominalSize: segment.nominalSize,
-      cFactor: segment.cFactor,
-      pipeLengthFt: segment.pipeLengthFt,
-      elevationChangeFt: segment.elevationChangeFt,
-      fittings:
-        segment.fittings.length > 0
-          ? segment.fittings.map((fitting) => ({
-              fittingType: orNull(fitting.fittingType),
-              quantity: fitting.quantity,
-              explicitEquivalentLengthFt: fitting.explicitEquivalentLengthFt ?? null,
-            }))
-          : null,
-    })),
+    segments: network.segments,
     waterSupply: toWaterSupply(values),
     deviceLosses:
       values.deviceLosses.length > 0
@@ -148,19 +140,22 @@ export function fittingNeedsExplicitLength(
 /**
  * Fittings whose equivalent length can't be resolved and have no explicit length typed in. The
  * live calculation waits while any exist, since the API would reject the request.
+ *
+ * Walks every pipe in the network -- a fitting is as likely on a branch pipe as on the riser -- and
+ * reports each by its own form path, which is where the missing figure is asked for.
  */
 export function unresolvedFittingPaths(
   values: SprinklerFormValues,
   table: FittingEquivalentLengthTableRow[],
 ): string[] {
   const paths: string[] = [];
-  values.segments.forEach((segment, segmentIndex) => {
-    segment.fittings.forEach((fitting, fittingIndex) => {
-      const needsExplicit = fittingNeedsExplicitLength(fitting.fittingType, segment.nominalSize, table);
+  for (const { path, run } of pipeRuns(values.network)) {
+    run.fittings.forEach((fitting, fittingIndex) => {
+      const needsExplicit = fittingNeedsExplicitLength(fitting.fittingType, run.nominalSize, table);
       if (needsExplicit && fitting.explicitEquivalentLengthFt === undefined) {
-        paths.push(`segments.${segmentIndex}.fittings.${fittingIndex}.explicitEquivalentLengthFt`);
+        paths.push(`${path}.fittings.${fittingIndex}.explicitEquivalentLengthFt`);
       }
     });
-  });
+  }
   return paths;
 }
