@@ -366,3 +366,43 @@ describe("describeSprinklerNode", () => {
     expect(describeSprinklerNode("S1")).toBeNull();
   });
 });
+
+describe("the fittings total, as the calculation sheet carries it", () => {
+  const withTotal = (fittingsTotalFt: number | undefined, extra: Partial<PipeRunValues> = {}) =>
+    buildNetwork(
+      network([
+        {
+          key: "k",
+          identicalToKey: "",
+          sprinklers: [
+            { kFactor: 5.6, pipe: pipe({ fittingsTotalFt, fittingsLabel: "2E 1GV", ...extra }) },
+          ],
+          crossMain: pipe(),
+        },
+      ]),
+    );
+
+  it("goes out as one fitting with no type, quantity one, and the total as its explicit length", () => {
+    expect(withTotal(13).segments[0].fittings).toEqual([
+      { fittingType: null, quantity: 1, explicitEquivalentLengthFt: 13 },
+    ]);
+  });
+
+  it("adds to the fittings that were itemized, after them", () => {
+    const built = withTotal(8, { fittings: [{ fittingType: "ELBOW_90_STANDARD", quantity: 2 }] });
+
+    expect(built.segments[0].fittings).toEqual([
+      { fittingType: "ELBOW_90_STANDARD", quantity: 2, explicitEquivalentLengthFt: null },
+      { fittingType: null, quantity: 1, explicitEquivalentLengthFt: 8 },
+    ]);
+  });
+
+  it("sends nothing for a blank or zero total, so a pipe with no fittings stays null", () => {
+    expect(withTotal(undefined).segments[0].fittings).toBeNull();
+    expect(withTotal(0).segments[0].fittings).toBeNull();
+  });
+
+  it("never sends the label, which is the designer's own note", () => {
+    expect(JSON.stringify(withTotal(13).segments)).not.toContain("2E 1GV");
+  });
+});

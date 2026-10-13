@@ -453,6 +453,41 @@ describe("sprinklerHydraulicsSchema", () => {
     });
   });
 
+  describe("the fittings total", () => {
+    const crossMainWith = (overrides: Record<string, unknown>) => {
+      const network = formInput().network;
+      const branch = network.branches[0];
+      return formInput({
+        network: {
+          ...network,
+          branches: [{ ...branch, crossMain: { ...branch.crossMain, ...overrides } }],
+        },
+      });
+    };
+
+    it("is optional: a pipe with nothing entered is complete", () => {
+      expect(issuePaths(crossMainWith({ fittingsTotalFt: "", fittingsLabel: "" }))).toEqual([]);
+      expect(issuePaths(crossMainWith({}))).toEqual([]);
+    });
+
+    it("takes a figure with or without a label, including zero", () => {
+      expect(issuePaths(crossMainWith({ fittingsTotalFt: "13", fittingsLabel: "2E 1GV" }))).toEqual([]);
+      expect(issuePaths(crossMainWith({ fittingsTotalFt: "13" }))).toEqual([]);
+      expect(issuePaths(crossMainWith({ fittingsTotalFt: "0" }))).toEqual([]);
+    });
+
+    it("cannot be negative, and says so on its own field", () => {
+      expect(issuePaths(crossMainWith({ fittingsTotalFt: "-4" }))).toEqual([
+        "network.branches.0.crossMain.fittingsTotalFt",
+      ]);
+    });
+
+    it("reaches the parsed values as a number", () => {
+      const values = sprinklerHydraulicsSchema.parse(crossMainWith({ fittingsTotalFt: "13" }));
+      expect(values.network.branches[0].crossMain.fittingsTotalFt).toBe(13);
+    });
+  });
+
   it("covers every form field across the steps exactly once", () => {
     const listed = STEPS.flatMap((step) => STEP_FIELDS[step]);
     expect(new Set(listed).size).toBe(listed.length);

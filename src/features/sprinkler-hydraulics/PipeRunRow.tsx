@@ -14,11 +14,12 @@ type RunField<K extends string> = `network.riser.${number}.${K}`;
 
 /**
  * The columns every pipe row shares, so a header row above a list lines up with the rows under it:
- * name, size, length, rise, the "more" toggle, and the row's actions. Below the sm breakpoint the
- * row wraps (name and actions on one line, the three figures under them), so this applies from sm.
+ * name, size, length, rise, fittings total, the "more" toggle, and the row's actions. Below the sm
+ * breakpoint the row wraps (name and actions on one line, the figures under them), so this applies
+ * from sm.
  */
 export const PIPE_ROW_COLUMNS =
-  "sm:grid-cols-[minmax(7rem,9.5rem)_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,7.5rem)_auto]";
+  "sm:grid-cols-[minmax(7rem,9rem)_minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,5rem)_auto]";
 
 const INPUT_CLASS =
   "w-full rounded-md border bg-white px-2 py-1.5 text-base shadow-sm outline-none transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-400 sm:text-sm dark:bg-zinc-950 dark:disabled:bg-zinc-900 dark:disabled:text-zinc-600";
@@ -38,6 +39,7 @@ export function PipeRowHeader({ firstColumn }: { firstColumn: string }) {
       <span>Size</span>
       <span>Length ({UNITS.length})</span>
       <span>Rise ({UNITS.length})</span>
+      <span>Fittings ({UNITS.length})</span>
       <span />
       <span />
     </div>
@@ -103,9 +105,11 @@ export function PipeRunRow({
   const material = watch(at("pipeMaterial")) as string;
   const schedule = watch(at("schedule")) as string | undefined;
   const fittingCount = ((watch(at("fittings")) as unknown[] | undefined) ?? []).length;
+  const fittingsLabel = String(watch(at("fittingsLabel")) ?? "").trim();
 
   const detailError =
     get(errors, `${basePath}.fittings`) ||
+    errorOf("fittingsLabel") ||
     errorOf("pipeMaterial") ||
     errorOf("schedule") ||
     errorOf("cFactor");
@@ -135,7 +139,8 @@ export function PipeRunRow({
   const sizeError = errorOf("nominalSize");
   const lengthError = errorOf("pipeLengthFt");
   const riseError = errorOf("elevationChangeFt");
-  const messages = [sizeError, lengthError, riseError].filter(Boolean);
+  const fittingsError = errorOf("fittingsTotalFt");
+  const messages = [sizeError, lengthError, riseError, fittingsError].filter(Boolean);
 
   return (
     <div className="flex flex-col gap-2 rounded-md border border-zinc-200 px-3 py-2 dark:border-zinc-800">
@@ -193,22 +198,36 @@ export function PipeRunRow({
           />
         </label>
 
+        <label className="order-6 flex flex-col gap-0.5 sm:order-5">
+          <span className={SMALL_LABEL}>Fittings ({UNITS.length})</span>
+          <input
+            type="number"
+            step="any"
+            aria-label={`Fittings total equivalent length in ${UNITS.length}, ${describedAs}`}
+            aria-invalid={!!fittingsError}
+            className={`${INPUT_CLASS} ${fittingsError ? ERROR_BORDER : OK_BORDER}`}
+            {...register(at("fittingsTotalFt"))}
+          />
+        </label>
+
         <button
           type="button"
           onClick={() => setExpanded((open) => !open)}
           aria-expanded={isOpen}
+          title={fittingsLabel || undefined}
           aria-label={`${isOpen ? "Hide" : "Show"} fittings and pipe details, ${describedAs}`}
-          className={`order-6 col-span-3 rounded-md border px-2 py-1.5 text-left text-xs font-medium transition-colors hover:bg-zinc-100 sm:order-5 sm:col-span-1 dark:hover:bg-zinc-800 ${
+          className={`order-7 col-span-2 truncate rounded-md border px-2 py-1.5 text-left text-xs font-medium transition-colors hover:bg-zinc-100 sm:order-6 sm:col-span-1 dark:hover:bg-zinc-800 ${
             detailError
               ? "border-red-400 text-red-700 dark:text-red-400"
               : "border-zinc-300 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400"
           }`}
         >
           {isOpen ? "▾" : "▸"} More
+          {fittingsLabel ? ` · ${fittingsLabel}` : ""}
           {fittingCount > 0 ? ` · ${fittingCount} fitting${fittingCount === 1 ? "" : "s"}` : ""}
         </button>
 
-        {actions && <div className="order-2 justify-self-end sm:order-6">{actions}</div>}
+        {actions && <div className="order-2 justify-self-end sm:order-7">{actions}</div>}
       </div>
 
       {messages.length > 0 && (
@@ -218,6 +237,25 @@ export function PipeRunRow({
       {isOpen && (
         <div className="flex flex-col gap-3 rounded-md bg-zinc-50 p-3 dark:bg-zinc-900/60">
           {detailExtra}
+
+          <div className="flex flex-col gap-1">
+            <label className="flex max-w-xs flex-col gap-0.5">
+              <span className="text-xs text-zinc-600 dark:text-zinc-400">
+                Fittings label (optional), e.g. 2E 1GV
+              </span>
+              <input
+                type="text"
+                className={`${INPUT_CLASS} ${OK_BORDER}`}
+                {...register(at("fittingsLabel"))}
+              />
+            </label>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              The fittings total in the row is the calculation sheet&apos;s &ldquo;ftg&rdquo;: one
+              figure for all the fittings on this pipe, used exactly as entered with no C factor
+              rescaling. The label is only for your own reading. To have lengths looked up from NFPA
+              13&apos;s chart for this pipe size, itemize them below instead; both add together.
+            </p>
+          </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <label className="flex flex-col gap-0.5">
@@ -289,6 +327,7 @@ export function PipeRunRow({
             </label>
           </div>
 
+          <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Itemized fittings</p>
           <PipeFittingsInput
             form={form}
             basePath={basePath}

@@ -46,6 +46,8 @@ export function newPipeRun(overrides: Partial<PipeRunInput> = {}): PipeRunInput 
     pipeLengthFt: "",
     elevationChangeFt: 0,
     fittings: [],
+    fittingsLabel: "",
+    fittingsTotalFt: "",
     ...overrides,
   };
 }

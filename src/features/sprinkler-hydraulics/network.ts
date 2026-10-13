@@ -45,6 +45,10 @@ export interface PipeRunValues {
     quantity: number;
     explicitEquivalentLengthFt?: number;
   }[];
+  /** What the designer calls the fittings ("2E 1GV"). Never sent. */
+  fittingsLabel?: string;
+  /** Their total equivalent length, as the calculation sheet carries it; sent as one fitting. */
+  fittingsTotalFt?: number;
 }
 
 export interface BranchSprinklerValues {
@@ -166,6 +170,14 @@ function toSegment(from: string, to: string, run: PipeRunValues): SprinklerPipeS
     quantity: fitting.quantity,
     explicitEquivalentLengthFt: fitting.explicitEquivalentLengthFt ?? null,
   }));
+  // The sheet's total, as one fitting with an explicit length: "no type, quantity 1, this long".
+  if (run.fittingsTotalFt !== undefined && run.fittingsTotalFt > 0) {
+    fittings.push({
+      fittingType: null,
+      quantity: 1,
+      explicitEquivalentLengthFt: run.fittingsTotalFt,
+    });
+  }
   return {
     fromNodeId: from,
     toNodeId: to,

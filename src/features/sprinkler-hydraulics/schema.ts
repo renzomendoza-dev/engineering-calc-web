@@ -37,6 +37,12 @@ const pipeRunSchema = z.object({
   pipeLengthFt: requiredNumber(z.coerce.number("Required").min(0, "Cannot be negative")),
   elevationChangeFt: z.coerce.number(),
   fittings: z.array(fittingSchema),
+  // The calculation sheet's way of writing fittings: a name for them ("2E 1GV") and their total
+  // equivalent length. The total is sent as one more fitting with an explicit length, so it adds
+  // to anything itemized above and, like any explicit length, is used exactly as entered. The
+  // label is for the designer's own reading and goes nowhere. Both blank is the usual case.
+  fittingsLabel: z.string().optional(), // FORM-ONLY
+  fittingsTotalFt: optionalNumber(z.coerce.number().min(0, "Cannot be negative")),
 });
 
 /** A sprinkler and the pipe after it -- the two are one thing, never entered separately. */

@@ -303,6 +303,28 @@ describe("toSprinklerRequest", () => {
     ]);
   });
 
+  it("sends the fittings total as an explicit-length fitting on that pipe only", () => {
+    const base = formValues();
+    const [branch] = base.network.branches;
+    const network = {
+      ...base.network,
+      branches: [
+        {
+          ...branch,
+          sprinklers: [
+            { ...branch.sprinklers[0], pipe: { ...branch.sprinklers[0].pipe, fittingsTotalFt: 13 } },
+          ],
+        },
+      ],
+    };
+    const request = toSprinklerRequest({ ...base, network });
+
+    expect(request.segments[0].fittings).toEqual([
+      { fittingType: null, quantity: 1, explicitEquivalentLengthFt: 13 },
+    ]);
+    expect(request.segments[1].fittings).toBeNull();
+  });
+
   it("produces a stable payload for unchanged input, so the live calculation doesn't repeat", () => {
     expect(JSON.stringify(toSprinklerRequest(formValues()))).toBe(
       JSON.stringify(toSprinklerRequest(formValues())),
