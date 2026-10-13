@@ -181,6 +181,20 @@ export interface IdenticalBranchRow {
 }
 
 /**
+ * Mirrors calc-api's SprinklerFlowRowDto: what one listed sprinkler discharges, and at what
+ * pressure. The segment rows carry flow that accumulates along a branch; this is each sprinkler on
+ * its own. Q = K x sqrt(P) holds for every row, including the ones on a branch that was balanced.
+ */
+export interface SprinklerFlowRow {
+  nodeId: string;
+  kFactor: number;
+  flowGpm: number;
+  pressurePsi: number;
+  /** What the design density asks of it: density x coverage area. */
+  minimumFlowGpm: number;
+}
+
+/**
  * Mirrors calc-api's SprinklerHydraulicResponse field-for-field.
  *
  * The four supply-dependent figures are null when the request carried no water supply — `passes`
@@ -203,6 +217,12 @@ export interface SprinklerHydraulicResponse {
    * must not fail to render over a list that would have been empty anyway.
    */
   identicalBranches?: IdenticalBranchRow[];
+  /**
+   * Each listed sprinkler's own flow and pressure, most remote first. The sprinklers an identical
+   * branch stands for are not here; that branch has its line above. Read as `?? []`: an API from
+   * before this existed omits it, and nothing should fail over a readout.
+   */
+  sprinklers?: SprinklerFlowRow[];
 }
 
 /**

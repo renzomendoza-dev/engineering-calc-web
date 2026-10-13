@@ -6,14 +6,14 @@ import { NumberField } from "@/components/ui/NumberField";
 import { SelectField } from "@/components/ui/SelectField";
 import type { PipeMaterialOption } from "@/features/pipe-velocity/types";
 import type { PipeRunInput } from "./defaults";
-import { formatLength } from "./format";
+import { formatFlow, formatLength, formatPressure } from "./format";
 import { UNITS } from "./labels";
-import { junctionId } from "./network";
+import { junctionId, sprinklerNodeId } from "./network";
 import { sizeOptions } from "./pipeOptions";
 import { PipeRowHeader, PipeRunRow } from "./PipeRunRow";
 import { RowActions, RowList } from "./RowList";
 import type { SprinklerForm } from "./stepProps";
-import type { FittingEquivalentLengthTableRow } from "./types";
+import type { FittingEquivalentLengthTableRow, SprinklerFlowRow } from "./types";
 
 /** An earlier branch listed in full, which a later one may be declared identical to. */
 export interface ReferenceBranchOption {
@@ -32,7 +32,7 @@ interface BranchEditorProps {
   materialsLoading: boolean;
   fittings: FittingEquivalentLengthTableRow[];
   /** What a new sprinkler on this branch starts with: K from step 2, and a pipe of the usual size. */
-  newSprinkler: () => { kFactor: number; pipe: PipeRunInput };
+  newSprinkler: (position: number) => { kFactor: number; pipe: PipeRunInput };
   /**
    * How many sprinklers the plan lays out on a branch line: the remote area is 1.2 x sqrt(area)
    * long along a branch, and that length at the sprinkler spacing, rounded up, is how many fit.
@@ -46,8 +46,118 @@ interface BranchEditorProps {
    * first branch, which has nothing earlier to be identical to.
    */
   referenceOptions: ReferenceBranchOption[];
+  /** What each listed sprinkler discharges, by node id, from the live calculation. */
+  sprinklerFlows?: Record<string, SprinklerFlowRow>;
+  /** True while those figures no longer match the input. */
+  flowsStale?: boolean;
   onDuplicate: () => void;
   onRemove: () => void;
+}
+
+type FillField = "nominalSize" | "pipeLengthFt" | "elevationChangeFt";
+
+const FILL_LABELS: Record<FillField, string> = {
+  nominalSize: "size",
+  pipeLengthFt: "length",
+  elevationChangeFt: "rise",
+};
+
+/**
+ * Copies this sprinkler's pipe size, length and/or rise onto the sprinklers after it on the same
+ * branch. Spacing along a branch is usually uniform, so the first row is typed and the rest filled
+ * in one click. Only those three fields are copied -- never fittings, which are particular to a
+ * pipe -- and a size is skipped where the target's material and schedule don't offer it, with a
+ * note saying so rather than leaving a size the API would reject.
+ */
+function FillRestOfBranch({
+  form,
+  sprinklersPath,
+  index,
+  count,
+  materials,
+}: {
+  form: SprinklerForm;
+  sprinklersPath: string;
+  index: number;
+  count: number;
+  materials: PipeMaterialOption[];
+}) {
+  const [note, setNote] = useState<string | null>(null);
+  if (index >= count - 1) return null;
+
+  const setAt = form.setValue as unknown as (
+    name: string,
+    value: unknown,
+    options?: { shouldValidate?: boolean; shouldDirty?: boolean },
+  ) => void;
+  const pipeAt = (position: number) =>
+    form.getValues(`${sprinklersPath}.${position}.pipe` as never) as unknown as Record<
+      string,
+      unknown
+    >;
+
+  function apply(fields: FillField[]) {
+    const source = pipeAt(index);
+    const targets = count - 1 - index;
+    let skipped = 0;
+    for (let position = index + 1; position < count; position += 1) {
+      const target = pipeAt(position);
+      for (const field of fields) {
+        if (field === "nominalSize") {
+          const offered = sizeOptions(
+            materials,
+            String(target.pipeMaterial ?? ""),
+            target.schedule as string | undefined,
+          ).some((option) => option.value === source.nominalSize);
+          if (!offered) {
+            skipped += 1;
+            continue;
+          }
+        }
+        setAt(`${sprinklersPath}.${position}.pipe.${field}`, source[field], {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+      }
+    }
+    const what = fields.map((field) => FILL_LABELS[field]).join(", ");
+    setNote(
+      `Applied ${what} to the ${targets} sprinkler${targets === 1 ? "" : "s"} after this one` +
+        (skipped > 0
+          ? ` (${skipped} size${skipped === 1 ? "" : "s"} skipped: not offered for that pipe)`
+          : "") +
+        ".",
+    );
+  }
+
+  const button =
+    "rounded-md border border-zinc-300 px-2 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800";
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="text-xs text-zinc-600 dark:text-zinc-400">
+          Use this pipe&apos;s … for the sprinklers after it:
+        </span>
+        {(["nominalSize", "pipeLengthFt", "elevationChangeFt"] as const).map((field) => (
+          <button key={field} type="button" onClick={() => apply([field])} className={button}>
+            {FILL_LABELS[field]}
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={() => apply(["nominalSize", "pipeLengthFt", "elevationChangeFt"])}
+          className={button}
+        >
+          all three
+        </button>
+      </div>
+      {note && (
+        <p role="status" className="text-xs text-zinc-500 dark:text-zinc-400">
+          {note}
+        </p>
+      )}
+    </div>
+  );
 }
 
 /** The pieces of a branch the summary and the opening rule read, as the form holds them. */
@@ -94,6 +204,8 @@ export function BranchEditor({
   plannedPerBranch,
   planBasis = null,
   referenceOptions,
+  sprinklerFlows = {},
+  flowsStale = false,
   onDuplicate,
   onRemove,
 }: BranchEditorProps) {
@@ -289,7 +401,7 @@ export function BranchEditor({
                 compact
                 itemLabel="sprinkler"
                 count={fields.length}
-                onAdd={() => append(newSprinkler() as never)}
+                onAdd={() => append(newSprinkler(fields.length) as never)}
                 error={listError}
               >
                 <PipeRowHeader firstColumn="Sprinkler" />
@@ -297,6 +409,7 @@ export function BranchEditor({
                   const sprinklerErrors = branchErrors?.sprinklers?.[index];
                   const kFactor = watch(`${sprinklersPath}.${index}.kFactor`);
                   const describedAs = `branch ${branchIndex + 1}, sprinkler ${index + 1}`;
+                  const discharge = sprinklerFlows[sprinklerNodeId(branchIndex, index)];
                   return (
                     <PipeRunRow
                       key={field.id}
@@ -312,12 +425,33 @@ export function BranchEditor({
                           K {String(kFactor ?? "")}
                         </span>
                       }
+                      readout={
+                        discharge ? (
+                          <span
+                            className={`truncate text-[11px] tabular-nums text-zinc-500 dark:text-zinc-400 ${
+                              flowsStale ? "opacity-60" : ""
+                            }`}
+                          >
+                            {formatFlow(discharge.flowGpm)} {UNITS.flow} @{" "}
+                            {formatPressure(discharge.pressurePsi)} {UNITS.pressure}
+                          </span>
+                        ) : null
+                      }
                       detailExtra={
-                        <div className="max-w-[10rem]">
-                          <NumberField
-                            label="K factor"
-                            error={sprinklerErrors?.kFactor?.message}
-                            {...register(`${sprinklersPath}.${index}.kFactor`)}
+                        <div className="flex flex-col gap-3">
+                          <div className="max-w-[10rem]">
+                            <NumberField
+                              label="K factor"
+                              error={sprinklerErrors?.kFactor?.message}
+                              {...register(`${sprinklersPath}.${index}.kFactor`)}
+                            />
+                          </div>
+                          <FillRestOfBranch
+                            form={form}
+                            sprinklersPath={sprinklersPath}
+                            index={index}
+                            count={fields.length}
+                            materials={materials}
                           />
                         </div>
                       }

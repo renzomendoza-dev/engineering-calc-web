@@ -3,6 +3,7 @@ import type { PipeMaterialOption } from "@/features/pipe-velocity/types";
 import type { UseSprinklerReferenceDataResult } from "@/hooks/useSprinklerReferenceData";
 import type { RemoteAreaPlanState } from "./useRemoteAreaPlan";
 import type { SprinklerFormInput, SprinklerFormValues } from "./schema";
+import type { SprinklerFlowRow } from "./types";
 
 /** The single react-hook-form instance shared by every step. */
 export type SprinklerForm = UseFormReturn<SprinklerFormInput, unknown, SprinklerFormValues>;
@@ -25,4 +26,11 @@ export interface StepProps {
    * empty list without explanation.
    */
   legacyNetworkDropped: boolean;
+  /**
+   * What each listed sprinkler discharges, by node id, from the live calculation. Empty until a
+   * calculation has completed.
+   */
+  sprinklerFlows: Record<string, SprinklerFlowRow>;
+  /** True when those figures no longer match the input: being edited, or not yet sendable. */
+  flowsStale: boolean;
 }

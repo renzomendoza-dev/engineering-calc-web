@@ -6,12 +6,13 @@ import { NumberField } from "@/components/ui/NumberField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
 import { formatApiText } from "@/lib/apiText";
 import { BranchEditor, type ReferenceBranchOption } from "../BranchEditor";
-import { newBranchKey, newPipeRun } from "../defaults";
+import { newBranchKey, newPipeRun, sizeForSprinklerCount } from "../defaults";
 import { DeviceLossRowsInput } from "../DeviceLossRowsInput";
 import { formatArea } from "../format";
 import { LayoutWorking } from "../LayoutWorking";
 import { UNITS } from "../labels";
 import { comparePlanCount } from "../planCount";
+import { sizeOptions } from "../pipeOptions";
 import { countSprinklers, isIdenticalBranch, riserNodeIds, riserNodeLabel } from "../network";
 import { PipeRowHeader, PipeRunRow } from "../PipeRunRow";
 import { RowActions, RowList } from "../RowList";
@@ -97,6 +98,8 @@ export function PipeNetworkStep({
   materialsLoading,
   plan,
   legacyNetworkDropped,
+  sprinklerFlows,
+  flowsStale,
 }: StepProps) {
   const {
     control,
@@ -136,14 +139,25 @@ export function PipeNetworkStep({
     schedule: String(watch("defaultSchedule") ?? ""),
     cFactor: Number(watch("defaultCFactor")),
   };
-  const newSprinkler = () => ({
-    kFactor,
-    pipe: newPipeRun({ ...baseRun, nominalSize: "1" }),
-  });
+  // A new sprinkler's pipe starts at the size its position on the branch suggests (see
+  // sizeForSprinklerCount), when the pipe material in use offers that size; otherwise at 1 in.
+  const offeredSizes = new Set(
+    sizeOptions(materials, baseRun.pipeMaterial, baseRun.schedule).map((option) => option.value),
+  );
+  const newSprinkler = (position = 0) => {
+    const suggested = sizeForSprinklerCount(position + 1);
+    return {
+      kFactor,
+      pipe: newPipeRun({
+        ...baseRun,
+        nominalSize: offeredSizes.size === 0 || offeredSizes.has(suggested) ? suggested : "1",
+      }),
+    };
+  };
   const newBranch = (sprinklerCount = 1) => ({
     key: newBranchKey(),
     identicalToKey: "",
-    sprinklers: Array.from({ length: sprinklerCount }, newSprinkler),
+    sprinklers: Array.from({ length: sprinklerCount }, (_, position) => newSprinkler(position)),
     crossMain: newPipeRun({ ...baseRun, nominalSize: "2" }),
   });
 
@@ -405,6 +419,8 @@ export function PipeNetworkStep({
               plannedPerBranch={planned?.perBranch ?? null}
               planBasis={planBasis}
               referenceOptions={referenceOptionsFor(index)}
+              sprinklerFlows={sprinklerFlows}
+              flowsStale={flowsStale}
               onDuplicate={() =>
                 // A copy of the branch as it stands: same sprinklers, same pipes. Its cross main is
                 // its own, so the distance to whatever follows it is editable independently. It

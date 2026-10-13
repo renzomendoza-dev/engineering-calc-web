@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   branchIndexOfNode,
   buildNetwork,
+  describeSprinklerNode,
   countSprinklers,
   junctionId,
   pipeRuns,
@@ -350,5 +351,18 @@ describe("identical branches", () => {
     expect(branchIndexOfNode("TOR")).toBeNull();
     expect(branchIndexOfNode("BOR")).toBeNull();
     expect(branchIndexOfNode("R2")).toBeNull();
+  });
+});
+
+describe("describeSprinklerNode", () => {
+  it("says which sprinkler a generated node is, in words", () => {
+    expect(describeSprinklerNode("BL1-S1")).toBe("Branch 1, sprinkler 1");
+    expect(describeSprinklerNode("BL12-S4")).toBe("Branch 12, sprinkler 4");
+  });
+
+  it("has nothing to say about the junctions and the riser", () => {
+    expect(describeSprinklerNode("A")).toBeNull();
+    expect(describeSprinklerNode("TOR")).toBeNull();
+    expect(describeSprinklerNode("S1")).toBeNull();
   });
 });

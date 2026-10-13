@@ -159,6 +159,11 @@ export function SprinklerHydraulicsCalculator() {
     setLegacyNetworkDropped(false);
   }
 
+  // Keyed by node, so each sprinkler row finds its own figures without searching.
+  const sprinklerFlows = Object.fromEntries(
+    (calculation.result?.sprinklers ?? []).map((row) => [row.nodeId, row]),
+  );
+
   const stepProps = {
     form,
     reference,
@@ -166,6 +171,8 @@ export function SprinklerHydraulicsCalculator() {
     materialsLoading,
     plan,
     legacyNetworkDropped,
+    sprinklerFlows,
+    flowsStale: calculation.isStale || !calculation.isComplete,
   };
 
   return (

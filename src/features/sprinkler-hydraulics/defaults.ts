@@ -4,6 +4,35 @@ import type { SprinklerFormInput } from "./schema";
 export type PipeRunInput = SprinklerFormInput["network"]["branches"][number]["crossMain"];
 
 /**
+ * The most sprinklers a steel pipe size serves in the pipe schedule method (the classic
+ * ordinary-hazard table: 1 in. - 2, 1-1/4 - 3, 1-1/2 - 5, 2 - 10, 2-1/2 - 20, 3 - 40).
+ *
+ * Used only to pick the size a new sprinkler's pipe starts at, so a branch steps up as it
+ * gathers flow instead of every pipe starting at 1 in. and drawing a velocity warning at its end.
+ * It is a starting point, not a design: the hydraulic calculation does not read it, every size
+ * stays editable, and it is steel -- another material or schedule may not offer the size, in which
+ * case the caller falls back. Check the figures against your copy of NFPA 13 before relying on
+ * them as more than a default.
+ */
+const PIPE_SCHEDULE_SPRINKLERS: readonly { size: string; upTo: number }[] = [
+  { size: "1", upTo: 2 },
+  { size: "1-1/4", upTo: 3 },
+  { size: "1-1/2", upTo: 5 },
+  { size: "2", upTo: 10 },
+  { size: "2-1/2", upTo: 20 },
+  { size: "3", upTo: 40 },
+];
+
+/**
+ * The nominal size a pipe starts at when it serves `sprinklerCount` sprinklers: the pipe after the
+ * Nth sprinkler of a branch carries the flow of the N before it.
+ */
+export function sizeForSprinklerCount(sprinklerCount: number): string {
+  const row = PIPE_SCHEDULE_SPRINKLERS.find((entry) => sprinklerCount <= entry.upTo);
+  return (row ?? PIPE_SCHEDULE_SPRINKLERS[PIPE_SCHEDULE_SPRINKLERS.length - 1]).size;
+}
+
+/**
  * A fresh run of pipe. The length is blank on purpose (see DEFAULT_SPRINKLER_FORM): it has to be
  * typed. Material, schedule and C factor are what step 2 chose, passed in by the caller; the size
  * is the caller's too, since a branch pipe and a riser are different things.

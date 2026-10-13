@@ -142,6 +142,15 @@ export function branchIndexOfNode(nodeId: string): number | null {
   return index - 1;
 }
 
+/**
+ * What a generated sprinkler node is called to a person: "Branch 2, sprinkler 3". Null for
+ * anything that is not one of this file's sprinkler names.
+ */
+export function describeSprinklerNode(nodeId: string): string | null {
+  const match = /^BL(\d+)-S(\d+)$/.exec(nodeId);
+  return match ? `Branch ${match[1]}, sprinkler ${match[2]}` : null;
+}
+
 export interface BuiltNetwork {
   sprinklers: { nodeId: string; kFactor: number }[];
   segments: SprinklerPipeSegmentRequest[];

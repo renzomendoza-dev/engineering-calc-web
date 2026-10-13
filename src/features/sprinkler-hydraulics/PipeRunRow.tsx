@@ -57,6 +57,8 @@ interface PipeRunRowProps {
   fittings: FittingEquivalentLengthTableRow[];
   /** Beside the label, for what identifies the row at a glance (a sprinkler's K factor). */
   leading?: ReactNode;
+  /** A line under the label, for a figure that belongs to the row (what a sprinkler discharges). */
+  readout?: ReactNode;
   /** Fields that belong in the opened panel before the pipe's own (a sprinkler's K factor). */
   detailExtra?: ReactNode;
   /** Duplicate / remove, or nothing for a pipe that is always there (a cross main). */
@@ -82,6 +84,7 @@ export function PipeRunRow({
   materialsLoading,
   fittings,
   leading,
+  readout,
   detailExtra,
   actions,
 }: PipeRunRowProps) {
@@ -139,11 +142,14 @@ export function PipeRunRow({
       <div
         className={`grid grid-cols-3 items-end gap-x-2 gap-y-2 sm:items-center ${PIPE_ROW_COLUMNS}`}
       >
-        <div className="order-1 col-span-2 flex min-w-0 items-center gap-2 sm:col-span-1">
-          <span className="truncate text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            {label}
-          </span>
-          {leading}
+        <div className="order-1 col-span-2 flex min-w-0 flex-col sm:col-span-1">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="truncate text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              {label}
+            </span>
+            {leading}
+          </div>
+          {readout}
         </div>
 
         <label className="order-3 flex flex-col gap-0.5 sm:order-2">
