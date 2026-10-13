@@ -1,11 +1,10 @@
 "use client";
 
 import { get, useFieldArray } from "react-hook-form";
-import { NumberField } from "@/components/ui/NumberField";
-import { SelectField, type SelectOption } from "@/components/ui/SelectField";
+import type { SelectOption } from "@/components/ui/SelectField";
 import { UNITS } from "./labels";
 import { publishedFittingLength } from "./request";
-import { RowCard, RowList } from "./RowList";
+import { RowActions, RowList } from "./RowList";
 import type { SprinklerForm } from "./stepProps";
 import type { FittingEquivalentLengthTableRow } from "./types";
 
@@ -18,6 +17,12 @@ type FittingsArrayPath = `network.riser.${number}.fittings`;
 type FittingFieldPath<K extends string> = `network.riser.${number}.fittings.${number}.${K}`;
 type NominalSizePath = `network.riser.${number}.nominalSize`;
 
+const INPUT_CLASS =
+  "w-full rounded-md border bg-white px-2 py-1.5 text-base shadow-sm outline-none transition-colors sm:text-sm dark:bg-zinc-950";
+const OK_BORDER =
+  "border-zinc-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-700";
+const ERROR_BORDER = "border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500";
+
 interface PipeFittingsInputProps {
   form: SprinklerForm;
   /** Where this pipe lives in the form, e.g. "network.branches.0.sprinklers.2.pipe". */
@@ -28,15 +33,21 @@ interface PipeFittingsInputProps {
 }
 
 /**
- * Fittings on one pipe. The equivalent length comes from NFPA 13's published chart when it has a
- * value for this fitting at this pipe size; where it doesn't -- the chart leaves plenty of
- * combinations blank -- the field for an explicit length appears instead, since the API rejects a
- * fitting it can't resolve.
+ * Fittings on one pipe, one line each. The equivalent length comes from NFPA 13's published chart
+ * when it has a value for this fitting at this pipe size; where it doesn't -- the chart leaves
+ * plenty of combinations blank -- a field for an explicit length appears instead, since the API
+ * rejects a fitting it can't resolve.
  *
- * The two paths behave differently downstream, so they say so: a chart lookup is rescaled for the
- * pipe's C factor by the calculation, while a length typed in here is used exactly as entered.
+ * The two paths behave differently downstream, so the line under the row says which applies: a
+ * chart lookup is rescaled for the pipe's C factor by the calculation, while a length typed in
+ * here is used exactly as entered.
  */
-export function PipeFittingsInput({ form, basePath, fittings, describedAs }: PipeFittingsInputProps) {
+export function PipeFittingsInput({
+  form,
+  basePath,
+  fittings,
+  describedAs,
+}: PipeFittingsInputProps) {
   const {
     control,
     register,
@@ -56,64 +67,100 @@ export function PipeFittingsInput({ form, basePath, fittings, describedAs }: Pip
     `${basePath}.fittings.${index}.${key}` as FittingFieldPath<K>;
 
   return (
-    <div className="rounded-md bg-zinc-50 p-3 dark:bg-zinc-900/60">
-      <RowList
-        itemLabel="fitting"
-        count={fields.length}
-        onAdd={() => append({ fittingType: "", quantity: 1, explicitEquivalentLengthFt: "" } as never)}
-      >
-        {fields.map((row, index) => {
-          const rowErrors = get(errors, `${basePath}.fittings.${index}`) as
-            | Record<string, { message?: string } | undefined>
-            | undefined;
-          const fittingType = watch(field(index, "fittingType")) as string | undefined;
-          const published = publishedFittingLength(fittingType, nominalSize as string | undefined, fittings);
+    <RowList
+      compact
+      itemLabel="fitting"
+      count={fields.length}
+      onAdd={() =>
+        append({ fittingType: "", quantity: 1, explicitEquivalentLengthFt: "" } as never)
+      }
+    >
+      {fields.map((row, index) => {
+        const rowErrors = get(errors, `${basePath}.fittings.${index}`) as
+          Record<string, { message?: string } | undefined> | undefined;
+        const fittingType = watch(field(index, "fittingType")) as string | undefined;
+        const published = publishedFittingLength(
+          fittingType,
+          nominalSize as string | undefined,
+          fittings,
+        );
+        const messages = [
+          rowErrors?.fittingType?.message,
+          rowErrors?.quantity?.message,
+          rowErrors?.explicitEquivalentLengthFt?.message,
+        ].filter(Boolean);
 
-          return (
-            <RowCard
-              key={row.id}
-              title={`Fitting ${index + 1}`}
-              describedAs={`fitting ${index + 1} on ${describedAs}`}
-              onDuplicate={() => insert(index + 1, { ...watch(`${basePath}.fittings.${index}` as never) } as never)}
-              onRemove={() => remove(index)}
-            >
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <SelectField
-                  label="Fitting type"
-                  options={typeOptions}
-                  error={rowErrors?.fittingType?.message}
+        return (
+          <div key={row.id} className="flex flex-col gap-1">
+            <div className="grid grid-cols-[minmax(0,1fr)_4.5rem_minmax(0,7rem)_auto] items-end gap-2">
+              <label className="flex flex-col gap-0.5">
+                <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Fitting</span>
+                <select
+                  aria-label={`Fitting type, fitting ${index + 1} on ${describedAs}`}
+                  aria-invalid={!!rowErrors?.fittingType}
+                  className={`${INPUT_CLASS} ${rowErrors?.fittingType ? ERROR_BORDER : OK_BORDER}`}
                   {...register(field(index, "fittingType"))}
-                />
-                <NumberField
-                  label="Quantity"
-                  error={rowErrors?.quantity?.message}
+                >
+                  {typeOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-0.5">
+                <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Qty</span>
+                <input
+                  type="number"
+                  step="any"
+                  aria-label={`Quantity, fitting ${index + 1} on ${describedAs}`}
+                  aria-invalid={!!rowErrors?.quantity}
+                  className={`${INPUT_CLASS} ${rowErrors?.quantity ? ERROR_BORDER : OK_BORDER}`}
                   {...register(field(index, "quantity"))}
                 />
-              </div>
-
+              </label>
               {published === undefined ? (
-                <NumberField
-                  label="Equivalent length (each)"
-                  unit={UNITS.length}
-                  hint={
-                    fittingType
-                      ? "NFPA 13's chart publishes no length for this fitting at this pipe size — enter the value from the manufacturer or the standard. It is used exactly as entered, with no C factor rescaling, so give the length for this pipe."
-                      : "Enter the equivalent length, or choose a fitting type above. A length entered here is used exactly as given, with no C factor rescaling."
-                  }
-                  error={rowErrors?.explicitEquivalentLengthFt?.message}
-                  {...register(field(index, "explicitEquivalentLengthFt"))}
-                />
+                <label className="flex flex-col gap-0.5">
+                  <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                    Length each ({UNITS.length})
+                  </span>
+                  <input
+                    type="number"
+                    step="any"
+                    aria-label={`Equivalent length each, fitting ${index + 1} on ${describedAs}`}
+                    aria-invalid={!!rowErrors?.explicitEquivalentLengthFt}
+                    className={`${INPUT_CLASS} ${
+                      rowErrors?.explicitEquivalentLengthFt ? ERROR_BORDER : OK_BORDER
+                    }`}
+                    {...register(field(index, "explicitEquivalentLengthFt"))}
+                  />
+                </label>
               ) : (
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Published equivalent length: {published} {UNITS.length} each, in feet of
-                  C&nbsp;=&nbsp;120 pipe (NFPA 13 Table 27.2.3.1.1). The calculation rescales it
-                  for this pipe&apos;s C factor and reports the factor it used in the worksheet.
+                <p className="pb-1.5 text-sm tabular-nums text-zinc-600 dark:text-zinc-400">
+                  {published} {UNITS.length} each
                 </p>
               )}
-            </RowCard>
-          );
-        })}
-      </RowList>
-    </div>
+              <RowActions
+                describedAs={`fitting ${index + 1} on ${describedAs}`}
+                onDuplicate={() =>
+                  insert(index + 1, { ...watch(`${basePath}.fittings.${index}` as never) } as never)
+                }
+                onRemove={() => remove(index)}
+              />
+            </div>
+            {messages.length > 0 && (
+              <p className="text-xs text-red-600 dark:text-red-400">{messages.join(" · ")}</p>
+            )}
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              {published === undefined
+                ? fittingType
+                  ? "NFPA 13's chart publishes no length for this fitting at this pipe size — enter one from the manufacturer or the standard. It is used exactly as entered, with no C factor rescaling."
+                  : "Choose a fitting type, or enter an equivalent length. A length entered here is used exactly as given, with no C factor rescaling."
+                : "From NFPA 13 Table 27.2.3.1.1, in feet of C = 120 pipe; the calculation rescales it for this pipe's C factor and reports the factor in the worksheet."}
+            </p>
+          </div>
+        );
+      })}
+    </RowList>
   );
 }

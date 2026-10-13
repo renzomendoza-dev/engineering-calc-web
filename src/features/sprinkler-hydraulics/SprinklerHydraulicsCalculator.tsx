@@ -9,6 +9,8 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { usePipeMaterials } from "@/hooks/usePipeMaterials";
 import { useSprinklerReferenceData } from "@/hooks/useSprinklerReferenceData";
 import { CalculationWarnings } from "./CalculationWarnings";
+import { countSprinklers } from "./network";
+import { comparePlanCount, moreThanPlanWarning } from "./planCount";
 import { DemandSummaryPanel } from "./DemandSummaryPanel";
 import { DEFAULT_SPRINKLER_FORM } from "./defaults";
 import { clearDraft, loadDraftDetailed, saveDraft } from "./draft";
@@ -25,7 +27,6 @@ import { StepNav } from "./StepNav";
 import { DesignDataStep } from "./steps/DesignDataStep";
 import { PipeNetworkStep } from "./steps/PipeNetworkStep";
 import { ProjectHazardStep } from "./steps/ProjectHazardStep";
-import { RemoteAreaStep } from "./steps/RemoteAreaStep";
 import { ResultsStep } from "./steps/ResultsStep";
 import { WaterSupplyStep } from "./steps/WaterSupplyStep";
 import { useRemoteAreaPlan } from "./useRemoteAreaPlan";
@@ -74,6 +75,17 @@ export function SprinklerHydraulicsCalculator() {
     reference.hazardPresets.find((preset) => preset.hazard === values.hazard)
       ?.maxCoverageSqFtPerSprinkler ?? null;
   const plan = useRemoteAreaPlan(values, maxCoverage);
+  // Listing more sprinklers than the plan calls for is not an error -- the calculation counts them
+  // all -- but its demand is then for a larger area than the one declared, which should be said on
+  // every step rather than only where the network is entered. Fewer is flagged in the network
+  // step alone: it is the state of every network while it is being entered, and a banner over each
+  // sprinkler added would be noise.
+  const plannedCount = plan.result ? plan.result.sprinklersForArea : null;
+  const listedCount = countSprinklers(values.network ?? { branches: [] });
+  const planWarnings =
+    plannedCount !== null && comparePlanCount(listedCount, plannedCount) === "more"
+      ? [moreThanPlanWarning(listedCount, plannedCount)]
+      : [];
   const { generalError, setGeneralError, handleApiError } = useApiFormError(
     setError,
     DEFAULT_SPRINKLER_FORM,
@@ -162,7 +174,9 @@ export function SprinklerHydraulicsCalculator() {
         <StepNav current={step} onSelect={goTo} />
 
         <FormErrorBanner message={generalError} />
-        {calculation.result && <CalculationWarnings warnings={calculation.result.warnings} />}
+        {calculation.result && (
+          <CalculationWarnings warnings={[...planWarnings, ...calculation.result.warnings]} />
+        )}
 
         <form onSubmit={(event) => event.preventDefault()} className="flex flex-col gap-6">
           <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
@@ -171,7 +185,6 @@ export function SprinklerHydraulicsCalculator() {
 
           {step === "project" && <ProjectHazardStep {...stepProps} />}
           {step === "design" && <DesignDataStep {...stepProps} />}
-          {step === "remote" && <RemoteAreaStep {...stepProps} />}
           {step === "supply" && <WaterSupplyStep {...stepProps} />}
           {step === "network" && <PipeNetworkStep {...stepProps} />}
           {step === "results" && <ResultsStep state={calculation} />}

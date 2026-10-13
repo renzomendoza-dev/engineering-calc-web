@@ -38,6 +38,11 @@ export function SprinklerFormulas() {
           description="NFPA 13 publishes fitting equivalent lengths in feet of C = 120 pipe, and requires rescaling them for pipe with a different C: 0.713 at C = 100, 1.16 at C = 130, 1.33 at C = 140, 1.51 at C = 150. The direction catches people out — a fitting's own loss barely depends on the pipe it sits in, so in rougher pipe (lower C, more loss per foot) it takes fewer feet of that pipe to match the fitting. Applied to chart lookups only: an equivalent length you type in yourself is used exactly as entered, because its basis isn't known."
         />
         <FormulaBlock
+          label="Identical branch, balanced at its junction"
+          tex="Q = Q_{ref}\sqrt{\dfrac{P_{junction}}{P_{ref}}}"
+          description="A branch declared identical to another is that branch's own result, scaled to the pressure at its junction: Q_ref and P_ref are the reference branch's flow and arrival pressure as worked from its own first sprinkler, and P_junction is the pressure the junction settles at. It is the same scaling a branch listed sprinkler by sprinkler gets where it meets the main."
+        />
+        <FormulaBlock
           label="Water supply curve"
           tex="P_{avail} = P_{static} - (P_{static} - P_{residual})\left(\dfrac{Q}{Q_{test}}\right)^{1.85}"
           description="Pressure the supply can still deliver at flow Q, fitted through the flow test: static pressure, and the residual pressure measured at the test flow Q_test. The safety margin is this pressure at the demand flow, less the pressure the system requires."

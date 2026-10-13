@@ -44,6 +44,8 @@ function formValues(overrides: Partial<SprinklerFormInput> = {}) {
     network: {
       branches: [
         {
+          key: "branch-1",
+          identicalToKey: "",
           sprinklers: [{ kFactor: "5.6", pipe: run() }],
           crossMain: run({ nominalSize: "2", pipeLengthFt: "20" }),
         },
@@ -84,6 +86,7 @@ describe("toSprinklerRequest", () => {
         "hazard",
         "hoseStreamGpm",
         "hoseStreamNodeId",
+        "identicalBranches",
         "segments",
         "sprinklers",
         "systemType",
@@ -138,7 +141,10 @@ describe("toSprinklerRequest", () => {
   });
 
   describe("the network is built from the branches", () => {
+    let counter = 0;
     const branch = (sprinklerCount: number, crossMainFt: string) => ({
+      key: `branch-${(counter += 1)}`,
+      identicalToKey: "",
       sprinklers: Array.from({ length: sprinklerCount }, () => ({ kFactor: "5.6", pipe: run() })),
       crossMain: run({ nominalSize: "2", pipeLengthFt: crossMainFt }),
     });
@@ -171,6 +177,30 @@ describe("toSprinklerRequest", () => {
         ["B", "C", 15],
         ["C", "TOR", 9],
       ]);
+    });
+
+    it("sends no identical branches, as null, when every branch is listed in full", () => {
+      const request = toSprinklerRequest(
+        formValues({ network: { branches: [branch(2, "12"), branch(2, "15")], riser: [] } }),
+      );
+
+      expect(request.identicalBranches).toBeNull();
+    });
+
+    it("declares an identical branch instead of listing it, and still lists its cross main", () => {
+      const listed = branch(4, "18");
+      const copy = {
+        ...branch(0, "18"),
+        key: "copy",
+        identicalToKey: listed.key,
+        // Held by the form, hidden, and not sent.
+        sprinklers: [{ kFactor: "5.6", pipe: run() }],
+      };
+      const request = toSprinklerRequest(formValues({ network: { branches: [listed, copy], riser: [] } }));
+
+      expect(request.identicalBranches).toEqual([{ joinNodeId: "B", referenceNodeId: "BL1-S4" }]);
+      expect(request.sprinklers.map((s) => s.nodeId)).toEqual(["BL1-S1", "BL1-S2", "BL1-S3", "BL1-S4"]);
+      expect(request.segments.map((s) => `${s.fromNodeId}->${s.toNodeId}`)).toContain("B->TOR");
     });
 
     it("continues down the riser from the top, and adds the hose stream on it", () => {

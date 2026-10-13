@@ -91,6 +91,18 @@ export interface DeviceLossRequest {
   pressureLossPsi: number;
 }
 
+/**
+ * Mirrors calc-api's IdenticalBranchDto: a branch line declared a copy of another instead of
+ * listed. Nothing of the copy is sent except where it arrives; its cross main is ordinary
+ * segments, so each copy keeps its own distance to its neighbour.
+ */
+export interface IdenticalBranchRequest {
+  /** The junction the copy arrives at. */
+  joinNodeId: string;
+  /** The last node of the branch it repeats -- the one that branch's final pipe leaves from. */
+  referenceNodeId: string;
+}
+
 /** Mirrors calc-api's SprinklerHydraulicRequest field-for-field. */
 export interface SprinklerHydraulicRequest {
   systemType: SprinklerSystemType;
@@ -110,6 +122,8 @@ export interface SprinklerHydraulicRequest {
   /** Null for a system with no pressurised source yet — the demand is still calculated. */
   waterSupply: WaterSupplyRequest | null;
   deviceLosses: DeviceLossRequest[] | null;
+  /** Null when no branch is declared identical to another. */
+  identicalBranches: IdenticalBranchRequest[] | null;
 }
 
 /** Mirrors calc-api's SegmentFlowRowDto — one row of the hydraulic calculation sheet. */
@@ -144,6 +158,29 @@ export interface SupplyCurvePoint {
 }
 
 /**
+ * Mirrors calc-api's IdenticalBranchRowDto: the one branch-level line that stands in for an
+ * identical branch's sprinklers and pipes.
+ *
+ * Reads as the hand calculation sheet writes it:
+ * flowGpm = referenceFlowGpm x sqrt(junctionPressurePsi / referencePressurePsi). Every figure is
+ * the API's; nothing here is derived in the browser.
+ */
+export interface IdenticalBranchRow {
+  joinNodeId: string;
+  referenceNodeId: string;
+  /** Where the reference branch's own final pipe lands. */
+  referenceJunctionNodeId: string;
+  sprinklerCount: number;
+  /** The reference branch as worked from its own most remote sprinkler, before any balancing. */
+  referenceFlowGpm: number;
+  referencePressurePsi: number;
+  /** The pressure the junction settled at. */
+  junctionPressurePsi: number;
+  scaleFactor: number;
+  flowGpm: number;
+}
+
+/**
  * Mirrors calc-api's SprinklerHydraulicResponse field-for-field.
  *
  * The four supply-dependent figures are null when the request carried no water supply — `passes`
@@ -160,6 +197,12 @@ export interface SprinklerHydraulicResponse {
   /** Empty when there is no supply to plot. */
   supplyCurve: SupplyCurvePoint[];
   warnings: string[];
+  /**
+   * Empty when no branch was declared identical. Their flow is already in the demand. Read it as
+   * `?? []`: an API from before identical branches existed omits the field, and the results page
+   * must not fail to render over a list that would have been empty anyway.
+   */
+  identicalBranches?: IdenticalBranchRow[];
 }
 
 /**

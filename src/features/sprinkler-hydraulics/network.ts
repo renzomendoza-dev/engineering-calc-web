@@ -1,4 +1,8 @@
-import type { SegmentFittingRequest, SprinklerPipeSegmentRequest } from "./types";
+import type {
+  IdenticalBranchRequest,
+  SegmentFittingRequest,
+  SprinklerPipeSegmentRequest,
+} from "./types";
 
 /**
  * The pipe network, as the designer thinks of it, and how it becomes the node-and-segment tree the
@@ -20,6 +24,10 @@ import type { SegmentFittingRequest, SprinklerPipeSegmentRequest } from "./types
  *   BL1-S1 --pipe--> BL1-S2 --pipe--> BL1-S3 --pipe--> A --cross main--> B --cross main--> TOR
  *                                                      ^                 ^
  *   BL2-S1 --pipe--> BL2-S2 --pipe--> BL2-S3 --pipe----+-----------------+  (branch 2 joins at B)
+ *
+ * A branch can instead be declared identical to an earlier one. It then has no sprinklers or pipes
+ * of its own to list -- only its cross main, since its distance to its neighbour is its own -- and
+ * the API works it out as a copy of the reference branch, balanced at its own junction.
  *
  * Flow runs toward the supply, so the API's "from" is always the upstream node.
  */
@@ -46,6 +54,17 @@ export interface BranchSprinklerValues {
 }
 
 export interface BranchValues {
+  /**
+   * Identifies this branch for as long as it exists, so "identical to" can point at it without
+   * pointing at a position: removing or inserting a branch moves positions, and a reference by
+   * position would silently start meaning a different branch.
+   */
+  key: string;
+  /**
+   * The key of the branch this one is identical to, or "" when it is listed in full. An identical
+   * branch carries no sprinklers (the form keeps any it had, hidden, but they are not read).
+   */
+  identicalToKey: string;
   /** Ordered from the most remote sprinkler towards the cross main. */
   sprinklers: BranchSprinklerValues[];
   /** The pipe from the end of this branch to the next branch's junction, or to the riser. */
@@ -94,9 +113,40 @@ export function riserNodeLabel(id: string, riserRuns: number): string {
   return `Riser, after run ${Number(id.slice(1)) - 1}`;
 }
 
+/** Whether a branch is declared a copy of another, rather than listed in full. */
+export function isIdenticalBranch(branch: { identicalToKey?: string }): boolean {
+  return typeof branch.identicalToKey === "string" && branch.identicalToKey.trim() !== "";
+}
+
+/** The position of the branch an identical branch repeats, or -1 when it names none that exists. */
+export function referenceIndex(
+  branches: readonly { key?: string; identicalToKey?: string }[],
+  branchIndex: number,
+): number {
+  const branch = branches[branchIndex];
+  if (!branch || !isIdenticalBranch(branch)) return -1;
+  return branches.findIndex((candidate) => candidate.key === branch.identicalToKey);
+}
+
+/**
+ * Which branch a generated node belongs to (0-based), or null for the riser and for anything that
+ * is not one of this file's names. Lets a result row speak of "branch 2" instead of node "B".
+ */
+export function branchIndexOfNode(nodeId: string): number | null {
+  const sprinkler = /^BL(\d+)-S\d+$/.exec(nodeId);
+  if (sprinkler) return Number(sprinkler[1]) - 1;
+  if (nodeId === "TOR" || nodeId === "BOR" || !/^[A-Z]+$/.test(nodeId)) return null;
+  // Bijective base 26, the inverse of junctionId: A = 0, Z = 25, AA = 26.
+  let index = 0;
+  for (const letter of nodeId) index = index * 26 + (letter.charCodeAt(0) - 64);
+  return index - 1;
+}
+
 export interface BuiltNetwork {
   sprinklers: { nodeId: string; kFactor: number }[];
   segments: SprinklerPipeSegmentRequest[];
+  /** Branches declared identical, in branch order. */
+  identicalBranches: IdenticalBranchRequest[];
   /** Every node that exists, so a caller can check a chosen node is one of them. */
   nodeIds: string[];
 }
@@ -130,6 +180,7 @@ function toSegment(from: string, to: string, run: PipeRunValues): SprinklerPipeS
 export function buildNetwork(network: NetworkValues): BuiltNetwork {
   const sprinklers: BuiltNetwork["sprinklers"] = [];
   const segments: SprinklerPipeSegmentRequest[] = [];
+  const identicalBranches: IdenticalBranchRequest[] = [];
   const nodeIds: string[] = [];
 
   const riserIds = riserNodeIds(network.riser.length);
@@ -139,12 +190,29 @@ export function buildNetwork(network: NetworkValues): BuiltNetwork {
     const junction = junctionId(branchIndex);
     nodeIds.push(junction);
 
-    branch.sprinklers.forEach((sprinkler, sprinklerIndex) => {
+    if (isIdenticalBranch(branch)) {
+      // Nothing of it is listed but where it arrives and which branch it repeats. The reference is
+      // named by its last sprinkler, the node its final pipe leaves from.
+      const reference = referenceIndex(network.branches, branchIndex);
+      const referenceBranch = network.branches[reference];
+      if (reference < 0 || reference >= branchIndex || isIdenticalBranch(referenceBranch)) {
+        throw new Error(
+          `Branch ${branchIndex + 1} is declared identical to a branch that is not an earlier, listed one`,
+        );
+      }
+      identicalBranches.push({
+        joinNodeId: junction,
+        referenceNodeId: sprinklerNodeId(reference, referenceBranch.sprinklers.length - 1),
+      });
+    }
+
+    const listed = isIdenticalBranch(branch) ? [] : branch.sprinklers;
+    listed.forEach((sprinkler, sprinklerIndex) => {
       const nodeId = sprinklerNodeId(branchIndex, sprinklerIndex);
       nodeIds.push(nodeId);
       sprinklers.push({ nodeId, kFactor: sprinkler.kFactor });
 
-      const isLast = sprinklerIndex === branch.sprinklers.length - 1;
+      const isLast = sprinklerIndex === listed.length - 1;
       const downstream = isLast ? junction : sprinklerNodeId(branchIndex, sprinklerIndex + 1);
       segments.push(toSegment(nodeId, downstream, sprinkler.pipe));
     });
@@ -158,14 +226,16 @@ export function buildNetwork(network: NetworkValues): BuiltNetwork {
     segments.push(toSegment(riserIds[index], riserIds[index + 1], run));
   });
 
-  return { sprinklers, segments, nodeIds };
+  return { sprinklers, segments, identicalBranches, nodeIds };
 }
 
 /** Every pipe run in the network, with the form path it lives at, in the order they are built. */
 export function pipeRuns(network: NetworkValues): { path: string; run: PipeRunValues }[] {
   const runs: { path: string; run: PipeRunValues }[] = [];
   network.branches.forEach((branch, b) => {
-    branch.sprinklers.forEach((sprinkler, s) => {
+    // An identical branch's own sprinklers are not part of the calculation, whatever the form holds.
+    const listed = isIdenticalBranch(branch) ? [] : branch.sprinklers;
+    listed.forEach((sprinkler, s) => {
       runs.push({ path: `network.branches.${b}.sprinklers.${s}.pipe`, run: sprinkler.pipe });
     });
     runs.push({ path: `network.branches.${b}.crossMain`, run: branch.crossMain });
@@ -175,9 +245,17 @@ export function pipeRuns(network: NetworkValues): { path: string; run: PipeRunVa
 }
 
 /**
- * Total flowing sprinklers across all branches. Takes only what it counts, so it works on the
- * form's raw (not yet validated) values as well as on parsed ones.
+ * Total flowing sprinklers across all branches, counting an identical branch as the sprinklers of
+ * the branch it repeats. Takes only what it counts, so it works on the form's raw (not yet
+ * validated) values as well as on parsed ones; an identical branch pointing at nothing counts none.
  */
-export function countSprinklers(network: { branches: { sprinklers: readonly unknown[] }[] }): number {
-  return network.branches.reduce((sum, branch) => sum + branch.sprinklers.length, 0);
+export function countSprinklers(network: {
+  branches: { key?: string; identicalToKey?: string; sprinklers: readonly unknown[] }[];
+}): number {
+  return network.branches.reduce((sum, branch, index) => {
+    if (!isIdenticalBranch(branch)) return sum + branch.sprinklers.length;
+    const reference = referenceIndex(network.branches, index);
+    if (reference < 0 || reference === index || isIdenticalBranch(network.branches[reference])) return sum;
+    return sum + network.branches[reference].sprinklers.length;
+  }, 0);
 }

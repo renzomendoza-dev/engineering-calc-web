@@ -22,6 +22,15 @@ export function newPipeRun(overrides: Partial<PipeRunInput> = {}): PipeRunInput 
 }
 
 /**
+ * A key for a branch added after the form opened. Not derived from position -- that is the whole
+ * point of it -- and not random at module load, so the server-rendered default and the client's
+ * agree; the one branch the form opens with has a fixed key.
+ */
+export function newBranchKey(): string {
+  return `branch-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/**
  * Starting point for a new calculation: the Light Hazard preset's published figures (density, area,
  * hose stream and the largest coverage one sprinkler may have, so step 1 is coherent before the
  * reference table loads), a wet-system steel C factor, and one sprinkler on one branch feeding a
@@ -73,6 +82,8 @@ export const DEFAULT_SPRINKLER_FORM: SprinklerFormInput = {
   network: {
     branches: [
       {
+        key: "branch-1",
+        identicalToKey: "",
         sprinklers: [{ kFactor: 5.6, pipe: newPipeRun({ nominalSize: "1" }) }],
         crossMain: newPipeRun({ nominalSize: "2" }),
       },

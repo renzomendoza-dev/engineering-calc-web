@@ -76,6 +76,8 @@ describe("mergeDraft", () => {
     const network = {
       branches: [
         {
+          key: "branch-1",
+          identicalToKey: "",
           sprinklers: [{ kFactor: "", pipe: { ...DEFAULT_SPRINKLER_FORM.network.branches[0].crossMain, pipeLengthFt: "" } }],
           crossMain: DEFAULT_SPRINKLER_FORM.network.branches[0].crossMain,
         },
@@ -91,8 +93,13 @@ describe("mergeDraft", () => {
     const run = DEFAULT_SPRINKLER_FORM.network.branches[0].crossMain;
     const network = {
       branches: [
-        { sprinklers: [{ kFactor: 5.6, pipe: run }, { kFactor: 5.6, pipe: run }], crossMain: run },
-        { sprinklers: [{ kFactor: 5.6, pipe: run }], crossMain: run },
+        {
+          key: "first",
+          identicalToKey: "",
+          sprinklers: [{ kFactor: 5.6, pipe: run }, { kFactor: 5.6, pipe: run }],
+          crossMain: run,
+        },
+        { key: "second", identicalToKey: "first", sprinklers: [{ kFactor: 5.6, pipe: run }], crossMain: run },
       ],
       riser: [run, run],
     };
@@ -100,6 +107,50 @@ describe("mergeDraft", () => {
     expect(result.values.network).toEqual(network);
     expect(result.values.hoseStreamNodeId).toBe("R2");
     expect(result.droppedLegacyNetwork).toBe(false);
+  });
+
+  describe("branch keys, which an identical branch points at", () => {
+    const run = DEFAULT_SPRINKLER_FORM.network.branches[0].crossMain;
+    const unkeyed = () => ({ sprinklers: [{ kFactor: 5.6, pipe: run }], crossMain: run });
+
+    it("gives a draft saved before keys existed one key per branch, and no identical-to", () => {
+      const { values } = mergeDraftDetailed({ network: { branches: [unkeyed(), unkeyed()], riser: [] } });
+      const [first, second] = values.network.branches;
+
+      expect(first.key).not.toBe("");
+      expect(second.key).not.toBe("");
+      expect(first.key).not.toBe(second.key);
+      expect(first.identicalToKey).toBe("");
+      expect(second.identicalToKey).toBe("");
+    });
+
+    it("never changes a key the draft already had", () => {
+      const network = {
+        branches: [
+          { ...unkeyed(), key: "kept-a", identicalToKey: "" },
+          { ...unkeyed(), key: "kept-b", identicalToKey: "kept-a" },
+        ],
+        riser: [],
+      };
+      const { values } = mergeDraftDetailed({ network });
+
+      expect(values.network.branches.map((b) => b.key)).toEqual(["kept-a", "kept-b"]);
+      expect(values.network.branches[1].identicalToKey).toBe("kept-a");
+    });
+
+    it("replaces a repeated key, so two branches can never be confused for one", () => {
+      const network = {
+        branches: [
+          { ...unkeyed(), key: "same", identicalToKey: "" },
+          { ...unkeyed(), key: "same", identicalToKey: "" },
+        ],
+        riser: [],
+      };
+      const keys = mergeDraftDetailed({ network }).values.network.branches.map((b) => b.key);
+
+      expect(new Set(keys).size).toBe(2);
+      expect(keys[0]).toBe("same");
+    });
   });
 
   it("does not trust a network whose branches are the wrong shape", () => {

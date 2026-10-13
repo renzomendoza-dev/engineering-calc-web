@@ -79,7 +79,7 @@ export function DesignBasisReadout({ plan }: { plan: RemoteAreaPlanState }) {
         <Stat
           label="Sprinklers to cover the area"
           value={`at least ${result.sprinklersForArea}`}
-          note="Rounded up; the layout in the remote area step can only add to it"
+          note="Rounded up; the layout in the pipe network step can only add to it"
         />
       </div>
 

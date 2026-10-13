@@ -48,11 +48,43 @@ const branchSprinklerSchema = z.object({
 /**
  * One branch line: its sprinklers from the most remote inwards, each with its pipe, then the cross
  * main that carries it on to the next branch (or to the riser, for the last).
+ *
+ * A branch can instead be declared identical to an earlier one (`identicalToKey` names it). It then
+ * keeps its cross main -- its distance to its neighbour is its own -- and nothing else is read: the
+ * sprinklers the form still holds for it are blanked before they are validated, so a half-entered
+ * list hidden behind the choice can't block anything, and un-ticking the choice finds it as left.
  */
-const branchSchema = z.object({
-  sprinklers: z.array(branchSprinklerSchema).min(1, "A branch needs at least one sprinkler"),
-  crossMain: pipeRunSchema,
-});
+const branchObjectSchema = z
+  .object({
+    key: z.string().min(1, "Required"),
+    identicalToKey: z.string(),
+    sprinklers: z.array(branchSprinklerSchema),
+    crossMain: pipeRunSchema,
+  })
+  .superRefine((branch, ctx) => {
+    if (branch.identicalToKey.trim() === "" && branch.sprinklers.length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["sprinklers"],
+        message: "A branch needs at least one sprinkler",
+      });
+    }
+  });
+
+/**
+ * The cast is deliberate and the whole of what this wrapper does to the type: preprocess only
+ * empties the hidden sprinkler list of an identical branch, so the shape going in and coming out is
+ * the object's, not `unknown` as zod's types would have it. Error paths are the object's own.
+ */
+const branchSchema = z.preprocess((value) => {
+  if (typeof value === "object" && value !== null) {
+    const branch = value as { identicalToKey?: unknown };
+    if (typeof branch.identicalToKey === "string" && branch.identicalToKey.trim() !== "") {
+      return { ...value, sprinklers: [] };
+    }
+  }
+  return value;
+}, branchObjectSchema) as unknown as typeof branchObjectSchema;
 
 const networkSchema = z.object({
   branches: z.array(branchSchema).min(1, "Add at least one branch"),
@@ -109,13 +141,13 @@ export const sprinklerHydraulicsSchema = z
     // -- (density x coverage / K)^2 -- or the minimum operating pressure, whichever is greater, and
     // the API works that out and says which governed.
 
-    // --- step 3: remote area ---
+    // --- step 4: pipe network (the spacing is entered beside the layout it sizes) ---
     // Spacing ALONG a branch line, FORM-ONLY and lenient like the ceiling height: it only lays the
     // area out, and the spacing between branches follows from the coverage. Blank means the layout
     // isn't worked out yet, not that anything is wrong.
     sprinklerSpacingFt: optionalNumber(z.coerce.number().positive("Must be positive")), // FORM-ONLY
 
-    // --- step 4: water supply ---
+    // --- step 3: water supply ---
     // FORM-ONLY: picks which block below is sent. "NONE" sends no supply at all, which the API
     // answers with the demand figures and a null margin and verdict.
     supplySource: z.enum(["FLOW_TEST", "GRAVITY_TANK", "NONE"], "Choose where the water comes from"),
@@ -137,7 +169,6 @@ export const sprinklerHydraulicsSchema = z
       outletRuns: z.array(supplyPipeRunSchema),
     }),
 
-    // --- step 5: pipe network ---
     // Branch by branch, sprinkler by sprinkler, each with its pipe -- see network.ts.
     network: networkSchema,
     deviceLosses: z.array(deviceLossSchema),
@@ -234,6 +265,32 @@ export const sprinklerHydraulicsSchema = z
       });
     }
 
+    // An identical branch repeats a listed branch that comes before it. It is named by key, so a
+    // removed branch leaves the copies that pointed at it with nothing to point at -- said here,
+    // on the field, rather than guessed at by quietly pointing them somewhere else.
+    data.network.branches.forEach((branch, index) => {
+      if (branch.identicalToKey.trim() === "") return;
+      const at = ["network", "branches", index, "identicalToKey"];
+      const reference = data.network.branches.findIndex((other) => other.key === branch.identicalToKey);
+      if (index === 0) {
+        ctx.addIssue({
+          code: "custom",
+          path: at,
+          message: "The first branch has no earlier branch to repeat",
+        });
+      } else if (reference < 0) {
+        ctx.addIssue({ code: "custom", path: at, message: "Choose the branch this one repeats" });
+      } else if (reference >= index) {
+        ctx.addIssue({ code: "custom", path: at, message: "Choose a branch that comes before this one" });
+      } else if (data.network.branches[reference].identicalToKey.trim() !== "") {
+        ctx.addIssue({
+          code: "custom",
+          path: at,
+          message: `Branch ${reference + 1} is itself a copy — choose a branch that is listed in full`,
+        });
+      }
+    });
+
     // calc-core's SegmentFitting needs either a type to look up or an explicit length. Every pipe
     // in the network can carry fittings, wherever it sits, so this walks them all; the path it
     // reports is the field's own, which is where the message appears.
@@ -256,13 +313,12 @@ export type SprinklerFormInput = z.input<typeof sprinklerHydraulicsSchema>;
 /** Post-coercion shape, the only thing request.ts maps from. */
 export type SprinklerFormValues = z.output<typeof sprinklerHydraulicsSchema>;
 
-export const STEPS = ["project", "design", "remote", "supply", "network", "results"] as const;
+export const STEPS = ["project", "design", "supply", "network", "results"] as const;
 export type StepId = (typeof STEPS)[number];
 
 export const STEP_LABELS: Record<StepId, string> = {
   project: "Project & hazard",
   design: "Design data",
-  remote: "Remote area",
   supply: "Water supply",
   network: "Pipe network",
   results: "Results",
@@ -285,9 +341,8 @@ export const STEP_FIELDS: Record<StepId, readonly (keyof SprinklerFormInput)[]> 
     "ceilingHeightFt",
   ],
   design: ["defaultKFactor", "defaultPipeMaterial", "defaultSchedule", "defaultCFactor"],
-  remote: ["sprinklerSpacingFt"],
   supply: ["supplySource", "waterSupply", "gravityTank"],
-  network: ["network", "deviceLosses", "hoseStreamNodeId"],
+  network: ["sprinklerSpacingFt", "network", "deviceLosses", "hoseStreamNodeId"],
   results: [],
 };
 

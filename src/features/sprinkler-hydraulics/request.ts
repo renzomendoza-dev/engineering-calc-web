@@ -51,6 +51,8 @@ export function toSprinklerRequest(values: SprinklerFormValues): SprinklerHydrau
             pressureLossPsi: device.pressureLossPsi,
           }))
         : null,
+    // Only where the designer declared a branch a copy of another. Null, not [], when there are none.
+    identicalBranches: network.identicalBranches.length > 0 ? network.identicalBranches : null,
   };
 }
 

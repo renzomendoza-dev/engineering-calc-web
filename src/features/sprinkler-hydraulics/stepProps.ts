@@ -14,8 +14,9 @@ export interface StepProps {
   materials: PipeMaterialOption[];
   materialsLoading: boolean;
   /**
-   * The remote area plan, worked out on the API from steps 1-3. Lives here rather than inside the
-   * remote area step so the pipe network step can compare the sprinklers listed against it.
+   * The remote area plan, worked out on the API from the design basis (steps 1 and 2) and the
+   * spacing entered in the pipe network step. Lives here rather than inside that step so the
+   * design data step can show what it needs from it too.
    */
   plan: RemoteAreaPlanState;
   /**

@@ -49,6 +49,8 @@ function formInput(overrides: Partial<SprinklerFormInput> = {}): SprinklerFormIn
     network: {
       branches: [
         {
+          key: "branch-1",
+          identicalToKey: "",
           sprinklers: [{ kFactor: "5.6", pipe: run({ nominalSize: "1", pipeLengthFt: "10" }) }],
           crossMain: run({ nominalSize: "2", pipeLengthFt: "20" }),
         },
@@ -141,6 +143,7 @@ describe("sprinklerHydraulicsSchema", () => {
         ...DEFAULT_SPRINKLER_FORM.network,
         branches: [
           {
+            ...DEFAULT_SPRINKLER_FORM.network.branches[0],
             sprinklers: [
               {
                 ...DEFAULT_SPRINKLER_FORM.network.branches[0].sprinklers[0],
@@ -374,6 +377,79 @@ describe("sprinklerHydraulicsSchema", () => {
           withFitting({ fittingType: "ELBOW_90_STANDARD", quantity: "1.5", explicitEquivalentLengthFt: "" }),
         ).toEqual([`${sprinklerPipePath}.fittings.0.quantity`]);
       });
+    });
+  });
+
+  describe("identical branches", () => {
+    const base = () => formInput().network.branches[0];
+    const second = (overrides: Record<string, unknown> = {}) => ({
+      key: "branch-2",
+      identicalToKey: "branch-1",
+      sprinklers: base().sprinklers,
+      crossMain: run({ nominalSize: "2", pipeLengthFt: "15" }),
+      ...overrides,
+    });
+    const withBranches = (...branches: Record<string, unknown>[]) =>
+      formInput({ network: { branches: [base(), ...branches] as never, riser: [] } });
+
+    it("accepts a branch declared identical to the one before it", () => {
+      expect(issuePaths(withBranches(second()))).toEqual([]);
+    });
+
+    it("does not read the sprinklers an identical branch still holds, however unfinished", () => {
+      // Blank lengths and no K: fine, because the branch is not listed and they are not read.
+      const unfinished = [{ kFactor: "", pipe: run({ pipeLengthFt: "" }) }];
+      expect(issuePaths(withBranches(second({ sprinklers: unfinished })))).toEqual([]);
+      expect(issuePaths(withBranches(second({ sprinklers: [] })))).toEqual([]);
+    });
+
+    it("gives the same unfinished sprinklers their errors once the branch is listed again", () => {
+      const unfinished = [{ kFactor: "5.6", pipe: run({ pipeLengthFt: "" }) }];
+      expect(issuePaths(withBranches(second({ identicalToKey: "", sprinklers: unfinished })))).toEqual([
+        "network.branches.1.sprinklers.0.pipe.pipeLengthFt",
+      ]);
+    });
+
+    it("still needs the copy's own cross main, which is its own distance", () => {
+      const crossMain = run({ nominalSize: "2", pipeLengthFt: "" });
+      expect(issuePaths(withBranches(second({ crossMain })))).toEqual([
+        "network.branches.1.crossMain.pipeLengthFt",
+      ]);
+    });
+
+    it("needs a sprinkler on a branch that is listed, but not on one that is a copy", () => {
+      expect(issuePaths(withBranches(second({ identicalToKey: "", sprinklers: [] })))).toEqual([
+        "network.branches.1.sprinklers",
+      ]);
+    });
+
+    it("gives the first branch nothing to repeat", () => {
+      const network = formInput().network;
+      const first = { ...network.branches[0], identicalToKey: "branch-1" };
+      expect(issuePaths(formInput({ network: { ...network, branches: [first] } }))).toEqual([
+        "network.branches.0.identicalToKey",
+      ]);
+    });
+
+    it("says so when the branch it repeated has been removed, rather than pointing elsewhere", () => {
+      expect(issuePaths(withBranches(second({ identicalToKey: "removed-branch" })))).toEqual([
+        "network.branches.1.identicalToKey",
+      ]);
+    });
+
+    it("refuses a branch that repeats one that comes later", () => {
+      const early = second({ key: "x", identicalToKey: "y" });
+      const late = { ...base(), key: "y" };
+      const network = { branches: [base(), early, late] as never, riser: [] };
+      expect(issuePaths(formInput({ network }))).toEqual(["network.branches.1.identicalToKey"]);
+    });
+
+    it("refuses a copy of a copy: the reference has to be a branch that is listed in full", () => {
+      const copyOfFirst = second({ key: "branch-2", identicalToKey: "branch-1" });
+      const copyOfCopy = second({ key: "branch-3", identicalToKey: "branch-2" });
+      expect(issuePaths(withBranches(copyOfFirst, copyOfCopy))).toEqual([
+        "network.branches.2.identicalToKey",
+      ]);
     });
   });
 

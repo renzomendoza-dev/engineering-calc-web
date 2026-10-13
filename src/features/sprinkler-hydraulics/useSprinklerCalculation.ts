@@ -1,6 +1,7 @@
 "use client";
 
 import { useLiveApiResult, type LiveApiResultState } from "@/hooks/useLiveApiResult";
+import { isIdenticalBranch } from "./network";
 import { toSprinklerRequest, unresolvedFittingPaths } from "./request";
 import { sprinklerHydraulicsSchema, type SprinklerFormInput } from "./schema";
 import type { FittingEquivalentLengthTableRow, SprinklerHydraulicResponse } from "./types";
@@ -28,6 +29,27 @@ function buildPayload(
 }
 
 /**
+ * Shown when branches are declared identical but the API that answered does not know the
+ * concept. Such an API accepts the request and quietly leaves those branches out, so the demand
+ * it reports is too low and nothing in the figures says so -- hence a warning, and not just a
+ * missing table. The response of an API that does support them always carries the list, even
+ * when it is empty.
+ */
+export const OLD_API_IDENTICAL_BRANCHES_WARNING =
+  "The calculation service answered without supporting identical branches, so the branches you " +
+  "declared identical are not in the demand below and it is understated. Update the service " +
+  "before relying on this result.";
+
+/** The result, with the old-service warning put first when it applies. Pure, so it can be tested. */
+export function withIdenticalBranchNotice(
+  result: SprinklerHydraulicResponse,
+  declaresCopies: boolean,
+): SprinklerHydraulicResponse {
+  if (!declaresCopies || result.identicalBranches !== undefined) return result;
+  return { ...result, warnings: [OLD_API_IDENTICAL_BRANCHES_WARNING, ...result.warnings] };
+}
+
+/**
  * Runs the hydraulic calculation on the API as the user edits, 400 ms after they stop.
  *
  * Every number the UI shows comes from the response -- nothing here recomputes flow, friction,
@@ -39,8 +61,12 @@ export function useSprinklerCalculation(
   values: SprinklerFormInput,
   fittings: FittingEquivalentLengthTableRow[],
 ): SprinklerCalculationState {
-  return useLiveApiResult<SprinklerHydraulicResponse>(
+  const state = useLiveApiResult<SprinklerHydraulicResponse>(
     SPRINKLER_HYDRAULICS_PATH,
     buildPayload(values, fittings),
   );
+
+  if (!state.result) return state;
+  const declaresCopies = (values.network?.branches ?? []).some(isIdenticalBranch);
+  return { ...state, result: withIdenticalBranchNotice(state.result, declaresCopies) };
 }

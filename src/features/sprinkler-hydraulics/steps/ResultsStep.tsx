@@ -3,6 +3,7 @@
 import { HeadlineResult } from "@/components/ui/HeadlineResult";
 import { ResultCard } from "@/components/ui/ResultCard";
 import { formatFlow, formatPercent, formatPressure } from "../format";
+import { IdenticalBranchTable } from "../IdenticalBranchTable";
 import { UNITS } from "../labels";
 import { SegmentWorksheetTable } from "../SegmentWorksheetTable";
 import { SprinklerFormulas } from "../SprinklerFormulas";
@@ -19,6 +20,7 @@ interface ResultsStepProps {
  */
 export function ResultsStep({ state }: ResultsStepProps) {
   const { result, isStale, isComplete } = state;
+  const identicalBranches = result?.identicalBranches ?? [];
 
   if (!result) {
     return (
@@ -98,6 +100,16 @@ export function ResultsStep({ state }: ResultsStepProps) {
         </h3>
         <SegmentWorksheetTable segments={result.segments} />
       </section>
+
+      {/* Only present when a branch was declared identical to another instead of listed. */}
+      {identicalBranches.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+            Identical branches
+          </h3>
+          <IdenticalBranchTable rows={identicalBranches} />
+        </section>
+      )}
 
       {/* Nothing to plot a demand against when no supply was given. */}
       {result.supplyCurve.length > 0 && (

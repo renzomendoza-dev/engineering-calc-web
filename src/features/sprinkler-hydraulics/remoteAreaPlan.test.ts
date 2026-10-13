@@ -105,8 +105,9 @@ describe("where the design basis is entered", () => {
     expect(Object.keys(DEFAULT_SPRINKLER_FORM)).not.toContain("assumedStartPressurePsi");
   });
 
-  it("leaves step 3 with only the spacing along the branch", () => {
-    expect(STEP_FIELDS.remote).toEqual(["sprinklerSpacingFt"]);
+  it("asks for the spacing along the branch beside the network it lays out, not in a step of its own", () => {
+    expect(STEP_FIELDS.network).toContain("sprinklerSpacingFt");
+    expect(Object.keys(STEP_FIELDS)).not.toContain("remote");
     expect(Object.keys(DEFAULT_SPRINKLER_FORM)).not.toContain("branchSpacingFt");
   });
 });
@@ -116,9 +117,10 @@ describe("step numbering", () => {
     STEPS.forEach((step, index) => expect(stepNumber(step)).toBe(index + 1));
   });
 
-  it("puts the remote area plan after the K factor it reads and before the network that uses it", () => {
-    expect(stepNumber("design")).toBeLessThan(stepNumber("remote"));
-    expect(stepNumber("remote")).toBeLessThan(stepNumber("network"));
-    expect(STEP_LABELS.remote).toBe("Remote area");
+  it("has five steps, with the pipe network after the water supply and before the results", () => {
+    expect([...STEPS]).toEqual(["project", "design", "supply", "network", "results"]);
+    expect(stepNumber("supply")).toBeLessThan(stepNumber("network"));
+    expect(stepNumber("network")).toBeLessThan(stepNumber("results"));
+    expect(STEP_LABELS.network).toBe("Pipe network");
   });
 });

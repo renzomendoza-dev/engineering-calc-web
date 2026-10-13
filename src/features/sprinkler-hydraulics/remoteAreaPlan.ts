@@ -12,7 +12,7 @@ export const REMOTE_AREA_PLAN_PATH = "/api/mechanical/sprinkler/remote-area";
  * the whole form can be handed to it.
  *
  * Reads the design area, density and coverage from step 1 and the default K factor from step 2,
- * which is the K new sprinklers start from. The spacing along the branch (step 3) is optional: the
+ * which is the K new sprinklers start from. The spacing along the branch (entered in the pipe network step) is optional: the
  * plan is useful without it, and the API leaves the layout fields null until it is given.
  */
 const planInputSchema = z

@@ -22,6 +22,30 @@ export interface MergedDraft {
   droppedLegacyNetwork: boolean;
 }
 
+/**
+ * Gives every branch a key and an identical-to field. Drafts saved before a branch could be
+ * declared identical have neither, and a branch needs a key that stays put to be pointed at.
+ * A key that is missing, or repeats an earlier one, is replaced; an existing one is never changed.
+ */
+function withBranchKeys(network: SprinklerFormInput["network"]): SprinklerFormInput["network"] {
+  const seen = new Set<string>();
+  const branches = network.branches.map((branch, index) => {
+    const stored = typeof branch.key === "string" ? branch.key.trim() : "";
+    let key = stored;
+    if (key === "" || seen.has(key)) {
+      key = `branch-${index + 1}`;
+      for (let attempt = 2; seen.has(key); attempt += 1) key = `branch-${index + 1}-${attempt}`;
+    }
+    seen.add(key);
+    return {
+      ...branch,
+      key,
+      identicalToKey: typeof branch.identicalToKey === "string" ? branch.identicalToKey : "",
+    };
+  });
+  return { ...network, branches };
+}
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -106,7 +130,9 @@ export function mergeDraftDetailed(raw: unknown): MergedDraft {
       ...(kept as Partial<SprinklerFormInput>),
       coveragePerSprinklerSqFt,
       waterSupply,
-      network: structured ? (draft.network as SprinklerFormInput["network"]) : DEFAULT_SPRINKLER_FORM.network,
+      network: structured
+        ? withBranchKeys(draft.network as SprinklerFormInput["network"])
+        : DEFAULT_SPRINKLER_FORM.network,
       deviceLosses: Array.isArray(draft.deviceLosses) ? draft.deviceLosses : DEFAULT_SPRINKLER_FORM.deviceLosses,
       // The old default pointed at a node that no longer exists; the new one is the top of the riser.
       hoseStreamNodeId: droppedLegacyNetwork
