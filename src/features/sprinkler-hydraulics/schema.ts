@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { optionalNumber, requiredNumber } from "@/lib/zodHelpers";
 import { pipeRuns, riserNodeIds } from "./network";
+import { SUCTION_CONDITIONS } from "@/features/firepump/types";
 import { SPRINKLER_HAZARDS, SPRINKLER_SYSTEM_TYPES } from "./types";
 
 /**
@@ -183,6 +184,17 @@ export const sprinklerHydraulicsSchema = z
     network: networkSchema,
     deviceLosses: z.array(deviceLossSchema),
     hoseStreamNodeId: z.string().optional(),
+
+    // --- results: sizing a pump and a tank from the calculation (all FORM-ONLY) ---
+    // How the pump takes its water, and the margins and duration chosen. Lenient on purpose: the
+    // sprinkler calculation is sent only when the whole form parses, and nothing here may stop it.
+    // What is missing is said where it is entered (pumpStorage.ts), not by blocking a result.
+    pumpSuctionCondition: z.enum(SUCTION_CONDITIONS),
+    pumpSuctionPressurePsi: optionalNumber(z.coerce.number()),
+    pumpSuctionLiftFt: optionalNumber(z.coerce.number()),
+    pumpSafetyMarginPercent: optionalNumber(z.coerce.number()),
+    storageDurationMinutes: optionalNumber(z.coerce.number()),
+    storageSafetyMarginPercent: optionalNumber(z.coerce.number()),
   })
   .superRefine((data, ctx) => {
     // calc-core requires the hose stream node whenever the allowance is non-zero. It is added at a
@@ -359,7 +371,15 @@ export const STEP_FIELDS: Record<StepId, readonly (keyof SprinklerFormInput)[]> 
   ],
   supply: ["supplySource", "waterSupply", "gravityTank"],
   network: ["sprinklerSpacingFt", "network", "deviceLosses", "hoseStreamNodeId"],
-  results: [],
+  // Nothing here blocks moving on: the steps before it are what a jump forward validates.
+  results: [
+    "pumpSuctionCondition",
+    "pumpSuctionPressurePsi",
+    "pumpSuctionLiftFt",
+    "pumpSafetyMarginPercent",
+    "storageDurationMinutes",
+    "storageSafetyMarginPercent",
+  ],
 };
 
 /**

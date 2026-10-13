@@ -9,17 +9,20 @@ import { UNITS } from "../labels";
 import { SegmentWorksheetTable } from "../SegmentWorksheetTable";
 import { SprinklerFormulas } from "../SprinklerFormulas";
 import { SupplyCurveChart } from "../SupplyCurveChart";
+import { PumpAndStorageSection } from "../PumpAndStorageSection";
+import type { SprinklerForm } from "../stepProps";
 import type { SprinklerCalculationState } from "../useSprinklerCalculation";
 
 interface ResultsStepProps {
   state: SprinklerCalculationState;
+  form: SprinklerForm;
 }
 
 /**
  * Step 5. The same figures as the summary panel, in full. Every value is read straight from the
  * response — the margin, the percentage and the verdict are the API's, not recomputed here.
  */
-export function ResultsStep({ state }: ResultsStepProps) {
+export function ResultsStep({ state, form }: ResultsStepProps) {
   const { result, isStale, isComplete } = state;
   const identicalBranches = result?.identicalBranches ?? [];
   const sprinklers = result?.sprinklers ?? [];
@@ -131,6 +134,9 @@ export function ResultsStep({ state }: ResultsStepProps) {
           <SupplyCurveChart result={result} />
         </section>
       )}
+
+      {/* Sized from the demand above, by the fire pump and fire water storage calculators. */}
+      <PumpAndStorageSection form={form} result={result} />
 
       <SprinklerFormulas />
 

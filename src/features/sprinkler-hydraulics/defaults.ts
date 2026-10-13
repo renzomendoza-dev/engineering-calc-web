@@ -126,6 +126,15 @@ export const DEFAULT_SPRINKLER_FORM: SprinklerFormInput = {
   deviceLosses: [],
   // Added at the top of the riser, where the cross main arrives -- see network.ts.
   hoseStreamNodeId: "TOR",
+
+  // Sizing a pump and a tank from the result: a pump with water arriving under pressure is the
+  // usual case; the rest is the designer's to state.
+  pumpSuctionCondition: "FLOODED",
+  pumpSuctionPressurePsi: "",
+  pumpSuctionLiftFt: "",
+  pumpSafetyMarginPercent: "",
+  storageDurationMinutes: "",
+  storageSafetyMarginPercent: "",
 };
 
 export const NEW_DEVICE_LOSS_ROW = { name: "", pressureLossPsi: 0 };

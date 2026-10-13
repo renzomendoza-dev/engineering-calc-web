@@ -35,6 +35,7 @@ function formValues(overrides: Partial<SprinklerFormInput> = {}) {
     defaultSchedule: "SCH40",
     defaultCFactor: "120",
     listedMinimumPressurePsi: "",
+    pumpSuctionCondition: "FLOODED",
     coveragePerSprinklerSqFt: "130",
     quickResponseSprinklers: false,
     ceilingHeightFt: "",
