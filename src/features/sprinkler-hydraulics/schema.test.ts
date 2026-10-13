@@ -33,6 +33,7 @@ function formInput(overrides: Partial<SprinklerFormInput> = {}): SprinklerFormIn
     defaultPipeMaterial: "BI",
     defaultSchedule: "SCH40",
     defaultCFactor: "120",
+    listedMinimumPressurePsi: "",
     coveragePerSprinklerSqFt: "130",
 
     quickResponseSprinklers: false,
@@ -485,6 +486,26 @@ describe("sprinklerHydraulicsSchema", () => {
     it("reaches the parsed values as a number", () => {
       const values = sprinklerHydraulicsSchema.parse(crossMainWith({ fittingsTotalFt: "13" }));
       expect(values.network.branches[0].crossMain.fittingsTotalFt).toBe(13);
+    });
+  });
+
+  describe("the listing's minimum pressure", () => {
+    it("is optional: blank is the standard's 7 psi", () => {
+      expect(issuePaths(formInput({ listedMinimumPressurePsi: "" }))).toEqual([]);
+    });
+
+    it("takes a positive figure", () => {
+      const values = sprinklerHydraulicsSchema.parse(formInput({ listedMinimumPressurePsi: "10" }));
+      expect(values.listedMinimumPressurePsi).toBe(10);
+    });
+
+    it("refuses zero and negative figures, on its own field", () => {
+      expect(issuePaths(formInput({ listedMinimumPressurePsi: "0" }))).toEqual(["listedMinimumPressurePsi"]);
+      expect(issuePaths(formInput({ listedMinimumPressurePsi: "-3" }))).toEqual(["listedMinimumPressurePsi"]);
+    });
+
+    it("is validated with the design data step, where it is entered", () => {
+      expect(STEP_FIELDS.design).toContain("listedMinimumPressurePsi");
     });
   });
 

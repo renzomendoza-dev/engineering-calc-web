@@ -24,6 +24,7 @@ const planInputSchema = z
     sprinklerSpacingFt: optionalNumber(z.coerce.number().positive()),
     quickResponseSprinklers: z.boolean(),
     ceilingHeightFt: optionalNumber(z.coerce.number().positive()),
+    listedMinimumPressurePsi: optionalNumber(z.coerce.number().positive()),
   })
   .refine((data) => !data.quickResponseSprinklers || data.ceilingHeightFt !== undefined, {
     // The reduction is read against the ceiling, so quick-response with no height is unanswerable.
@@ -61,6 +62,7 @@ export function buildRemoteAreaPlanPayload(
     // quick-response was unticked shouldn't travel with the request.
     ceilingHeightFt: data.quickResponseSprinklers ? (data.ceilingHeightFt ?? null) : null,
     maxCoveragePerSprinklerSqFt: maxCoverageSqFtPerSprinkler,
+    listedMinimumPressurePsi: data.listedMinimumPressurePsi ?? null,
   };
   return JSON.stringify(request);
 }

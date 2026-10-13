@@ -143,6 +143,10 @@ export const sprinklerHydraulicsSchema = z
     defaultPipeMaterial: z.string().min(1, "Pipe material is required"), // FORM-ONLY
     defaultSchedule: z.string().optional(), // FORM-ONLY
     defaultCFactor: z.coerce.number().positive("Must be positive"), // FORM-ONLY
+    // What the sprinkler's listing asks for, where that is more than the 7 psi NFPA 13 sets for any
+    // sprinkler (27.2.4.11.2). Blank means the standard's figure. Sent: it raises the floor under
+    // every sprinkler, and the API never lets it lower it.
+    listedMinimumPressurePsi: optionalNumber(z.coerce.number().positive("Must be positive")),
     // There is no starting pressure input. The most remote sprinkler starts at what its flow needs
     // -- (density x coverage / K)^2 -- or the minimum operating pressure, whichever is greater, and
     // the API works that out and says which governed.
@@ -346,7 +350,13 @@ export const STEP_FIELDS: Record<StepId, readonly (keyof SprinklerFormInput)[]> 
     "quickResponseSprinklers",
     "ceilingHeightFt",
   ],
-  design: ["defaultKFactor", "defaultPipeMaterial", "defaultSchedule", "defaultCFactor"],
+  design: [
+    "defaultKFactor",
+    "defaultPipeMaterial",
+    "defaultSchedule",
+    "defaultCFactor",
+    "listedMinimumPressurePsi",
+  ],
   supply: ["supplySource", "waterSupply", "gravityTank"],
   network: ["sprinklerSpacingFt", "network", "deviceLosses", "hoseStreamNodeId"],
   results: [],

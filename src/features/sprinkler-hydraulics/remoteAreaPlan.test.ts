@@ -25,6 +25,7 @@ describe("buildRemoteAreaPlanPayload", () => {
       quickResponseSprinklers: false,
       ceilingHeightFt: null,
       maxCoveragePerSprinklerSqFt: 225,
+      listedMinimumPressurePsi: null,
     });
   });
 
@@ -122,5 +123,23 @@ describe("step numbering", () => {
     expect(stepNumber("supply")).toBeLessThan(stepNumber("network"));
     expect(stepNumber("network")).toBeLessThan(stepNumber("results"));
     expect(STEP_LABELS.network).toBe("Pipe network");
+  });
+});
+
+describe("the listing's minimum pressure in the plan request", () => {
+  const sent = (overrides: Partial<SprinklerFormInput>) => {
+    const payload = buildRemoteAreaPlanPayload(
+      { ...DEFAULT_SPRINKLER_FORM, ...overrides } as SprinklerFormInput,
+      225,
+    );
+    return payload === null ? null : JSON.parse(payload).listedMinimumPressurePsi;
+  };
+
+  it("is sent when the designer gave one", () => {
+    expect(sent({ listedMinimumPressurePsi: "10" })).toBe(10);
+  });
+
+  it("is null when left blank, so the standard's 7 psi stands", () => {
+    expect(sent({ listedMinimumPressurePsi: "" })).toBeNull();
   });
 });

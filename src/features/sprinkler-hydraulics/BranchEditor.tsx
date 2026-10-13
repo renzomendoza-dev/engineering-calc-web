@@ -392,8 +392,8 @@ export function BranchEditor({
                   {planBasis
                     ? ` The remote area is ${formatLength(planBasis.remoteAreaLengthFt)} ${UNITS.length} long along a branch (1.2 × √A), which at ${formatLength(planBasis.spacingFt)} ${UNITS.length} spacing is ${plannedPerBranch} sprinklers, rounded up.`
                     : ""}{" "}
-                  NFPA 13 sets that length as a minimum, so a longer branch is allowed — it just
-                  means fewer branch lines are needed to cover the same area.
+                  NFPA 13 (27.2.4.2.1) sets that length as a minimum, so a longer branch is allowed
+                  — it just means fewer branch lines are needed to cover the same area.
                 </p>
               )}
 

@@ -90,6 +90,8 @@ export const DEFAULT_SPRINKLER_FORM: SprinklerFormInput = {
   defaultPipeMaterial: "BI",
   defaultSchedule: "SCH40",
   defaultCFactor: 120,
+  // Blank: the standard's 7 psi minimum. A listing that asks for more is entered in step 2.
+  listedMinimumPressurePsi: "",
 
   // Spacing along a branch is measured, not defaulted: blank means the layout isn't worked out
   // yet, and a blank layout never blocks the hydraulic calculation.

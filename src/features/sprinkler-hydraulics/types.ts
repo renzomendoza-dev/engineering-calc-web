@@ -124,6 +124,11 @@ export interface SprinklerHydraulicRequest {
   deviceLosses: DeviceLossRequest[] | null;
   /** Null when no branch is declared identical to another. */
   identicalBranches: IdenticalBranchRequest[] | null;
+  /**
+   * The minimum operating pressure the sprinkler's listing specifies, applied to every sprinkler;
+   * null for none. It can only raise the standard's 7 psi, never lower it.
+   */
+  listedMinimumPressurePsi: number | null;
 }
 
 /** Mirrors calc-api's SegmentFlowRowDto — one row of the hydraulic calculation sheet. */
@@ -301,6 +306,11 @@ export interface RemoteAreaPlanRequest {
   quickResponseSprinklers: boolean;
   ceilingHeightFt: number | null;
   maxCoveragePerSprinklerSqFt: number | null;
+  /**
+   * The minimum operating pressure the sprinkler's listing specifies (NFPA 13 27.2.4.11.2), or
+   * null for none. It can only raise the 7 psi the standard sets for any sprinkler.
+   */
+  listedMinimumPressurePsi: number | null;
 }
 
 /**

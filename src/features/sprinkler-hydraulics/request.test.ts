@@ -34,6 +34,7 @@ function formValues(overrides: Partial<SprinklerFormInput> = {}) {
     defaultPipeMaterial: "BI",
     defaultSchedule: "SCH40",
     defaultCFactor: "120",
+    listedMinimumPressurePsi: "",
     coveragePerSprinklerSqFt: "130",
     quickResponseSprinklers: false,
     ceilingHeightFt: "",
@@ -87,6 +88,7 @@ describe("toSprinklerRequest", () => {
         "hoseStreamGpm",
         "hoseStreamNodeId",
         "identicalBranches",
+        "listedMinimumPressurePsi",
         "segments",
         "sprinklers",
         "systemType",
@@ -377,5 +379,16 @@ describe("fitting equivalent lengths", () => {
     expect(unresolvedFittingPaths({ ...base, network }, [])).toEqual([
       "network.branches.0.crossMain.fittings.0.explicitEquivalentLengthFt",
     ]);
+  });
+});
+
+describe("the listing's minimum pressure in the request", () => {
+  it("is sent as a number when given, so it raises the floor under every sprinkler", () => {
+    const request = toSprinklerRequest(formValues({ listedMinimumPressurePsi: "12" }));
+    expect(request.listedMinimumPressurePsi).toBe(12);
+  });
+
+  it("is null when blank", () => {
+    expect(toSprinklerRequest(formValues()).listedMinimumPressurePsi).toBeNull();
   });
 });

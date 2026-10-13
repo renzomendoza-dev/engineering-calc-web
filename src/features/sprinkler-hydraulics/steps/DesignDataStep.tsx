@@ -2,7 +2,7 @@
 
 import { NumberField } from "@/components/ui/NumberField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
-import { CONFIDENCE_LABELS, humanizeCode } from "../labels";
+import { CONFIDENCE_LABELS, humanizeCode, UNITS } from "../labels";
 import { materialOptions, scheduleOptions } from "../pipeOptions";
 import { StartingPressureReadout } from "../PlanReadouts";
 import type { StepProps } from "../stepProps";
@@ -140,6 +140,16 @@ export function DesignDataStep({ form, reference, materials, materialsLoading, p
           label="Published C factors:"
           picks={cFactorPicks}
           onPick={(value) => setValue("defaultCFactor", value, { shouldValidate: true })}
+        />
+      </div>
+
+      <div className="max-w-sm">
+        <NumberField
+          label="Minimum operating pressure from the sprinkler listing (optional)"
+          unit={UNITS.pressure}
+          hint="NFPA 13 sets 7 psi for any sprinkler (27.2.4.11.1); where the listing for the application specifies more, that higher pressure is required (27.2.4.11.2). Leave blank for 7 psi. It can only raise the minimum, and it applies to every sprinkler."
+          error={errors.listedMinimumPressurePsi?.message}
+          {...register("listedMinimumPressurePsi")}
         />
       </div>
 
