@@ -9,7 +9,13 @@ import { RowCard } from "@/features/sprinkler-hydraulics/RowList";
 import { useMotorHorsepowerRatings } from "@/hooks/useMotorHorsepowerRatings";
 import { useMotorVoltages } from "@/hooks/useMotorVoltages";
 import type { GeneratorSetFormInput } from "./schema";
-import type { GeneratorSetReference } from "./types";
+import {
+  DIRECT_LOAD_KIND_LABELS,
+  DIRECT_LOAD_KINDS,
+  DIRECT_LOAD_UNIT_LABELS,
+  DIRECT_LOAD_UNITS,
+  type GeneratorSetReference,
+} from "./types";
 
 type Register = UseFormRegister<GeneratorSetFormInput>;
 type Watch = UseFormWatch<GeneratorSetFormInput>;
@@ -113,7 +119,9 @@ export function LightingAreaRow({
         />
         <SelectField
           label="Area type"
-          options={areaTypeOptions.length > 0 ? areaTypeOptions : [{ value: "GENERAL", label: "—" }]}
+          options={
+            areaTypeOptions.length > 0 ? areaTypeOptions : [{ value: "GENERAL", label: "—" }]
+          }
           disabled={referenceDisabled || isDwelling}
           error={rowErrors?.areaType?.message}
           {...register(`lightingAreas.${index}.areaType`)}
@@ -157,13 +165,7 @@ export function LightingAreaRow({
   );
 }
 
-export function ReceptacleGroupRow({
-  index,
-  register,
-  errors,
-  onDuplicate,
-  onRemove,
-}: RowProps) {
+export function ReceptacleGroupRow({ index, register, errors, onDuplicate, onRemove }: RowProps) {
   const rowErrors = errors.receptacleGroups?.[index];
   return (
     <RowCard
@@ -237,6 +239,112 @@ export function OtherLoadRow({ index, register, errors, onDuplicate, onRemove }:
   );
 }
 
+interface DirectLoadRowProps extends RowProps {
+  watch: Watch;
+}
+
+const directKindOptions: SelectOption[] = DIRECT_LOAD_KINDS.map((value) => ({
+  value,
+  label: DIRECT_LOAD_KIND_LABELS[value],
+}));
+const directUnitOptions: SelectOption[] = DIRECT_LOAD_UNITS.map((value) => ({
+  value,
+  label: DIRECT_LOAD_UNIT_LABELS[value],
+}));
+
+/** A building's whole load, or a fire pump, entered as a figure instead of built up. */
+export function DirectLoadRow({
+  index,
+  register,
+  watch,
+  errors,
+  onDuplicate,
+  onRemove,
+}: DirectLoadRowProps) {
+  const rowErrors = errors.directLoads?.[index];
+  const kind = watch(`directLoads.${index}.kind`);
+  const unit = watch(`directLoads.${index}.unit`);
+  const isPump = kind === "FIRE_PUMP";
+
+  return (
+    <RowCard
+      title={`Total load ${index + 1}`}
+      describedAs={`total load ${index + 1}`}
+      onDuplicate={onDuplicate}
+      onRemove={onRemove}
+    >
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <TextField
+          label="Name (optional)"
+          error={rowErrors?.label?.message}
+          {...register(`directLoads.${index}.label`)}
+        />
+        <SelectField
+          label="This load is"
+          options={directKindOptions}
+          error={rowErrors?.kind?.message}
+          {...register(`directLoads.${index}.kind`)}
+        />
+        <NumberField
+          label="Load"
+          hint={
+            isPump
+              ? "The fire pump's running load, from its controller or nameplate."
+              : "The building's total load. Enter it after your own demand factors; none is applied."
+          }
+          error={rowErrors?.amount?.message}
+          {...register(`directLoads.${index}.amount`)}
+        />
+        <SelectField
+          label="Unit"
+          options={directUnitOptions}
+          hint={unit === "AMPS" ? "Amperes at the system voltage." : undefined}
+          error={rowErrors?.unit?.message}
+          {...register(`directLoads.${index}.unit`)}
+        />
+        {unit === "KW" && (
+          <NumberField
+            label="Power factor"
+            hint="Turns kW into kVA."
+            error={rowErrors?.powerFactor?.message}
+            {...register(`directLoads.${index}.powerFactor`)}
+          />
+        )}
+        {isPump && (
+          <>
+            <NumberField
+              label="Locked-rotor current (optional)"
+              unit="A"
+              hint="At the system voltage, from the controller or nameplate. Blank leaves the pump's starting out of the check."
+              error={rowErrors?.lockedRotorAmps?.message}
+              {...register(`directLoads.${index}.lockedRotorAmps`)}
+            />
+            <NumberField
+              label="Start step"
+              hint="Loads in the same step start together; a higher step starts once the lower ones are running."
+              error={rowErrors?.startStep?.message}
+              {...register(`directLoads.${index}.startStep`)}
+            />
+            <NumberField
+              label="Starting current"
+              unit="% of locked rotor"
+              hint="100 for across-the-line starting."
+              error={rowErrors?.startingCurrentPercent?.message}
+              {...register(`directLoads.${index}.startingCurrentPercent`)}
+            />
+          </>
+        )}
+      </div>
+      {!isPump && (
+        <CheckboxField
+          label="Runs 3 hours or more"
+          registration={register(`directLoads.${index}.continuous`)}
+        />
+      )}
+    </RowCard>
+  );
+}
+
 interface MotorRowProps extends RowProps {
   watch: Watch;
   setValue: SetValue;
@@ -260,17 +368,16 @@ export function MotorRow({
   const horsepowerLabel = watch(`motors.${index}.horsepowerLabel`) ?? "";
   const voltage = String(watch(`motors.${index}.voltage`) ?? "");
 
-  const { horsepowerRatings, isLoading: hpLoading, error: hpError } = useMotorHorsepowerRatings(
-    phaseType,
-    isThreePhase ? "INDUCTION" : "",
-    isThreePhase,
-  );
-  const { voltages, isLoading: voltageLoading, error: voltageError } = useMotorVoltages(
-    phaseType,
-    isThreePhase ? "INDUCTION" : "",
-    isThreePhase,
-    horsepowerLabel,
-  );
+  const {
+    horsepowerRatings,
+    isLoading: hpLoading,
+    error: hpError,
+  } = useMotorHorsepowerRatings(phaseType, isThreePhase ? "INDUCTION" : "", isThreePhase);
+  const {
+    voltages,
+    isLoading: voltageLoading,
+    error: voltageError,
+  } = useMotorVoltages(phaseType, isThreePhase ? "INDUCTION" : "", isThreePhase, horsepowerLabel);
 
   // Pre-select the system voltage once the horsepower's published voltages are known, so a motor
   // on the generator's own voltage needs no second choice. Only fills an empty field.
@@ -287,7 +394,11 @@ export function MotorRow({
   const voltageOptions: SelectOption[] = [
     {
       value: "",
-      label: !horsepowerLabel ? "Select horsepower first" : voltageLoading ? "Loading…" : "Select voltage",
+      label: !horsepowerLabel
+        ? "Select horsepower first"
+        : voltageLoading
+          ? "Loading…"
+          : "Select voltage",
     },
     ...voltages.map((entry) => ({ value: String(entry), label: `${entry} V` })),
   ];
@@ -329,6 +440,19 @@ export function MotorRow({
           error={rowErrors?.voltage?.message ?? voltageError ?? undefined}
           hint="Voltages with a published full-load current at this horsepower."
           {...register(`motors.${index}.voltage`)}
+        />
+        <NumberField
+          label="Start step"
+          hint="Motors in the same step start together; a higher step starts once the lower ones are running."
+          error={rowErrors?.startStep?.message}
+          {...register(`motors.${index}.startStep`)}
+        />
+        <NumberField
+          label="Starting current"
+          unit="% of locked rotor"
+          hint="100 for across-the-line starting; less where a starter or drive holds the current down."
+          error={rowErrors?.startingCurrentPercent?.message}
+          {...register(`motors.${index}.startingCurrentPercent`)}
         />
       </div>
     </RowCard>

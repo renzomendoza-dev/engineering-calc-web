@@ -13,6 +13,45 @@ export const GENERATOR_PHASE_LABELS: Record<GeneratorPhaseType, string> = {
 /** The standby article that applies to the OPTIONAL class, which is the only one with a transfer mode. */
 export const OPTIONAL_STANDBY_CLASS = "OPTIONAL";
 
+/** How the load is entered: built up from its parts, or given as a total for a building or a fire pump. */
+export const LOAD_ENTRY_MODES = ["BUILD", "DIRECT"] as const;
+
+export type LoadEntryMode = (typeof LOAD_ENTRY_MODES)[number];
+
+/** The two loads that can be entered as a total. */
+export const DIRECT_LOAD_KINDS = ["BUILDING", "FIRE_PUMP"] as const;
+
+export type DirectLoadKind = (typeof DIRECT_LOAD_KINDS)[number];
+
+export const DIRECT_LOAD_KIND_LABELS: Record<DirectLoadKind, string> = {
+  BUILDING: "Building load",
+  FIRE_PUMP: "Fire pump",
+};
+
+/** The units a total load is entered in. */
+export const DIRECT_LOAD_UNITS = ["KVA", "KW", "AMPS"] as const;
+
+export type DirectLoadUnit = (typeof DIRECT_LOAD_UNITS)[number];
+
+export const DIRECT_LOAD_UNIT_LABELS: Record<DirectLoadUnit, string> = {
+  KVA: "kVA",
+  KW: "kW",
+  AMPS: "A",
+};
+
+/** Mirrors calc-api's DirectLoadDto field-for-field. */
+export interface DirectLoadRequest {
+  label: string;
+  kind: DirectLoadKind;
+  amount: number;
+  unit: DirectLoadUnit;
+  powerFactor: number | null;
+  continuous: boolean;
+  lockedRotorAmps: number | null;
+  startStep: number | null;
+  startingCurrentPercent: number | null;
+}
+
 /** Mirrors calc-api's LightingAreaDto field-for-field. */
 export interface LightingAreaRequest {
   label: string;
@@ -46,6 +85,8 @@ export interface MotorLoadRequest {
   horsepowerLabel: string;
   voltage: number;
   quantity: number;
+  startStep: number | null;
+  startingCurrentPercent: number | null;
 }
 
 /** Mirrors calc-api's OutputConductorDto field-for-field. */
@@ -74,15 +115,20 @@ export interface GeneratorSetSizingRequest {
   selectedGeneratorKva: number | null;
   designPreventsOverload: boolean;
   outputConductor: OutputConductorRequest | null;
+  subtransientReactancePercent: number | null;
+  maximumVoltageDipPercent: number | null;
+  directLoads: DirectLoadRequest[];
 }
 
-export type LoadKind = "LIGHTING" | "RECEPTACLE" | "OTHER" | "MOTOR";
+export type LoadKind = "LIGHTING" | "RECEPTACLE" | "OTHER" | "MOTOR" | DirectLoadKind;
 
 export const LOAD_KIND_LABELS: Record<LoadKind, string> = {
   LIGHTING: "Lighting",
   RECEPTACLE: "Receptacles",
   OTHER: "Other load",
   MOTOR: "Motor",
+  BUILDING: "Building load",
+  FIRE_PUMP: "Fire pump",
 };
 
 /** Mirrors calc-api's LoadRowDto field-for-field. */
@@ -100,6 +146,20 @@ export interface LoadRow {
 export interface Requirement {
   citation: string;
   text: string;
+}
+
+/** Which of the two requirements set the required capacity. */
+export type GoverningCase = "RUNNING_LOAD" | "MOTOR_STARTING";
+
+/** Mirrors calc-api's StartingStepDto field-for-field. */
+export interface StartingStep {
+  step: number;
+  motors: string;
+  startingKva: number;
+  runningKvaBefore: number;
+  requiredGeneratorKva: number;
+  voltageDipPercentAtSelected: number | null;
+  withinDipLimit: boolean | null;
 }
 
 /** Mirrors calc-api's GeneratorSetSizingResponse field-for-field. */
@@ -128,6 +188,11 @@ export interface GeneratorSetSizingResponse {
   requirements: Requirement[];
   standardSizesNote: string;
   warnings: string[];
+  runningRequiredKva: number;
+  startingRequiredKva: number | null;
+  governingCase: GoverningCase;
+  startingSteps: StartingStep[];
+  startingBasis: string | null;
 }
 
 /** Mirrors calc-api's LightingOccupancyDto field-for-field. */
@@ -171,4 +236,7 @@ export interface GeneratorSetReference {
   standardSizesNote: string;
   defaultGeneratorPowerFactor: number;
   defaultGeneratorPowerFactorNote: string;
+  defaultSubtransientReactancePercent: number;
+  defaultMaximumVoltageDipPercent: number;
+  motorStartingDefaultsNote: string;
 }

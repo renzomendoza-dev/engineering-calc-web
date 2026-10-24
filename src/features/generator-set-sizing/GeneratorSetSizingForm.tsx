@@ -1,20 +1,29 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormErrorBanner } from "@/components/ui/FormErrorBanner";
 import { NumberField } from "@/components/ui/NumberField";
+import { RadioGroupField } from "@/components/ui/RadioGroupField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import type { RadioOption } from "@/components/ui/RadioGroupField";
 import { RowList } from "@/features/sprinkler-hydraulics/RowList";
 import { useApiFormError } from "@/hooks/useApiFormError";
 import { useGeneratorSetReference } from "@/hooks/useGeneratorSetReference";
 import { useWireSizingReferenceData } from "@/hooks/useWireSizingReferenceData";
 import { apiPost } from "@/lib/api-client";
-import { LightingAreaRow, MotorRow, OtherLoadRow, ReceptacleGroupRow } from "./LoadInputs";
+import {
+  DirectLoadRow,
+  LightingAreaRow,
+  MotorRow,
+  OtherLoadRow,
+  ReceptacleGroupRow,
+} from "./LoadInputs";
 import { buildGeneratorSetRequest } from "./request";
 import {
+  activeLoadsOnly,
   generatorSetSchema,
   type GeneratorSetFormInput,
   type GeneratorSetFormValues,
@@ -31,8 +40,23 @@ function titleCase(value: string): string {
   return value.charAt(0) + value.slice(1).toLowerCase();
 }
 
+const baseResolver = zodResolver(generatorSetSchema);
+
+/** Validates, and hands back, only the loads of the entry mode in use (see activeLoadsOnly). */
+const resolver: Resolver<GeneratorSetFormInput, unknown, GeneratorSetFormValues> = (
+  values,
+  context,
+  options,
+) => baseResolver(activeLoadsOnly(values), context, options);
+
+const loadEntryOptions: RadioOption[] = [
+  { value: "BUILD", label: "Build it up from lighting, receptacles and motors" },
+  { value: "DIRECT", label: "I have the total load (a building or a fire pump)" },
+];
+
 const defaultValues: GeneratorSetFormInput = {
   standbyClass: "",
+  loadEntryMode: "BUILD",
   optionalTransfer: "",
   phaseType: "THREE_PHASE",
   voltage: "",
@@ -41,6 +65,7 @@ const defaultValues: GeneratorSetFormInput = {
   applyReceptacleDemandFactor: true,
   otherLoads: [],
   motors: [],
+  directLoads: [],
   generatorPowerFactor: 0.8,
   spareCapacityPercent: 0,
   selectedGeneratorKva: undefined,
@@ -54,6 +79,9 @@ const defaultValues: GeneratorSetFormInput = {
     conductorMaterial: "",
     terminationTempRatingCelsius: undefined,
   },
+  // Filled from the API's defaults once they load (see the effect below); blank skips the check.
+  subtransientReactancePercent: undefined,
+  maximumVoltageDipPercent: undefined,
 };
 
 const phaseOptions: SelectOption[] = GENERATOR_PHASE_TYPES.map((value) => ({
@@ -62,9 +90,7 @@ const phaseOptions: SelectOption[] = GENERATOR_PHASE_TYPES.map((value) => ({
 }));
 
 function SectionHeading({ children }: { children: string }) {
-  return (
-    <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">{children}</h2>
-  );
+  return <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">{children}</h2>;
 }
 
 interface GeneratorSetSizingFormProps {
@@ -82,15 +108,19 @@ export function GeneratorSetSizingForm({ onResult }: GeneratorSetSizingFormProps
     watch,
     formState: { errors, isSubmitting },
   } = useForm<GeneratorSetFormInput, unknown, GeneratorSetFormValues>({
-    resolver: zodResolver(generatorSetSchema),
+    resolver,
     defaultValues,
   });
-  const { generalError, setGeneralError, handleApiError } = useApiFormError(setError, defaultValues);
+  const { generalError, setGeneralError, handleApiError } = useApiFormError(
+    setError,
+    defaultValues,
+  );
 
   const lighting = useFieldArray({ control, name: "lightingAreas" });
   const receptacles = useFieldArray({ control, name: "receptacleGroups" });
   const others = useFieldArray({ control, name: "otherLoads" });
   const motors = useFieldArray({ control, name: "motors" });
+  const directs = useFieldArray({ control, name: "directLoads" });
 
   const reference = useGeneratorSetReference();
   const wireReference = useWireSizingReferenceData();
@@ -102,11 +132,37 @@ export function GeneratorSetSizingForm({ onResult }: GeneratorSetSizingFormProps
   const phaseType = watch("phaseType");
   const systemVoltageInput = watch("voltage");
   const sizeOutputConductor = watch("sizeOutputConductor");
+  const loadEntryMode = watch("loadEntryMode");
+  const directLoads = watch("directLoads");
+  const isDirect = loadEntryMode === "DIRECT";
+  // Motor starting applies to motors, and to a fire pump entered as a total.
+  const hasStartingLoads = isDirect
+    ? directLoads.some((load) => load.kind === "FIRE_PUMP")
+    : motors.fields.length > 0;
 
   const isOptional = standbyClass === OPTIONAL_STANDBY_CLASS;
   const selectedClass = reference.standbyClasses.find((entry) => entry.key === standbyClass);
-  const selectedTransfer = reference.optionalTransfers.find((entry) => entry.key === optionalTransfer);
+  const selectedTransfer = reference.optionalTransfers.find(
+    (entry) => entry.key === optionalTransfer,
+  );
   const systemVoltage = Number(systemVoltageInput) > 0 ? Number(systemVoltageInput) : undefined;
+
+  // Start the motor starting check from the API's defaults, once, when they arrive: they are the
+  // API's figures (and not PEC values), so the form does not keep its own copy. Clearing the fields
+  // afterwards skips the check, so the defaults are never re-applied.
+  const startingDefaultsApplied = useRef(false);
+  useEffect(() => {
+    if (startingDefaultsApplied.current || reference.isLoading || reference.error) return;
+    startingDefaultsApplied.current = true;
+    setValue("subtransientReactancePercent", reference.defaultSubtransientReactancePercent);
+    setValue("maximumVoltageDipPercent", reference.defaultMaximumVoltageDipPercent);
+  }, [
+    reference.isLoading,
+    reference.error,
+    reference.defaultSubtransientReactancePercent,
+    reference.defaultMaximumVoltageDipPercent,
+    setValue,
+  ]);
 
   // A transfer mode belongs to optional standby only, so it is cleared when another class is picked.
   useEffect(() => {
@@ -156,7 +212,9 @@ export function GeneratorSetSizingForm({ onResult }: GeneratorSetSizingFormProps
     })),
   ];
 
-  const loadsError = errors.lightingAreas?.root?.message ?? errors.lightingAreas?.message;
+  const loadsError = isDirect
+    ? (errors.directLoads?.root?.message ?? errors.directLoads?.message)
+    : (errors.lightingAreas?.root?.message ?? errors.lightingAreas?.message);
 
   const onSubmit = async (values: GeneratorSetFormValues) => {
     setGeneralError(null);
@@ -171,7 +229,11 @@ export function GeneratorSetSizingForm({ onResult }: GeneratorSetSizingFormProps
     }
   };
 
-  const rowProps = (index: number, list: { insert: (i: number, value: never) => void; remove: (i: number) => void }, path: "lightingAreas" | "receptacleGroups" | "otherLoads" | "motors") => ({
+  const rowProps = (
+    index: number,
+    list: { insert: (i: number, value: never) => void; remove: (i: number) => void },
+    path: "lightingAreas" | "receptacleGroups" | "otherLoads" | "motors" | "directLoads",
+  ) => ({
     index,
     register,
     errors,
@@ -234,103 +296,178 @@ export function GeneratorSetSizingForm({ onResult }: GeneratorSetSizingFormProps
 
       <section className="flex flex-col gap-4">
         <SectionHeading>Loads on the generator</SectionHeading>
+        <RadioGroupField
+          legend="How do you want to enter the load?"
+          options={loadEntryOptions}
+          {...register("loadEntryMode")}
+        />
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          List the loads that will run together on the set. The load is built the way PEC Article
-          2.20 builds a feeder load.
+          {isDirect
+            ? "Enter the total load of the building, or a fire pump, as a figure. It is taken as the load to carry, so give a building's load after your own demand factors."
+            : "List the loads that will run together on the set. The load is built the way PEC Article 2.20 builds a feeder load."}
         </p>
         {loadsError && <p className="text-xs text-red-600 dark:text-red-400">{loadsError}</p>}
 
-        <RowList
-          itemLabel="lighting area"
-          count={lighting.fields.length}
-          onAdd={() =>
-            lighting.append({
-              label: "",
-              occupancy: "",
-              areaType: "GENERAL",
-              floorAreaM2: "",
-              unitLoadVoltAmperesPerM2: undefined,
-              entireLightingUsedAtOnce: false,
-              continuous: true,
-            })
-          }
-        >
-          {lighting.fields.map((field, index) => (
-            <LightingAreaRow
-              key={field.id}
-              {...rowProps(index, lighting, "lightingAreas")}
-              watch={watch}
-              setValue={setValue}
-              reference={reference}
-              referenceDisabled={referenceDisabled}
-            />
-          ))}
-        </RowList>
-
-        <RowList
-          itemLabel="receptacle group"
-          count={receptacles.fields.length}
-          onAdd={() =>
-            receptacles.append({
-              label: "",
-              outlets: "",
-              bankOrOfficeFloorAreaM2: undefined,
-              continuous: false,
-            })
-          }
-        >
-          {receptacles.fields.map((field, index) => (
-            <ReceptacleGroupRow key={field.id} {...rowProps(index, receptacles, "receptacleGroups")} />
-          ))}
-        </RowList>
-
-        {receptacles.fields.length > 0 && (
-          <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
-              {...register("applyReceptacleDemandFactor")}
-            />
-            Apply the receptacle demand factor (Table 2.20.3.5)
-          </label>
+        {isDirect && (
+          <RowList
+            itemLabel="total load"
+            count={directs.fields.length}
+            onAdd={() =>
+              directs.append({
+                label: "",
+                kind: "BUILDING",
+                amount: "",
+                unit: "KVA",
+                powerFactor: undefined,
+                continuous: true,
+                lockedRotorAmps: undefined,
+                startStep: 1,
+                startingCurrentPercent: 100,
+              })
+            }
+          >
+            {directs.fields.map((field, index) => (
+              <DirectLoadRow
+                key={field.id}
+                {...rowProps(index, directs, "directLoads")}
+                watch={watch}
+              />
+            ))}
+          </RowList>
         )}
 
-        <RowList
-          itemLabel="other load"
-          count={others.fields.length}
-          onAdd={() =>
-            others.append({
-              label: "",
-              voltAmperes: "",
-              demandFactorPercent: 100,
-              continuous: false,
-            })
-          }
-        >
-          {others.fields.map((field, index) => (
-            <OtherLoadRow key={field.id} {...rowProps(index, others, "otherLoads")} />
-          ))}
-        </RowList>
+        {!isDirect && (
+          <>
+            <RowList
+              itemLabel="lighting area"
+              count={lighting.fields.length}
+              onAdd={() =>
+                lighting.append({
+                  label: "",
+                  occupancy: "",
+                  areaType: "GENERAL",
+                  floorAreaM2: "",
+                  unitLoadVoltAmperesPerM2: undefined,
+                  entireLightingUsedAtOnce: false,
+                  continuous: true,
+                })
+              }
+            >
+              {lighting.fields.map((field, index) => (
+                <LightingAreaRow
+                  key={field.id}
+                  {...rowProps(index, lighting, "lightingAreas")}
+                  watch={watch}
+                  setValue={setValue}
+                  reference={reference}
+                  referenceDisabled={referenceDisabled}
+                />
+              ))}
+            </RowList>
 
-        <RowList
-          itemLabel="motor"
-          count={motors.fields.length}
-          onAdd={() =>
-            motors.append({ label: "", horsepowerLabel: "", voltage: "", quantity: 1 })
-          }
-        >
-          {motors.fields.map((field, index) => (
-            <MotorRow
-              key={field.id}
-              {...rowProps(index, motors, "motors")}
-              watch={watch}
-              setValue={setValue}
-              phaseType={phaseType}
-              systemVoltage={systemVoltage}
-            />
-          ))}
-        </RowList>
+            <RowList
+              itemLabel="receptacle group"
+              count={receptacles.fields.length}
+              onAdd={() =>
+                receptacles.append({
+                  label: "",
+                  outlets: "",
+                  bankOrOfficeFloorAreaM2: undefined,
+                  continuous: false,
+                })
+              }
+            >
+              {receptacles.fields.map((field, index) => (
+                <ReceptacleGroupRow
+                  key={field.id}
+                  {...rowProps(index, receptacles, "receptacleGroups")}
+                />
+              ))}
+            </RowList>
+
+            {receptacles.fields.length > 0 && (
+              <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
+                  {...register("applyReceptacleDemandFactor")}
+                />
+                Apply the receptacle demand factor (Table 2.20.3.5)
+              </label>
+            )}
+
+            <RowList
+              itemLabel="other load"
+              count={others.fields.length}
+              onAdd={() =>
+                others.append({
+                  label: "",
+                  voltAmperes: "",
+                  demandFactorPercent: 100,
+                  continuous: false,
+                })
+              }
+            >
+              {others.fields.map((field, index) => (
+                <OtherLoadRow key={field.id} {...rowProps(index, others, "otherLoads")} />
+              ))}
+            </RowList>
+
+            <RowList
+              itemLabel="motor"
+              count={motors.fields.length}
+              onAdd={() =>
+                motors.append({
+                  label: "",
+                  horsepowerLabel: "",
+                  voltage: "",
+                  quantity: 1,
+                  startStep: 1,
+                  startingCurrentPercent: 100,
+                })
+              }
+            >
+              {motors.fields.map((field, index) => (
+                <MotorRow
+                  key={field.id}
+                  {...rowProps(index, motors, "motors")}
+                  watch={watch}
+                  setValue={setValue}
+                  phaseType={phaseType}
+                  systemVoltage={systemVoltage}
+                />
+              ))}
+            </RowList>
+          </>
+        )}
       </section>
+
+      {hasStartingLoads && (
+        <section className="flex flex-col gap-4">
+          <SectionHeading>Motor starting</SectionHeading>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Checks the voltage dip when the motors {isDirect ? "or the fire pump start" : "start"},
+            from their locked-rotor kVA. Clear both fields to skip it.{" "}
+            {reference.motorStartingDefaultsNote}
+          </p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <NumberField
+              label="Generator subtransient reactance"
+              unit="%"
+              hint="X″d from the generator data sheet."
+              error={errors.subtransientReactancePercent?.message}
+              {...register("subtransientReactancePercent")}
+            />
+            <NumberField
+              label="Maximum voltage dip"
+              unit="%"
+              hint="The largest dip you accept when a motor starts."
+              error={errors.maximumVoltageDipPercent?.message}
+              {...register("maximumVoltageDipPercent")}
+            />
+          </div>
+        </section>
+      )}
 
       <section className="flex flex-col gap-4">
         <SectionHeading>Generator set</SectionHeading>
@@ -369,7 +506,8 @@ export function GeneratorSetSizingForm({ onResult }: GeneratorSetSizingFormProps
             The generator&apos;s design does not permit overloading
           </span>
           <span className="pl-6 text-xs font-normal text-zinc-500 dark:text-zinc-400">
-            Sizes the output conductors at 100% of nameplate current instead of 115% (PEC 4.45.1.13).
+            Sizes the output conductors at 100% of nameplate current instead of 115% (PEC
+            4.45.1.13).
           </span>
         </label>
       </section>
@@ -431,7 +569,11 @@ export function GeneratorSetSizingForm({ onResult }: GeneratorSetSizingFormProps
 
       <FormErrorBanner message={generalError} />
 
-      <SubmitButton isSubmitting={isSubmitting} label="Size generator set" submittingLabel="Sizing…" />
+      <SubmitButton
+        isSubmitting={isSubmitting}
+        label="Size generator set"
+        submittingLabel="Sizing…"
+      />
     </form>
   );
 }

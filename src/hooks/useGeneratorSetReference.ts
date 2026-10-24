@@ -18,6 +18,9 @@ const EMPTY: GeneratorSetReference = {
   standardSizesNote: "",
   defaultGeneratorPowerFactor: 0.8,
   defaultGeneratorPowerFactorNote: "",
+  defaultSubtransientReactancePercent: 0,
+  defaultMaximumVoltageDipPercent: 0,
+  motorStartingDefaultsNote: "",
 };
 
 /** Fetches generator set sizing's dropdown data once on mount; none of it depends on user input. */
