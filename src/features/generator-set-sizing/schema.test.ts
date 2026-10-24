@@ -42,8 +42,56 @@ function formInput(overrides: Partial<GeneratorSetFormInput> = {}): GeneratorSet
       conductorMaterial: "",
       terminationTempRatingCelsius: "",
     },
+    includeFirePump: false,
+    firePump: firePumpForm(),
     subtransientReactancePercent: "20",
     maximumVoltageDipPercent: "15",
+    ...overrides,
+  };
+}
+
+type FirePumpForm = GeneratorSetFormInput["firePump"];
+
+const pumpByHorsepower = {
+  entry: "HORSEPOWER" as const,
+  horsepowerLabel: "100",
+  voltage: "460",
+  fullLoadAmps: "",
+  lockedRotorAmps: "",
+};
+
+const pumpByAmps = {
+  entry: "AMPERES" as const,
+  horsepowerLabel: "",
+  voltage: "",
+  fullLoadAmps: "40",
+  lockedRotorAmps: "240",
+};
+
+/** The fire pump section as the form holds it: by horsepower, no jockey, no run. */
+function firePumpForm(overrides: Partial<FirePumpForm> = {}): FirePumpForm {
+  return {
+    motor: pumpByHorsepower,
+    includeJockey: false,
+    jockey: { ...pumpByHorsepower, horsepowerLabel: "", voltage: "" },
+    accessoryAmps: "",
+    startStep: "1",
+    startingCurrentPercent: "100",
+    sizeSupplyRun: false,
+    supplyRun: {
+      ambientTempCelsius: "30",
+      numberOfCurrentCarryingConductors: "3",
+      numberOfParallelSets: "1",
+      insulationType: "THHN",
+      conductorMaterial: "COPPER",
+      terminationTempRatingCelsius: "75",
+      checkVoltageDrop: false,
+      oneWayLengthMeters: "",
+      conduitMaterial: "",
+      startingPowerFactor: "",
+      runningPowerFactor: "",
+      cableStartingDropAllowancePercent: "",
+    },
     ...overrides,
   };
 }
@@ -65,25 +113,10 @@ function issuePaths(input: GeneratorSetFormInput): string[] {
 
 const buildingRow = {
   label: "Tower",
-  kind: "BUILDING" as const,
   amount: "250",
   unit: "KW" as const,
   powerFactor: "0.85",
   continuous: true,
-  lockedRotorAmps: "",
-  startStep: "1",
-  startingCurrentPercent: "100",
-};
-
-const pumpRow = {
-  ...buildingRow,
-  label: "Fire pump",
-  kind: "FIRE_PUMP" as const,
-  amount: "30",
-  unit: "AMPS" as const,
-  powerFactor: "",
-  continuous: false,
-  lockedRotorAmps: "180",
 };
 
 describe("generatorSetSchema", () => {
@@ -192,8 +225,8 @@ describe("entering the total load directly", () => {
       ...overrides,
     });
 
-  it("accepts a building total and a fire pump with no lighting, receptacles or motors", () => {
-    expect(issuePaths(direct({ directLoads: [buildingRow, pumpRow] }))).toEqual([]);
+  it("accepts a building total with no lighting, receptacles or motors", () => {
+    expect(issuePaths(direct())).toEqual([]);
   });
 
   it("asks for at least one total load", () => {
@@ -236,27 +269,182 @@ describe("entering the total load directly", () => {
     ).toEqual(["directLoads.0.amount"]);
   });
 
-  it("sends the fire pump's starting figures and a building's as null", () => {
+  it("sends only the building's total, with the power factor only for kW", () => {
     const request = buildGeneratorSetRequest(
-      generatorSetSchema.parse(activeLoadsOnly(direct({ directLoads: [buildingRow, pumpRow] }))),
+      generatorSetSchema.parse(
+        activeLoadsOnly(
+          direct({ directLoads: [buildingRow, { ...buildingRow, unit: "KVA", amount: "180" }] }),
+        ),
+      ),
     );
     expect(request.lightingAreas).toEqual([]);
-    expect(request.directLoads[0]).toMatchObject({
-      kind: "BUILDING",
-      unit: "KW",
-      powerFactor: 0.85,
-      lockedRotorAmps: null,
-      startStep: null,
-      startingCurrentPercent: null,
+    expect(request.directLoads[0]).toMatchObject({ unit: "KW", powerFactor: 0.85 });
+    expect(request.directLoads[1]).toMatchObject({ unit: "KVA", amount: 180, powerFactor: null });
+  });
+});
+
+describe("a fire pump", () => {
+  const withPump = (
+    pump: Partial<FirePumpForm> = {},
+    overrides: Partial<GeneratorSetFormInput> = {},
+  ) => formInput({ includeFirePump: true, firePump: firePumpForm(pump), ...overrides });
+
+  it("is not validated, nor sent, until it is switched on", () => {
+    const hidden = formInput({
+      firePump: firePumpForm({ motor: { ...pumpByHorsepower, horsepowerLabel: "" } }),
     });
-    expect(request.directLoads[1]).toMatchObject({
-      kind: "FIRE_PUMP",
-      continuous: false,
-      unit: "AMPS",
-      powerFactor: null,
-      lockedRotorAmps: 180,
+    expect(issuePaths(hidden)).toEqual([]);
+    expect(buildGeneratorSetRequest(generatorSetSchema.parse(hidden)).firePump).toBeNull();
+  });
+
+  it("is enough to size on its own, in either entry mode", () => {
+    expect(issuePaths(withPump({}, { lightingAreas: [] }))).toEqual([]);
+    expect(issuePaths(withPump({}, { lightingAreas: [], loadEntryMode: "DIRECT" }))).toEqual([]);
+  });
+
+  it("needs the horsepower and voltage, or the full-load current, of the way it is entered", () => {
+    const noHorsepower = { ...pumpByHorsepower, horsepowerLabel: "", voltage: "" };
+    expect(issuePaths(withPump({ motor: noHorsepower }))).toEqual([
+      "firePump.motor.horsepowerLabel",
+      "firePump.motor.voltage",
+    ]);
+    expect(issuePaths(withPump({ motor: { ...pumpByAmps, fullLoadAmps: "" } }))).toEqual([
+      "firePump.motor.fullLoadAmps",
+    ]);
+    expect(issuePaths(withPump({ motor: pumpByAmps }))).toEqual([]);
+  });
+
+  it("checks the jockey pump only when there is one", () => {
+    const empty = { ...pumpByHorsepower, horsepowerLabel: "", voltage: "" };
+    expect(issuePaths(withPump({ jockey: empty }))).toEqual([]);
+    expect(issuePaths(withPump({ includeJockey: true, jockey: empty }))).toEqual([
+      "firePump.jockey.horsepowerLabel",
+      "firePump.jockey.voltage",
+    ]);
+  });
+
+  it("asks for the conductor conditions only when the run is to be sized", () => {
+    const blankConductor = {
+      ...firePumpForm().supplyRun,
+      insulationType: "",
+      conductorMaterial: "",
+      terminationTempRatingCelsius: "",
+    };
+    expect(issuePaths(withPump({ supplyRun: blankConductor }))).toEqual([]);
+    expect(issuePaths(withPump({ sizeSupplyRun: true, supplyRun: blankConductor }))).toEqual([
+      "firePump.supplyRun.insulationType",
+      "firePump.supplyRun.conductorMaterial",
+      "firePump.supplyRun.terminationTempRatingCelsius",
+    ]);
+  });
+
+  it("asks for the drop inputs only when the voltage drop is to be checked", () => {
+    const run = firePumpForm().supplyRun;
+    expect(issuePaths(withPump({ sizeSupplyRun: true, supplyRun: run }))).toEqual([]);
+    expect(
+      issuePaths(withPump({ sizeSupplyRun: true, supplyRun: { ...run, checkVoltageDrop: true } })),
+    ).toEqual([
+      "firePump.supplyRun.oneWayLengthMeters",
+      "firePump.supplyRun.startingPowerFactor",
+      "firePump.supplyRun.runningPowerFactor",
+      "firePump.supplyRun.cableStartingDropAllowancePercent",
+      "firePump.supplyRun.conduitMaterial",
+    ]);
+  });
+
+  it("keeps the cable's share of the starting drop below the 15% it is part of", () => {
+    const run = {
+      ...firePumpForm().supplyRun,
+      checkVoltageDrop: true,
+      oneWayLengthMeters: "50",
+      conduitMaterial: "PVC",
+      startingPowerFactor: "0.3",
+      runningPowerFactor: "0.85",
+      cableStartingDropAllowancePercent: "15",
+    };
+    expect(issuePaths(withPump({ sizeSupplyRun: true, supplyRun: run }))).toEqual([
+      "firePump.supplyRun.cableStartingDropAllowancePercent",
+    ]);
+  });
+
+  it("is sent by horsepower with the other entry's fields null", () => {
+    const request = buildGeneratorSetRequest(generatorSetSchema.parse(withPump()));
+    expect(request.firePump?.motor).toEqual({
+      horsepowerLabel: "100",
+      voltage: 460,
+      fullLoadAmps: null,
+      lockedRotorAmps: null,
+    });
+    expect(request.firePump).toMatchObject({
+      jockey: null,
+      accessoryAmps: null,
+      supplyRun: null,
       startStep: 1,
-      startingCurrentPercent: 100,
+    });
+  });
+
+  it("is sent by current, with a locked-rotor current for the pump but not the jockey", () => {
+    const request = buildGeneratorSetRequest(
+      generatorSetSchema.parse(
+        withPump({
+          motor: pumpByAmps,
+          includeJockey: true,
+          jockey: { ...pumpByAmps, fullLoadAmps: "6", lockedRotorAmps: "36" },
+          accessoryAmps: "2",
+        }),
+      ),
+    );
+    expect(request.firePump?.motor).toEqual({
+      horsepowerLabel: null,
+      voltage: null,
+      fullLoadAmps: 40,
+      lockedRotorAmps: 240,
+    });
+    expect(request.firePump?.jockey).toEqual({
+      horsepowerLabel: null,
+      voltage: null,
+      fullLoadAmps: 6,
+      lockedRotorAmps: null,
+    });
+    expect(request.firePump?.accessoryAmps).toBe(2);
+  });
+
+  it("sends the run and its drop inputs only as far as they are switched on", () => {
+    const run = firePumpForm().supplyRun;
+    const sizedOnly = buildGeneratorSetRequest(
+      generatorSetSchema.parse(withPump({ sizeSupplyRun: true, supplyRun: run })),
+    );
+    expect(sizedOnly.firePump?.supplyRun).toMatchObject({
+      insulationType: "THHN",
+      terminationTempRatingCelsius: 75,
+      oneWayLengthMeters: null,
+      conduitMaterial: null,
+      startingPowerFactor: null,
+      cableStartingDropAllowancePercent: null,
+    });
+
+    const withDrop = buildGeneratorSetRequest(
+      generatorSetSchema.parse(
+        withPump({
+          sizeSupplyRun: true,
+          supplyRun: {
+            ...run,
+            checkVoltageDrop: true,
+            oneWayLengthMeters: "120",
+            conduitMaterial: "STEEL",
+            startingPowerFactor: "0.3",
+            runningPowerFactor: "0.85",
+            cableStartingDropAllowancePercent: "5",
+          },
+        }),
+      ),
+    );
+    expect(withDrop.firePump?.supplyRun).toMatchObject({
+      oneWayLengthMeters: 120,
+      conduitMaterial: "STEEL",
+      startingPowerFactor: 0.3,
+      runningPowerFactor: 0.85,
+      cableStartingDropAllowancePercent: 5,
     });
   });
 });

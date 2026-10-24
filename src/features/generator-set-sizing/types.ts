@@ -13,20 +13,10 @@ export const GENERATOR_PHASE_LABELS: Record<GeneratorPhaseType, string> = {
 /** The standby article that applies to the OPTIONAL class, which is the only one with a transfer mode. */
 export const OPTIONAL_STANDBY_CLASS = "OPTIONAL";
 
-/** How the load is entered: built up from its parts, or given as a total for a building or a fire pump. */
+/** How the building's load is entered: built up from its parts, or given as a total. */
 export const LOAD_ENTRY_MODES = ["BUILD", "DIRECT"] as const;
 
 export type LoadEntryMode = (typeof LOAD_ENTRY_MODES)[number];
-
-/** The two loads that can be entered as a total. */
-export const DIRECT_LOAD_KINDS = ["BUILDING", "FIRE_PUMP"] as const;
-
-export type DirectLoadKind = (typeof DIRECT_LOAD_KINDS)[number];
-
-export const DIRECT_LOAD_KIND_LABELS: Record<DirectLoadKind, string> = {
-  BUILDING: "Building load",
-  FIRE_PUMP: "Fire pump",
-};
 
 /** The units a total load is entered in. */
 export const DIRECT_LOAD_UNITS = ["KVA", "KW", "AMPS"] as const;
@@ -42,14 +32,48 @@ export const DIRECT_LOAD_UNIT_LABELS: Record<DirectLoadUnit, string> = {
 /** Mirrors calc-api's DirectLoadDto field-for-field. */
 export interface DirectLoadRequest {
   label: string;
-  kind: DirectLoadKind;
   amount: number;
   unit: DirectLoadUnit;
   powerFactor: number | null;
   continuous: boolean;
+}
+
+/** How a pump is entered: from the PEC horsepower tables, or as the currents from its controller. */
+export const PUMP_ENTRY_MODES = ["HORSEPOWER", "AMPERES"] as const;
+
+export type PumpEntryMode = (typeof PUMP_ENTRY_MODES)[number];
+
+/** Mirrors calc-api's PumpMotorDto field-for-field. */
+export interface PumpMotorRequest {
+  horsepowerLabel: string | null;
+  voltage: number | null;
+  fullLoadAmps: number | null;
   lockedRotorAmps: number | null;
+}
+
+/** Mirrors calc-api's SupplyRunDto field-for-field. */
+export interface SupplyRunRequest {
+  ambientTempCelsius: number;
+  numberOfCurrentCarryingConductors: number;
+  numberOfParallelSets: number;
+  insulationType: string;
+  conductorMaterial: string;
+  terminationTempRatingCelsius: number;
+  oneWayLengthMeters: number | null;
+  conduitMaterial: string | null;
+  startingPowerFactor: number | null;
+  runningPowerFactor: number | null;
+  cableStartingDropAllowancePercent: number | null;
+}
+
+/** Mirrors calc-api's FirePumpDto field-for-field. */
+export interface FirePumpRequest {
+  motor: PumpMotorRequest;
+  jockey: PumpMotorRequest | null;
+  accessoryAmps: number | null;
   startStep: number | null;
   startingCurrentPercent: number | null;
+  supplyRun: SupplyRunRequest | null;
 }
 
 /** Mirrors calc-api's LightingAreaDto field-for-field. */
@@ -118,9 +142,10 @@ export interface GeneratorSetSizingRequest {
   subtransientReactancePercent: number | null;
   maximumVoltageDipPercent: number | null;
   directLoads: DirectLoadRequest[];
+  firePump: FirePumpRequest | null;
 }
 
-export type LoadKind = "LIGHTING" | "RECEPTACLE" | "OTHER" | "MOTOR" | DirectLoadKind;
+export type LoadKind = "LIGHTING" | "RECEPTACLE" | "OTHER" | "MOTOR" | "BUILDING" | "FIRE_PUMP";
 
 export const LOAD_KIND_LABELS: Record<LoadKind, string> = {
   LIGHTING: "Lighting",
@@ -160,6 +185,39 @@ export interface StartingStep {
   requiredGeneratorKva: number;
   voltageDipPercentAtSelected: number | null;
   withinDipLimit: boolean | null;
+  dipLimitPercent: number;
+}
+
+/** Mirrors calc-api's FirePumpConductorDto field-for-field. */
+export interface FirePumpConductor {
+  sizeLabel: string;
+  ampacitySizeLabel: string;
+  upsizedForVoltageDrop: boolean;
+  numberOfParallelSets: number;
+  requiredAmpacityPerSetAmps: number;
+  deratedAmpacityAmps: number;
+  meetsTerminationRating: boolean;
+}
+
+/** Mirrors calc-api's FirePumpResultDto field-for-field. */
+export interface FirePumpResult {
+  pumpFullLoadAmps: number;
+  jockeyFullLoadAmps: number | null;
+  accessoryAmps: number | null;
+  pumpLockedRotorAmps: number | null;
+  minimumConductorAmpacityAmps: number;
+  conductorBasis: string;
+  conductor: FirePumpConductor | null;
+  cableStartingDropPercent: number | null;
+  cableRunningDropPercent: number | null;
+  runningDropWithinLimit: boolean | null;
+  generatorStartingDropPercent: number | null;
+  controllerStartingDropPercent: number | null;
+  startingDropWithinLimit: boolean | null;
+  generatorCurrentPercentOfPumpFla: number | null;
+  generatorExceedsExceptionLevel: boolean | null;
+  voltageDropBasis: string;
+  requirements: Requirement[];
 }
 
 /** Mirrors calc-api's GeneratorSetSizingResponse field-for-field. */
@@ -193,6 +251,7 @@ export interface GeneratorSetSizingResponse {
   governingCase: GoverningCase;
   startingSteps: StartingStep[];
   startingBasis: string | null;
+  firePump: FirePumpResult | null;
 }
 
 /** Mirrors calc-api's LightingOccupancyDto field-for-field. */
@@ -239,4 +298,8 @@ export interface GeneratorSetReference {
   defaultSubtransientReactancePercent: number;
   defaultMaximumVoltageDipPercent: number;
   motorStartingDefaultsNote: string;
+  defaultFirePumpStartingPowerFactor: number;
+  defaultFirePumpRunningPowerFactor: number;
+  defaultCableStartingDropAllowancePercent: number;
+  firePumpDefaultsNote: string;
 }

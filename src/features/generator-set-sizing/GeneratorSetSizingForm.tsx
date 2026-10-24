@@ -14,6 +14,8 @@ import { useApiFormError } from "@/hooks/useApiFormError";
 import { useGeneratorSetReference } from "@/hooks/useGeneratorSetReference";
 import { useWireSizingReferenceData } from "@/hooks/useWireSizingReferenceData";
 import { apiPost } from "@/lib/api-client";
+import { ConductorFields } from "./ConductorFields";
+import { FirePumpSection } from "./FirePumpSection";
 import {
   DirectLoadRow,
   LightingAreaRow,
@@ -36,10 +38,6 @@ import {
   type GeneratorSetSizingResponse,
 } from "./types";
 
-function titleCase(value: string): string {
-  return value.charAt(0) + value.slice(1).toLowerCase();
-}
-
 const baseResolver = zodResolver(generatorSetSchema);
 
 /** Validates, and hands back, only the loads of the entry mode in use (see activeLoadsOnly). */
@@ -51,8 +49,19 @@ const resolver: Resolver<GeneratorSetFormInput, unknown, GeneratorSetFormValues>
 
 const loadEntryOptions: RadioOption[] = [
   { value: "BUILD", label: "Build it up from lighting, receptacles and motors" },
-  { value: "DIRECT", label: "I have the total load (a building or a fire pump)" },
+  { value: "DIRECT", label: "I have the building's total load" },
 ];
+
+/** A pump not yet filled in: entered by horsepower to begin with. */
+function emptyPump(): GeneratorSetFormInput["firePump"]["motor"] {
+  return {
+    entry: "HORSEPOWER",
+    horsepowerLabel: "",
+    voltage: undefined,
+    fullLoadAmps: undefined,
+    lockedRotorAmps: undefined,
+  };
+}
 
 const defaultValues: GeneratorSetFormInput = {
   standbyClass: "",
@@ -78,6 +87,30 @@ const defaultValues: GeneratorSetFormInput = {
     insulationType: "",
     conductorMaterial: "",
     terminationTempRatingCelsius: undefined,
+  },
+  includeFirePump: false,
+  firePump: {
+    motor: emptyPump(),
+    includeJockey: false,
+    jockey: emptyPump(),
+    accessoryAmps: undefined,
+    startStep: 1,
+    startingCurrentPercent: 100,
+    sizeSupplyRun: false,
+    supplyRun: {
+      ambientTempCelsius: 30,
+      numberOfCurrentCarryingConductors: 3,
+      numberOfParallelSets: 1,
+      insulationType: "",
+      conductorMaterial: "",
+      terminationTempRatingCelsius: undefined,
+      checkVoltageDrop: false,
+      oneWayLengthMeters: undefined,
+      conduitMaterial: "",
+      startingPowerFactor: undefined,
+      runningPowerFactor: undefined,
+      cableStartingDropAllowancePercent: undefined,
+    },
   },
   // Filled from the API's defaults once they load (see the effect below); blank skips the check.
   subtransientReactancePercent: undefined,
@@ -125,7 +158,6 @@ export function GeneratorSetSizingForm({ onResult }: GeneratorSetSizingFormProps
   const reference = useGeneratorSetReference();
   const wireReference = useWireSizingReferenceData();
   const referenceDisabled = reference.isLoading || !!reference.error;
-  const wireReferenceDisabled = wireReference.isLoading || !!wireReference.error;
 
   const standbyClass = watch("standbyClass");
   const optionalTransfer = watch("optionalTransfer");
@@ -133,12 +165,10 @@ export function GeneratorSetSizingForm({ onResult }: GeneratorSetSizingFormProps
   const systemVoltageInput = watch("voltage");
   const sizeOutputConductor = watch("sizeOutputConductor");
   const loadEntryMode = watch("loadEntryMode");
-  const directLoads = watch("directLoads");
+  const includeFirePump = watch("includeFirePump");
   const isDirect = loadEntryMode === "DIRECT";
-  // Motor starting applies to motors, and to a fire pump entered as a total.
-  const hasStartingLoads = isDirect
-    ? directLoads.some((load) => load.kind === "FIRE_PUMP")
-    : motors.fields.length > 0;
+  // Motor starting applies to motors (only in the build-up mode) and to the fire pump.
+  const hasStartingLoads = includeFirePump || (!isDirect && motors.fields.length > 0);
 
   const isOptional = standbyClass === OPTIONAL_STANDBY_CLASS;
   const selectedClass = reference.standbyClasses.find((entry) => entry.key === standbyClass);
@@ -183,6 +213,11 @@ export function GeneratorSetSizingForm({ onResult }: GeneratorSetSizingFormProps
       setValue(`motors.${i}.horsepowerLabel`, "");
       setValue(`motors.${i}.voltage`, "");
     }
+    // The fire pump and its jockey are looked up the same way.
+    for (const pump of ["motor", "jockey"] as const) {
+      setValue(`firePump.${pump}.horsepowerLabel`, "");
+      setValue(`firePump.${pump}.voltage`, undefined);
+    }
   }, [phaseType, getValues, setValue]);
 
   const standbyClassOptions: SelectOption[] = [
@@ -193,25 +228,6 @@ export function GeneratorSetSizingForm({ onResult }: GeneratorSetSizingFormProps
     { value: "", label: reference.isLoading ? "Loading…" : "Select how load is transferred" },
     ...reference.optionalTransfers.map((entry) => ({ value: entry.key, label: entry.label })),
   ];
-  const insulationTypeOptions: SelectOption[] = [
-    { value: "", label: wireReference.isLoading ? "Loading…" : "Select insulation type" },
-    ...wireReference.insulationTypes.map((type) => ({ value: type, label: type })),
-  ];
-  const conductorMaterialOptions: SelectOption[] = [
-    { value: "", label: wireReference.isLoading ? "Loading…" : "Select a material" },
-    ...wireReference.conductorMaterials.map((material) => ({
-      value: material,
-      label: titleCase(material),
-    })),
-  ];
-  const terminationOptions: SelectOption[] = [
-    { value: "", label: wireReference.isLoading ? "Loading…" : "Select a rating" },
-    ...wireReference.terminationTempRatings.map((rating) => ({
-      value: String(rating),
-      label: `${rating}°C`,
-    })),
-  ];
-
   const loadsError = isDirect
     ? (errors.directLoads?.root?.message ?? errors.directLoads?.message)
     : (errors.lightingAreas?.root?.message ?? errors.lightingAreas?.message);
@@ -303,7 +319,7 @@ export function GeneratorSetSizingForm({ onResult }: GeneratorSetSizingFormProps
         />
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
           {isDirect
-            ? "Enter the total load of the building, or a fire pump, as a figure. It is taken as the load to carry, so give a building's load after your own demand factors."
+            ? "Enter the building's total load as a figure. It is taken as the load to carry, so give it after your own demand factors. A fire pump is entered in its own section below."
             : "List the loads that will run together on the set. The load is built the way PEC Article 2.20 builds a feeder load."}
         </p>
         {loadsError && <p className="text-xs text-red-600 dark:text-red-400">{loadsError}</p>}
@@ -315,14 +331,10 @@ export function GeneratorSetSizingForm({ onResult }: GeneratorSetSizingFormProps
             onAdd={() =>
               directs.append({
                 label: "",
-                kind: "BUILDING",
                 amount: "",
                 unit: "KVA",
                 powerFactor: undefined,
                 continuous: true,
-                lockedRotorAmps: undefined,
-                startStep: 1,
-                startingCurrentPercent: 100,
               })
             }
           >
@@ -442,12 +454,28 @@ export function GeneratorSetSizingForm({ onResult }: GeneratorSetSizingFormProps
         )}
       </section>
 
+      <FirePumpSection
+        register={register}
+        watch={watch}
+        setValue={setValue}
+        errors={errors}
+        phaseType={phaseType}
+        systemVoltage={systemVoltage}
+        reference={reference}
+        wireReference={wireReference}
+      />
+
       {hasStartingLoads && (
         <section className="flex flex-col gap-4">
           <SectionHeading>Motor starting</SectionHeading>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Checks the voltage dip when the motors {isDirect ? "or the fire pump start" : "start"},
-            from their locked-rotor kVA. Clear both fields to skip it.{" "}
+            Checks the voltage dip when the{" "}
+            {includeFirePump && (isDirect || motors.fields.length === 0)
+              ? "fire pump starts"
+              : includeFirePump
+                ? "motors and the fire pump start"
+                : "motors start"}
+            , from the locked-rotor kVA. Clear both fields to skip it.{" "}
             {reference.motorStartingDefaultsNote}
           </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -523,47 +551,13 @@ export function GeneratorSetSizingForm({ onResult }: GeneratorSetSizingFormProps
           Also size the conductors from the generator terminals
         </label>
         {sizeOutputConductor && (
-          <div className="grid grid-cols-1 gap-4 rounded-lg border border-zinc-200 p-4 sm:grid-cols-2 dark:border-zinc-800">
-            <SelectField
-              label="Insulation type"
-              options={insulationTypeOptions}
-              disabled={wireReferenceDisabled}
-              error={errors.outputConductor?.insulationType?.message}
-              {...register("outputConductor.insulationType")}
-            />
-            <SelectField
-              label="Conductor material"
-              options={conductorMaterialOptions}
-              disabled={wireReferenceDisabled}
-              error={errors.outputConductor?.conductorMaterial?.message}
-              {...register("outputConductor.conductorMaterial")}
-            />
-            <SelectField
-              label="Termination temperature rating"
-              options={terminationOptions}
-              disabled={wireReferenceDisabled}
-              error={errors.outputConductor?.terminationTempRatingCelsius?.message}
-              {...register("outputConductor.terminationTempRatingCelsius")}
-            />
-            <NumberField
-              label="Ambient temperature"
-              unit="°C"
-              error={errors.outputConductor?.ambientTempCelsius?.message}
-              {...register("outputConductor.ambientTempCelsius")}
-            />
-            <NumberField
-              label="Current-carrying conductors"
-              hint="In the same raceway."
-              error={errors.outputConductor?.numberOfCurrentCarryingConductors?.message}
-              {...register("outputConductor.numberOfCurrentCarryingConductors")}
-            />
-            <NumberField
-              label="Parallel sets"
-              hint="Large sets usually need more than one."
-              error={errors.outputConductor?.numberOfParallelSets?.message}
-              {...register("outputConductor.numberOfParallelSets")}
-            />
-          </div>
+          <ConductorFields
+            prefix="outputConductor"
+            register={register}
+            errors={errors.outputConductor}
+            wireReference={wireReference}
+            parallelHint="Large sets usually need more than one."
+          />
         )}
       </section>
 

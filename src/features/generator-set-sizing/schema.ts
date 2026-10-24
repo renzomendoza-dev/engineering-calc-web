@@ -2,11 +2,11 @@ import { z } from "zod";
 import { optionalNumber, requiredNumber } from "@/lib/zodHelpers";
 import { TERMINATION_TEMP_RATINGS } from "@/features/wire-sizing/types";
 import {
-  DIRECT_LOAD_KINDS,
   DIRECT_LOAD_UNITS,
   GENERATOR_PHASE_TYPES,
   LOAD_ENTRY_MODES,
   OPTIONAL_STANDBY_CLASS,
+  PUMP_ENTRY_MODES,
 } from "./types";
 
 /**
@@ -64,18 +64,25 @@ const motorSchema = z.object({
 
 const directLoadSchema = z.object({
   label: z.string(),
-  kind: z.enum(DIRECT_LOAD_KINDS),
   amount: requiredNumber(z.coerce.number("Required").positive("Must be positive")),
   unit: z.enum(DIRECT_LOAD_UNITS),
   powerFactor: optionalNumber(z.coerce.number().positive("Must be positive").max(1, "At most 1")),
   continuous: z.boolean(),
+});
+
+/**
+ * A pump entered one of two ways: from the PEC horsepower tables (`horsepowerLabel` and `voltage`)
+ * or as the currents from its controller (`fullLoadAmps`, and `lockedRotorAmps` for the fire pump
+ * motor). Which fields are needed follows `entry`; superRefine below asks for them.
+ */
+const pumpMotorSchema = z.object({
+  entry: z.enum(PUMP_ENTRY_MODES),
+  horsepowerLabel: z.string(),
+  voltage: optionalNumber(
+    z.coerce.number().int("Must be a whole number").positive("Must be positive"),
+  ),
+  fullLoadAmps: optionalNumber(z.coerce.number().positive("Must be positive")),
   lockedRotorAmps: optionalNumber(z.coerce.number().positive("Must be positive")),
-  startStep: requiredNumber(
-    z.coerce.number("Required").int("Must be a whole number").min(1, "Must be at least 1"),
-  ),
-  startingCurrentPercent: requiredNumber(
-    z.coerce.number("Required").positive("Must be positive").max(100, "At most 100"),
-  ),
 });
 
 const outputConductorSchema = z.object({
@@ -91,6 +98,37 @@ const outputConductorSchema = z.object({
   insulationType: z.string(),
   conductorMaterial: z.string(),
   terminationTempRatingCelsius: z.coerce.number().optional(),
+});
+
+/** The run to the fire pump controller: the conductor conditions, and optionally its voltage drop. */
+const supplyRunSchema = outputConductorSchema.extend({
+  checkVoltageDrop: z.boolean(),
+  oneWayLengthMeters: optionalNumber(z.coerce.number().positive("Must be positive")),
+  conduitMaterial: z.string(),
+  startingPowerFactor: optionalNumber(
+    z.coerce.number().positive("Must be positive").max(1, "At most 1"),
+  ),
+  runningPowerFactor: optionalNumber(
+    z.coerce.number().positive("Must be positive").max(1, "At most 1"),
+  ),
+  cableStartingDropAllowancePercent: optionalNumber(
+    z.coerce.number().positive("Must be positive").lt(15, "Must be below 15"),
+  ),
+});
+
+const firePumpSchema = z.object({
+  motor: pumpMotorSchema,
+  includeJockey: z.boolean(),
+  jockey: pumpMotorSchema,
+  accessoryAmps: optionalNumber(z.coerce.number().min(0, "Cannot be negative")),
+  startStep: requiredNumber(
+    z.coerce.number("Required").int("Must be a whole number").min(1, "Must be at least 1"),
+  ),
+  startingCurrentPercent: requiredNumber(
+    z.coerce.number("Required").positive("Must be positive").max(100, "At most 100"),
+  ),
+  sizeSupplyRun: z.boolean(),
+  supplyRun: supplyRunSchema,
 });
 
 export const generatorSetSchema = z
@@ -114,6 +152,8 @@ export const generatorSetSchema = z
     designPreventsOverload: z.boolean(),
     sizeOutputConductor: z.boolean(),
     outputConductor: outputConductorSchema,
+    includeFirePump: z.boolean(),
+    firePump: firePumpSchema,
     subtransientReactancePercent: optionalNumber(
       z.coerce.number().positive("Must be positive").max(100, "At most 100"),
     ),
@@ -150,13 +190,14 @@ export const generatorSetSchema = z
       }
     });
 
-    // Only the loads of the entry mode in use count (activeLoadsOnly empties the other lists).
+    // Only the loads of the entry mode in use count (activeLoadsOnly empties the other lists); a fire
+    // pump counts in either, and is enough on its own.
     if (data.loadEntryMode === "DIRECT") {
-      if (data.directLoads.length === 0) {
+      if (data.directLoads.length === 0 && !data.includeFirePump) {
         ctx.addIssue({
           code: "custom",
           path: ["directLoads"],
-          message: "Add the total load of the building or the fire pump",
+          message: "Add the total load of the building, or a fire pump",
         });
       }
     } else if (
@@ -164,44 +205,103 @@ export const generatorSetSchema = z
         data.receptacleGroups.length +
         data.otherLoads.length +
         data.motors.length ===
-      0
+        0 &&
+      !data.includeFirePump
     ) {
       ctx.addIssue({
         code: "custom",
         path: ["lightingAreas"],
-        message: "Add at least one load: lighting, receptacles, another load or a motor",
+        message:
+          "Add at least one load: lighting, receptacles, another load, a motor or a fire pump",
       });
     }
 
     if (data.sizeOutputConductor) {
-      const conductor = data.outputConductor;
-      if (!conductor.insulationType) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["outputConductor", "insulationType"],
-          message: "Insulation type is required",
-        });
+      checkConductor(ctx, ["outputConductor"], data.outputConductor);
+    }
+
+    if (data.includeFirePump) {
+      const pump = data.firePump;
+      checkPump(ctx, ["firePump", "motor"], pump.motor);
+      if (pump.includeJockey) {
+        checkPump(ctx, ["firePump", "jockey"], pump.jockey);
       }
-      if (!conductor.conductorMaterial) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["outputConductor", "conductorMaterial"],
-          message: "Conductor material is required",
-        });
-      }
-      const rating = conductor.terminationTempRatingCelsius;
-      if (
-        rating === undefined ||
-        !(TERMINATION_TEMP_RATINGS as readonly number[]).includes(rating)
-      ) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["outputConductor", "terminationTempRatingCelsius"],
-          message: "Select a termination temperature rating",
-        });
+      if (pump.sizeSupplyRun) {
+        const run = pump.supplyRun;
+        checkConductor(ctx, ["firePump", "supplyRun"], run);
+        if (run.checkVoltageDrop) {
+          const required = (field: string, value: number | undefined) => {
+            if (value === undefined) {
+              ctx.addIssue({
+                code: "custom",
+                path: ["firePump", "supplyRun", field],
+                message: "Required for the voltage drop check",
+              });
+            }
+          };
+          required("oneWayLengthMeters", run.oneWayLengthMeters);
+          required("startingPowerFactor", run.startingPowerFactor);
+          required("runningPowerFactor", run.runningPowerFactor);
+          required("cableStartingDropAllowancePercent", run.cableStartingDropAllowancePercent);
+          if (!run.conduitMaterial) {
+            ctx.addIssue({
+              code: "custom",
+              path: ["firePump", "supplyRun", "conduitMaterial"],
+              message: "Conduit material is required for the voltage drop check",
+            });
+          }
+        }
       }
     }
   });
+
+/** The conductor conditions every sized run needs; blank selections are reported against their field. */
+function checkConductor(
+  ctx: z.RefinementCtx,
+  path: string[],
+  conductor: z.infer<typeof outputConductorSchema>,
+) {
+  if (!conductor.insulationType) {
+    ctx.addIssue({
+      code: "custom",
+      path: [...path, "insulationType"],
+      message: "Insulation type is required",
+    });
+  }
+  if (!conductor.conductorMaterial) {
+    ctx.addIssue({
+      code: "custom",
+      path: [...path, "conductorMaterial"],
+      message: "Conductor material is required",
+    });
+  }
+  const rating = conductor.terminationTempRatingCelsius;
+  if (rating === undefined || !(TERMINATION_TEMP_RATINGS as readonly number[]).includes(rating)) {
+    ctx.addIssue({
+      code: "custom",
+      path: [...path, "terminationTempRatingCelsius"],
+      message: "Select a termination temperature rating",
+    });
+  }
+}
+
+/** A pump needs the fields of the way it is entered: horsepower and voltage, or its full-load current. */
+function checkPump(ctx: z.RefinementCtx, path: string[], pump: z.infer<typeof pumpMotorSchema>) {
+  if (pump.entry === "HORSEPOWER") {
+    if (!pump.horsepowerLabel) {
+      ctx.addIssue({
+        code: "custom",
+        path: [...path, "horsepowerLabel"],
+        message: "Select a horsepower",
+      });
+    }
+    if (pump.voltage === undefined) {
+      ctx.addIssue({ code: "custom", path: [...path, "voltage"], message: "Select a voltage" });
+    }
+  } else if (pump.fullLoadAmps === undefined) {
+    ctx.addIssue({ code: "custom", path: [...path, "fullLoadAmps"], message: "Required" });
+  }
+}
 
 /** Pre-coercion shape react-hook-form edits (numeric fields come in as strings). */
 export type GeneratorSetFormInput = z.input<typeof generatorSetSchema>;

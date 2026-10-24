@@ -25,6 +25,7 @@ function WarningBox({ children }: { children: string }) {
 export function GeneratorSetSizingResults({ result }: GeneratorSetSizingResultsProps) {
   const selected = result.selectedGeneratorKva;
   const conductor = result.outputConductor;
+  const firePump = result.firePump;
 
   return (
     <div className="flex flex-col gap-6">
@@ -143,14 +144,15 @@ export function GeneratorSetSizingResults({ result }: GeneratorSetSizingResultsP
         <div className="flex flex-col gap-3">
           <SectionHeading>Motor starting</SectionHeading>
           <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
-            <table className="w-full min-w-[40rem] text-left text-sm">
+            <table className="w-full min-w-[46rem] text-left text-sm">
               <thead className="bg-zinc-50 text-xs text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
                 <tr>
                   <th className="px-3 py-2 font-medium">Step</th>
-                  <th className="px-3 py-2 font-medium">Motors</th>
+                  <th className="px-3 py-2 font-medium">Starting</th>
                   <th className="px-3 py-2 text-right font-medium">Starting (kVA)</th>
                   <th className="px-3 py-2 text-right font-medium">Already running (kVA)</th>
-                  <th className="px-3 py-2 text-right font-medium">Set for the dip limit (kVA)</th>
+                  <th className="px-3 py-2 text-right font-medium">Dip limit</th>
+                  <th className="px-3 py-2 text-right font-medium">Set for the limit (kVA)</th>
                   <th className="px-3 py-2 text-right font-medium">Dip on the selected set</th>
                 </tr>
               </thead>
@@ -164,6 +166,9 @@ export function GeneratorSetSizingResults({ result }: GeneratorSetSizingResultsP
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums">
                       {formatNumber(step.runningKvaBefore)}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums">
+                      {formatNumber(step.dipLimitPercent)}%
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums">
                       {formatNumber(step.requiredGeneratorKva)}
@@ -191,6 +196,111 @@ export function GeneratorSetSizingResults({ result }: GeneratorSetSizingResultsP
               {formatApiText(result.startingBasis)}
             </p>
           )}
+        </div>
+      )}
+
+      {firePump && (
+        <div className="flex flex-col gap-3">
+          <SectionHeading>Fire pump, PEC Article 6.95</SectionHeading>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <ResultCard
+              label="Fire Pump Full-Load Current"
+              value={formatNumber(firePump.pumpFullLoadAmps)}
+              unit="A"
+            />
+            {firePump.pumpLockedRotorAmps !== null && (
+              <ResultCard
+                label="Fire Pump Locked-Rotor Current"
+                value={formatNumber(firePump.pumpLockedRotorAmps)}
+                unit="A"
+              />
+            )}
+            <ResultCard
+              label="Minimum Conductor Ampacity"
+              value={formatNumber(firePump.minimumConductorAmpacityAmps)}
+              unit="A"
+            />
+            {firePump.conductor && (
+              <ResultCard
+                label="Conductors to the Controller"
+                value={
+                  firePump.conductor.numberOfParallelSets > 1
+                    ? `${firePump.conductor.numberOfParallelSets} × ${firePump.conductor.sizeLabel}`
+                    : firePump.conductor.sizeLabel
+                }
+                unit="mm²"
+                note={
+                  firePump.conductor.upsizedForVoltageDrop
+                    ? `Larger than the ${firePump.conductor.ampacitySizeLabel} mm² the ampacity needs, to hold the voltage drop.`
+                    : undefined
+                }
+              />
+            )}
+            {firePump.cableStartingDropPercent !== null && (
+              <ResultCard
+                label="Cable Drop at Starting"
+                value={formatNumber(firePump.cableStartingDropPercent)}
+                unit="%"
+              />
+            )}
+            {firePump.cableRunningDropPercent !== null && (
+              <ResultCard
+                label="Cable Drop Running at 115%"
+                value={formatNumber(firePump.cableRunningDropPercent)}
+                unit="%"
+                tone={firePump.runningDropWithinLimit === false ? "warning" : "default"}
+                note={
+                  firePump.runningDropWithinLimit === false
+                    ? "Over the 5% allowed (6.95.1.7)."
+                    : "Within the 5% allowed (6.95.1.7)."
+                }
+              />
+            )}
+            {firePump.controllerStartingDropPercent !== null && (
+              <ResultCard
+                label="Voltage Drop at the Controller, Starting"
+                value={formatNumber(firePump.controllerStartingDropPercent)}
+                unit="%"
+                tone={firePump.startingDropWithinLimit === false ? "warning" : "default"}
+                note={
+                  firePump.startingDropWithinLimit === false
+                    ? "Over the 15% allowed (6.95.1.7)."
+                    : "Within the 15% allowed (6.95.1.7)."
+                }
+              />
+            )}
+            {firePump.generatorCurrentPercentOfPumpFla !== null && (
+              <ResultCard
+                label="Generator Current as a Share of the Pump's"
+                value={formatNumber(firePump.generatorCurrentPercentOfPumpFla, 0)}
+                unit="%"
+                note={
+                  firePump.generatorExceedsExceptionLevel
+                    ? "Above 225%: 6.95.1.6(C) Exception No. 2 applies to the conductors between the generator and the transfer switch."
+                    : "At or below 225%."
+                }
+              />
+            )}
+          </div>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            {formatApiText(firePump.conductorBasis)}
+          </p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            {formatApiText(firePump.voltageDropBasis)}
+          </p>
+          <ul className="flex flex-col gap-2">
+            {firePump.requirements.map((requirement) => (
+              <li
+                key={`${requirement.citation}-${requirement.text}`}
+                className="flex gap-3 rounded-lg border border-zinc-200 p-3 text-sm dark:border-zinc-800"
+              >
+                <span className="w-32 flex-shrink-0 font-medium text-zinc-900 dark:text-zinc-50">
+                  {requirement.citation}
+                </span>
+                <span className="text-zinc-700 dark:text-zinc-300">{requirement.text}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

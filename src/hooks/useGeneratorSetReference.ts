@@ -21,6 +21,10 @@ const EMPTY: GeneratorSetReference = {
   defaultSubtransientReactancePercent: 0,
   defaultMaximumVoltageDipPercent: 0,
   motorStartingDefaultsNote: "",
+  defaultFirePumpStartingPowerFactor: 0,
+  defaultFirePumpRunningPowerFactor: 0,
+  defaultCableStartingDropAllowancePercent: 0,
+  firePumpDefaultsNote: "",
 };
 
 /** Fetches generator set sizing's dropdown data once on mount; none of it depends on user input. */
