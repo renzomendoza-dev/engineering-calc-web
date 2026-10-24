@@ -52,6 +52,14 @@ export const calculators: CalculatorConfig[] = [
     status: "available",
   },
   {
+    name: "Generator Set Sizing",
+    description:
+      "Standby generator load, size and output conductors from PEC Article 2.20, 4.45 and Chapter 7.",
+    category: "Electrical",
+    href: "/electrical/generator-set-sizing",
+    status: "available",
+  },
+  {
     name: "Pipe Velocity / Sizing",
     description: "Check flow velocity through a pipe, or size a pipe for a target velocity.",
     category: "Mechanical",

@@ -34,6 +34,7 @@ import type {
   SprinklerCFactorTableRow,
   SprinklerKFactorTableRow,
 } from "@/features/sprinkler-hydraulics/types";
+import type { GeneratorSetReference } from "@/features/generator-set-sizing/types";
 
 /**
  * Wraps calc-api's electrical reference endpoints
@@ -147,6 +148,14 @@ export function getMotorVoltages(
     params.motorClass = motorClass;
   }
   return apiGet<number[]>("/api/electrical/reference/motor-voltages", params);
+}
+
+/**
+ * What generator set sizing offers: Table 2.20.2.3 occupancies, the Chapter 7 standby classes and
+ * transfer modes, and the standard set sizes (which are catalogue ratings, not PEC data).
+ */
+export function getGeneratorSetReference(): Promise<GeneratorSetReference> {
+  return apiGet<GeneratorSetReference>("/api/electrical/generator-set-sizing/reference");
 }
 
 /** Raw rows of the combined PEC Article 4.30 full-load current tables (4.30.14.1–4.30.14.4). */
