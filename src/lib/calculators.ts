@@ -137,6 +137,14 @@ export const calculators: CalculatorConfig[] = [
     status: "available",
   },
   {
+    name: "Natural Smoke and Heat Venting (NFPA 204)",
+    description:
+      "Vent and inlet areas for curtained areas and design fires by NFPA 204 hand calculations, with the dimension and spacing checks.",
+    category: "Mechanical",
+    href: "/smoke-control/natural-venting",
+    status: "available",
+  },
+  {
     name: "t-Squared Fire Growth Smoke Production Calculator",
     description: "Time-varying t-squared fire growth smoke production at a single evaluation time, per NFPA 92.",
     category: "Mechanical",
