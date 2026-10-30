@@ -11,6 +11,7 @@ import { useSprinklerReferenceData } from "@/hooks/useSprinklerReferenceData";
 import { CalculationWarnings } from "./CalculationWarnings";
 import { countSprinklers } from "./network";
 import { comparePlanCount, moreThanPlanWarning } from "./planCount";
+import { warningsForStep } from "./stepWarnings";
 import { DemandSummaryPanel } from "./DemandSummaryPanel";
 import { DEFAULT_SPRINKLER_FORM } from "./defaults";
 import { clearDraft, loadDraftDetailed, saveDraft } from "./draft";
@@ -182,7 +183,9 @@ export function SprinklerHydraulicsCalculator() {
 
         <FormErrorBanner message={generalError} />
         {calculation.result && (
-          <CalculationWarnings warnings={[...planWarnings, ...calculation.result.warnings]} />
+          <CalculationWarnings
+            warnings={warningsForStep([...planWarnings, ...calculation.result.warnings], step)}
+          />
         )}
 
         <form onSubmit={(event) => event.preventDefault()} className="flex flex-col gap-6">
