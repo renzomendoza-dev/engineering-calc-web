@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { sizeForSprinklerCount } from "./defaults";
+import { DEFAULT_SPRINKLER_FORM, sizeForSprinklerCount } from "./defaults";
+
+describe("the default form", () => {
+  it("starts the storage duration at the lowest of the default hazard's range", () => {
+    expect(DEFAULT_SPRINKLER_FORM.hazard).toBe("LIGHT");
+    expect(DEFAULT_SPRINKLER_FORM.storageDurationMinutes).toBe("30");
+  });
+});
 
 describe("sizeForSprinklerCount", () => {
   it("starts a branch at 1 in. and steps up as the pipe gathers sprinklers", () => {

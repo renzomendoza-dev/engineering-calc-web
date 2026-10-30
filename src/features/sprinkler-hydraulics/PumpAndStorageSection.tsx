@@ -14,8 +14,10 @@ import {
   buildPumpCapacityRequest,
   buildPumpDemandRequest,
   buildStorageRequest,
+  durationRangeFor,
   hazardClassificationFor,
   pumpAddsNoPressure,
+  storageDurationIssue,
   type PumpStorageInputs,
 } from "./pumpStorage";
 import type { SprinklerForm } from "./stepProps";
@@ -72,6 +74,8 @@ export function PumpAndStorageSection({ form, result }: PumpAndStorageSectionPro
   };
   const hazard = watch("hazard");
   const flooded = inputs.suctionCondition === "FLOODED";
+  const durationRange = durationRangeFor(hazard);
+  const durationIssue = storageDurationIssue(inputs.storageDurationMinutes, hazard);
 
   // A supply that already delivers what the system needs leaves nothing for a pump to add, which
   // the pump calculator would refuse; that is the answer, so it is said rather than sent.
@@ -103,7 +107,9 @@ export function PumpAndStorageSection({ form, result }: PumpAndStorageSectionPro
     storageRequest.request ? JSON.stringify(storageRequest.request) : null,
   );
 
-  const settling = demand.isStale || capacity.isStale || storage.isStale;
+  // A duration outside the range has no storage request on purpose, so the missing storage figure is
+  // not the pump figures being out of date.
+  const settling = demand.isStale || capacity.isStale || (storage.isStale && !durationIssue);
   const failure = [demand.error, capacity.error, storage.error].find((error) => error != null);
   const problems = [...demandRequest.problems, ...storageRequest.problems];
 
@@ -178,7 +184,11 @@ export function PumpAndStorageSection({ form, result }: PumpAndStorageSectionPro
         <NumberField
           label="Storage duration (optional)"
           unit="min"
-          hint={`The ${HAZARD_CLASSIFICATION_LABELS[hazardClassificationFor(hazard)]} range applies; blank takes the top of it.`}
+          hint={`${HAZARD_CLASSIFICATION_LABELS[hazardClassificationFor(hazard)]}: ${
+            durationRange.minMinutes === durationRange.maxMinutes
+              ? `a fixed ${durationRange.minMinutes} min`
+              : `${durationRange.minMinutes} to ${durationRange.maxMinutes} min`
+          } (NFPA 13). Starts at the lowest; blank takes the top.`}
           error={errors.storageDurationMinutes?.message}
           {...register("storageDurationMinutes")}
         />
@@ -190,6 +200,20 @@ export function PumpAndStorageSection({ form, result }: PumpAndStorageSectionPro
           {...register("storageSafetyMarginPercent")}
         />
       </div>
+
+      {durationIssue && (
+        <div
+          role="status"
+          className="rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30"
+        >
+          <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+            {durationIssue.kind === "below"
+              ? "Storage duration is below the minimum"
+              : "Storage duration is above the range"}
+          </p>
+          <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">{durationIssue.message}</p>
+        </div>
+      )}
 
       {problems.length > 0 && (
         <p className="rounded-md border border-zinc-300 bg-zinc-50 px-3 py-2 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
@@ -235,7 +259,7 @@ export function PumpAndStorageSection({ form, result }: PumpAndStorageSectionPro
             />
           </div>
 
-          {storage.result && (
+          {storage.result && !durationIssue && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <ResultCard
                 label="Required storage volume"

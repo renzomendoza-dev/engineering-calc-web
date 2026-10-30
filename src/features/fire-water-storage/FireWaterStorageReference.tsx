@@ -30,7 +30,7 @@ export function FireWaterStorageReference() {
 
       <details className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900">
         <summary className="cursor-pointer text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          NFPA 13 (2019), Table 11.2.3.1.2 — Water Supply Duration Requirements
+          NFPA 13 (2019), Table 19.3.3.1.2 — Water Supply Duration Requirements
         </summary>
         <div className="mt-3 max-h-96 overflow-y-auto overflow-x-auto">
           {isLoading ? (

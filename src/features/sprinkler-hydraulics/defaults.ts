@@ -1,3 +1,4 @@
+import { defaultStorageDurationMinutes } from "./pumpStorage";
 import type { SprinklerFormInput } from "./schema";
 
 /** One run of pipe as the form holds it, before any of it is parsed. */
@@ -133,7 +134,9 @@ export const DEFAULT_SPRINKLER_FORM: SprinklerFormInput = {
   pumpSuctionPressurePsi: "",
   pumpSuctionLiftFt: "",
   pumpSafetyMarginPercent: "",
-  storageDurationMinutes: "",
+  // The lowest of the hazard's range, as the fields above are the hazard's preset; refilled when
+  // the hazard changes. Blank is allowed and takes the top of the range.
+  storageDurationMinutes: String(defaultStorageDurationMinutes("LIGHT")),
   storageSafetyMarginPercent: "",
 };
 

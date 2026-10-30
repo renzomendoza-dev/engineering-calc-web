@@ -10,7 +10,7 @@ export const HAZARD_CLASSIFICATION_LABELS: Record<HazardClassification, string> 
 
 /**
  * Mirrors calc-core's reference/storage/fire-water-duration.json exactly (NFPA 13 2019
- * edition, Table 11.2.3.1.2 — confirmed "verified" confidence, not a placeholder like the
+ * edition, Table 19.3.3.1.2 — confirmed "verified" confidence, not a placeholder like the
  * domestic occupancy data). No reference endpoint exposes this, so it's a client-side
  * constant — kept in sync manually with the JSON if the backend data ever changes. Light
  * Hazard has no ambiguity (fixed 30 minutes, min==max).
@@ -39,7 +39,7 @@ export interface FireWaterStorageRequest {
 
 /**
  * Mirrors calc-api's FireWaterDurationEntryDto field-for-field — one row of
- * reference/storage/fire-water-duration.json (NFPA 13 2019, Table 11.2.3.1.2).
+ * reference/storage/fire-water-duration.json (NFPA 13 2019, Table 19.3.3.1.2).
  */
 export interface FireWaterDurationTableRow {
   hazardClassification: HazardClassification;

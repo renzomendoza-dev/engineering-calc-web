@@ -7,6 +7,7 @@ import { TextField } from "@/components/ui/TextField";
 import { formatApiText } from "@/lib/apiText";
 import { CONFIDENCE_LABELS, HAZARD_LABELS, SYSTEM_TYPE_LABELS, UNITS } from "../labels";
 import { DesignBasisReadout } from "../PlanReadouts";
+import { defaultStorageDurationMinutes } from "../pumpStorage";
 import type { StepProps } from "../stepProps";
 import { SPRINKLER_HAZARDS, SPRINKLER_SYSTEM_TYPES, type SprinklerHazard } from "../types";
 import { stepNumber } from "../schema";
@@ -49,6 +50,14 @@ export function ProjectHazardStep({ form, reference, plan }: StepProps) {
   const hazardRegistration = register("hazard");
 
   function applyPreset(next: string) {
+    // The storage duration starts at the lowest of the hazard's range. It comes from the storage
+    // table's ranges, not the preset (which carries the top of each range), so it follows the hazard
+    // even before the preset table has loaded.
+    if ((SPRINKLER_HAZARDS as readonly string[]).includes(next)) {
+      setValue("storageDurationMinutes", String(defaultStorageDurationMinutes(next as SprinklerHazard)), {
+        shouldValidate: true,
+      });
+    }
     const match = hazardPresets.find((entry) => entry.hazard === next);
     if (!match) return;
     setValue("densityGpmPerSqFt", match.densityGpmPerSqFt, { shouldValidate: true });
