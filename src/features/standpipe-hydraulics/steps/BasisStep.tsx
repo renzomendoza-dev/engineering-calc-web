@@ -30,24 +30,24 @@ interface ClassNote {
 }
 
 /**
- * What each class is for, to help choose one. Wording follows clause 5.3 of the 2019 edition; the
- * flows are those of 7.10. Explanation only: the API applies the rules, and the AHJ decides which
- * class a building needs (5.1.2).
+ * What each class is for, to help choose one. Wording follows clause 8.2 of the 2024 edition; the
+ * flows are those of 10.6. Explanation only: the API applies the rules, and the AHJ decides which
+ * class a building needs (4.1.1).
  */
 const CLASS_NOTES: ClassNote[] = [
   {
     value: "CLASS_I",
-    who: "2.5 in. hose connections to supply water for use by fire departments and by those trained in handling heavy fire streams (5.3.1).",
+    who: "2.5 in. hose connections to supply water for use by fire departments and by those trained in handling heavy fire streams (8.2.1).",
     flow: "500 gpm at the most remote standpipe (250 gpm at each of two connections), plus 250 gpm for each additional standpipe.",
   },
   {
     value: "CLASS_II",
-    who: "1.5 in. hose stations to supply water for use by trained personnel, or a hose connection for the fire department during initial response (5.3.2.1). Each station carries lined hose of 100 ft or less ready for use (4.6.2.1).",
+    who: "1.5 in. hose stations to supply water for use by trained personnel, or a hose connection for the fire department during initial response (8.2.2.1). Each connection for trained personnel is equipped with no more than 100 ft of listed, lined 1.5 in. hose ready for use (7.6.2.1).",
     flow: "100 gpm at the most remote hose connection, and no extra flow where there is more than one connection.",
   },
   {
     value: "CLASS_III",
-    who: "Both: 1.5 in. hose stations for use by trained personnel and 2.5 in. hose connections for the fire department and those trained in handling heavy streams (5.3.3).",
+    who: "Both: 1.5 in. hose stations for use by trained personnel and 2.5 in. hose connections for the fire department and those trained in handling heavy streams (8.2.3).",
     flow: "Same flow as Class I.",
   },
 ];
@@ -72,10 +72,10 @@ function ClassGuide({ selected }: { selected: StandpipeClass }) {
         </span>
       ))}
       <span className="block text-xs text-zinc-500 dark:text-zinc-400">
-        The authority having jurisdiction decides the class and type of system a building needs (5.1.2),
+        The authority having jurisdiction decides the class and type of system a building needs (4.1.1),
         so ask it if you are unsure. For Class III in a building sprinklered throughout, the 1.5 in.
         hose stations may be left out, subject to the AHJ, if each 2.5 in. connection has a 2.5 x
-        1.5 in. reducer and a cap on a chain (5.3.3.2). Clause numbers are from the 2019 edition.
+        1.5 in. reducer and a cap on a chain (8.2.3.2). Clause numbers are from the 2024 edition.
       </span>
     </span>
   );
@@ -174,7 +174,7 @@ export function BasisStep({ form }: StepProps) {
             unit="gpm"
             hint={
               classIOrIII
-                ? "Leave blank. The other standpipes and the sprinkler allowance are worked out from the flow rules (7.10) and shown in the results. Enter a figure only to use a larger one."
+                ? "Leave blank. The other standpipes and the sprinkler allowance are worked out from the flow rules (10.6) and shown in the results. Enter a figure only to use a larger one."
                 : "Sprinkler flow or other flow drawn from this supply. The pages read give no rule for combining it with a Class II system, so none is assumed: blank adds nothing."
             }
             error={errors.flowAddedAtSupplyGpm?.message}

@@ -13,7 +13,7 @@ function nextSegmentKey(existing: { key: string }[]): string {
 
 /**
  * C starts at 120, the value for black steel in wet service in the C table the API serves
- * (Table 8.3.2.3); it stays editable because the AHJ may require another.
+ * (Table 11.3.2.3); it stays editable because the AHJ may require another.
  */
 export function newSegment(
   existing: { key: string }[],

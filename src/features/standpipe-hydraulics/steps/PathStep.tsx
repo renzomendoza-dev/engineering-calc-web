@@ -23,7 +23,7 @@ const CONNECTION_OPTIONS = [
 ];
 
 const C_FACTOR_HINT =
-  "Hazen-Williams C. 120 is black steel in wet service in the C table of NFPA 14 (Table 8.3.2.3 in the 2019 edition); other pipe types are listed at the foot of the page. The AHJ may require another value.";
+  "Hazen-Williams C. 120 is black steel in wet service in the C table of NFPA 14 (Table 11.3.2.3); other pipe types are listed at the foot of the page. The AHJ may require another value.";
 
 /**
  * Step 2: the pipe path from the hydraulically most remote hose connection back to the supply, one
