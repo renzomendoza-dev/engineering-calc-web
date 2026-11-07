@@ -213,7 +213,7 @@ export function BasisStep({ form }: StepProps) {
           <SelectField
             label="Fire department connection inlet size"
             options={INLET_OPTIONS}
-            hint="A large inlet carries more flow, so fewer are needed (10.7.3.1). Check the hose pressure limit before choosing one."
+            hint="A large inlet carries more flow, so fewer are needed (10.7.3.1). The hose that supplies a 4 in. or 5 in. inlet is rated 185 psi, so the results compare the pressure at each connection with that (A.10.7.3.1.3)."
             error={errors.fireDepartmentConnectionInletSize?.message}
             {...register("fireDepartmentConnectionInletSize")}
           />
