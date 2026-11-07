@@ -10,6 +10,7 @@ import {
   formatFlow,
   formatKw,
   formatLength,
+  formatSeconds,
   formatTemperature,
 } from "../format";
 import type { NaturalVentingCalculationState } from "../useNaturalVentingCalculation";
@@ -172,6 +173,18 @@ function FireCasePanel({ fire, controlling }: { fire: FireCaseResult; controllin
           unit="kW"
           note={fire.heatReleaseRateCapped ? "Limited to the fuel-limited maximum." : undefined}
         />
+        {fire.detectionTime !== null && (
+          <ResultCard
+            label="Detection time td"
+            value={formatSeconds(fire.detectionTime)}
+            unit="s"
+            note={
+              fire.detectionTimeFromDetector
+                ? "Worked out from the smoke detector temperature rise (Eq. 9.2.5.4.3)."
+                : "As entered."
+            }
+          />
+        )}
         <ResultCard label="Fire diameter D" value={formatLength(fire.fireDiameter)} unit="m" />
         <ResultCard
           label="Mean flame height L"

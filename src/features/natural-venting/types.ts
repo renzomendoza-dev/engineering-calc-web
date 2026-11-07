@@ -46,6 +46,8 @@ export interface FireCaseRequest {
   steadyHeatReleaseRate?: number;
   growthTime?: number;
   detectionTime?: number;
+  detectorDistance?: number;
+  detectorTemperatureRise?: number;
   designInterval?: number;
   maxHeatReleaseRate?: number;
   fireDiameter?: number;
@@ -89,6 +91,8 @@ export interface FireCaseResult {
   designHeatReleaseRate: number;
   heatReleaseRateCapped: boolean;
   growthCoefficient: number | null;
+  detectionTime: number | null;
+  detectionTimeFromDetector: boolean;
   fireDiameter: number;
   meanFlameHeight: number;
   virtualOrigin: number;

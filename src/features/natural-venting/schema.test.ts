@@ -72,6 +72,40 @@ describe("naturalVentingSchema", () => {
     expect(issuePaths(form)).toContain("fireCases.0.fireDiameter");
   });
 
+  it("asks for the detection time or the detector distance, whichever way the detection is known", () => {
+    const form = validForm();
+    form.fireCases[0] = { ...form.fireCases[0], kind: "GROWING", growthTime: "150", designInterval: "300" };
+
+    form.fireCases[0] = { ...form.fireCases[0], detectionSource: "known" };
+    expect(issuePaths(form)).toContain("fireCases.0.detectionTime");
+    expect(issuePaths(form)).not.toContain("fireCases.0.detectorDistance");
+
+    form.fireCases[0] = { ...form.fireCases[0], detectionSource: "detector" };
+    expect(issuePaths(form)).toContain("fireCases.0.detectorDistance");
+    expect(issuePaths(form)).not.toContain("fireCases.0.detectionTime");
+
+    // A distance of zero is a detector over the fire axis, so it is a value, not a blank.
+    form.fireCases[0] = { ...form.fireCases[0], detectionSource: "detector", detectorDistance: "0" };
+    expect(issuePaths(form)).toEqual([]);
+  });
+
+  it("takes a positive temperature rise and a distance that is not negative", () => {
+    const form = validForm();
+    form.fireCases[0] = {
+      ...form.fireCases[0],
+      kind: "GROWING",
+      growthTime: "150",
+      designInterval: "300",
+      detectionSource: "detector",
+      detectorDistance: "-1",
+      detectorTemperatureRise: "0",
+    };
+
+    expect(issuePaths(form)).toEqual(
+      expect.arrayContaining(["fireCases.0.detectorDistance", "fireCases.0.detectorTemperatureRise"]),
+    );
+  });
+
   it("keeps the smoke layer between the base of the fire and the vents", () => {
     const form = validForm();
 

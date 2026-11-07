@@ -32,13 +32,18 @@ function toZoneRequest(zone: ZoneValues): VentZoneRequest {
 
 function toFireCaseRequest(fire: FireCaseValues, zoneName: string): FireCaseRequest {
   const steady = fire.kind === "STEADY";
+  // Only the chosen way of knowing the detection time is sent: the API refuses both together.
+  const known = !steady && fire.detectionSource === "known";
+  const detector = !steady && fire.detectionSource === "detector";
   return {
     name: fire.name.trim(),
     zoneName,
     kind: fire.kind,
     steadyHeatReleaseRate: steady ? fire.steadyHeatReleaseRate : undefined,
     growthTime: steady ? undefined : fire.growthTime,
-    detectionTime: steady ? undefined : fire.detectionTime,
+    detectionTime: known ? fire.detectionTime : undefined,
+    detectorDistance: detector ? fire.detectorDistance : undefined,
+    detectorTemperatureRise: detector ? fire.detectorTemperatureRise : undefined,
     designInterval: steady ? undefined : fire.designInterval,
     maxHeatReleaseRate: steady ? undefined : fire.maxHeatReleaseRate,
     fireDiameter: fire.diameterSource === "diameter" ? fire.fireDiameter : undefined,

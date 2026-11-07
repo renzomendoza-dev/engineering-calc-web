@@ -25,6 +25,10 @@ export type InletMode = (typeof INLET_MODES)[number];
 export const DIAMETER_SOURCES = ["unitHrr", "diameter", "area"] as const;
 export type DiameterSource = (typeof DIAMETER_SOURCES)[number];
 
+/** How a growing fire's detection time is known: given, or worked out from a smoke detector (9.2.5.4.3). */
+export const DETECTION_SOURCES = ["known", "detector"] as const;
+export type DetectionSource = (typeof DETECTION_SOURCES)[number];
+
 const zoneSchema = z
   .object({
     key: z.string().min(1),
@@ -76,7 +80,10 @@ const fireCaseSchema = z
     kind: z.enum(FIRE_CASE_KINDS),
     steadyHeatReleaseRate: optionalNumber(positive()),
     growthTime: optionalNumber(positive()),
+    detectionSource: z.enum(DETECTION_SOURCES),
     detectionTime: optionalNumber(nonNegative()),
+    detectorDistance: optionalNumber(nonNegative()),
+    detectorTemperatureRise: optionalNumber(positive()),
     designInterval: optionalNumber(positive()),
     maxHeatReleaseRate: optionalNumber(positive()),
     diameterSource: z.enum(DIAMETER_SOURCES),
@@ -95,7 +102,8 @@ const fireCaseSchema = z
       if (fire.steadyHeatReleaseRate === undefined) required("steadyHeatReleaseRate");
     } else {
       if (fire.growthTime === undefined) required("growthTime");
-      if (fire.detectionTime === undefined) required("detectionTime");
+      if (fire.detectionSource === "known" && fire.detectionTime === undefined) required("detectionTime");
+      if (fire.detectionSource === "detector" && fire.detectorDistance === undefined) required("detectorDistance");
       if (fire.designInterval === undefined) required("designInterval");
     }
     if (fire.diameterSource === "unitHrr" && fire.unitHeatReleaseRate === undefined) {

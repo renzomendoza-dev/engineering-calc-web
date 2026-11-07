@@ -16,8 +16,13 @@ import { FIRE_CASE_KINDS } from "../types";
 
 type FireNumberField = Exclude<
   keyof FireCaseFormInput,
-  "key" | "name" | "zoneKey" | "kind" | "diameterSource"
+  "key" | "name" | "zoneKey" | "kind" | "diameterSource" | "detectionSource"
 >;
+
+const DETECTION_OPTIONS = [
+  { value: "known", label: "I know it (heat detectors to NFPA 72, DETACT, or another method)" },
+  { value: "detector", label: "Smoke detectors: from the temperature rise at the detector (Equation 9.2.5.4.3)" },
+];
 
 const KIND_OPTIONS = FIRE_CASE_KINDS.map((value) => ({ value, label: KIND_LABELS[value] }));
 
@@ -89,6 +94,7 @@ function FireCaseCard({ form, index, onRemove, removeDisabled }: FireCaseCardPro
   const fireErrors = errors.fireCases?.[index];
   const kind = watch(`fireCases.${index}.kind`);
   const source = watch(`fireCases.${index}.diameterSource`);
+  const detectionSource = watch(`fireCases.${index}.detectionSource`);
   const zones = watch("zones");
   const reference = useNaturalVentingReference();
 
@@ -155,12 +161,6 @@ function FireCaseCard({ form, index, onRemove, removeDisabled }: FireCaseCardPro
               {...number("growthTime")}
             />
             <NumberField
-              label="Detection time td"
-              unit="s"
-              hint="Time from ignition to detection."
-              {...number("detectionTime")}
-            />
-            <NumberField
               label="Design interval tr"
               unit="s"
               hint="Measured from detection (3.3.8): the time the layer must be held."
@@ -172,6 +172,39 @@ function FireCaseCard({ form, index, onRemove, removeDisabled }: FireCaseCardPro
               hint="Optional. Caps the fire at what the fuel can supply."
               {...number("maxHeatReleaseRate")}
             />
+            <div className="flex flex-col gap-4 sm:col-span-2">
+              <RadioGroupField
+                legend="Detection time td"
+                options={DETECTION_OPTIONS}
+                hint="Time from ignition to detection, which the design interval is added to (8.3.5)."
+                {...register(`fireCases.${index}.detectionSource`)}
+              />
+              {detectionSource === "known" && (
+                <div className="grid items-end gap-4 sm:grid-cols-2">
+                  <NumberField label="Detection time td" unit="s" {...number("detectionTime")} />
+                </div>
+              )}
+              {detectionSource === "detector" && (
+                <div className="grid items-end gap-4 sm:grid-cols-2">
+                  <NumberField
+                    label="Distance from the fire axis to the detector r"
+                    unit="m"
+                    hint="The farthest distance possible from the detectors that control detection (9.2.5.4.2). For detectors on a square grid it is the spacing ÷ √2: Annex D uses 6.5 m for 9.1 m spacing."
+                    {...number("detectorDistance")}
+                  />
+                  <NumberField
+                    label="Temperature rise at activation ΔT"
+                    unit="K"
+                    hint="From tests of the detector and the fuel. Blank takes 20 K, the minimum where there are no test data (9.2.5.4.3.1 and 9.2.5.4.3.2)."
+                    {...number("detectorTemperatureRise")}
+                  />
+                  <p className="text-xs text-zinc-500 sm:col-span-2 dark:text-zinc-400">
+                    Uses tg above and the ceiling height above the base of the fire. The equation is for a
+                    continuously growing fire. It is not DETACT-QS, so a time from that program can differ.
+                  </p>
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>

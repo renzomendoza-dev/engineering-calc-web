@@ -32,6 +32,11 @@ export function formatTemperature(value: number): string {
   return fixed(value, 0);
 }
 
+/** Times to a tenth of a second are as fine as the correlations they come from. */
+export function formatSeconds(value: number): string {
+  return fixed(value, 1);
+}
+
 export function formatFactor(value: number): string {
   return fixed(value, 2);
 }
@@ -40,6 +45,8 @@ export function formatFactor(value: number): string {
 const CHECK_DIGITS: Record<string, number> = {
   kW: 0,
   K: 0,
+  C: 1,
+  s: 1,
   m: 2,
   m2: 2,
   "m/s": 2,

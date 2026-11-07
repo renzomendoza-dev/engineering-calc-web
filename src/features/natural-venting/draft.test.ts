@@ -22,6 +22,18 @@ describe("mergeDraft", () => {
     expect(merged.fireCases[0].kind).toBe("STEADY");
   });
 
+  it("gives a fire case saved before the smoke detector option existed a known detection time", () => {
+    const merged = mergeDraft({
+      zones: [{ key: "zone-1", name: "Hall" }],
+      fireCases: [{ key: "fire-1", name: "A", zoneKey: "zone-1", kind: "GROWING", detectionTime: "90" }],
+    });
+
+    expect(merged.fireCases[0].detectionSource).toBe("known");
+    expect(merged.fireCases[0].detectionTime).toBe("90");
+    expect(merged.fireCases[0].detectorDistance).toBe("");
+    expect(merged.fireCases[0].detectorTemperatureRise).toBe("");
+  });
+
   it("always has a zone and a fire case, and no fire case points at a missing zone", () => {
     const empty = mergeDraft({ zones: [], fireCases: [] });
     expect(empty.zones).toHaveLength(1);

@@ -83,6 +83,58 @@ describe("toNaturalVentingRequest", () => {
     expect(growing.unitHeatReleaseRate).toBeUndefined();
   });
 
+  it("sends either the detection time or the detector distance, never both", () => {
+    const form = baseForm();
+    form.fireCases[0] = {
+      ...form.fireCases[0],
+      kind: "GROWING",
+      detectionTime: "90",
+      detectorDistance: "6.5",
+      detectorTemperatureRise: "15",
+      designInterval: "360",
+    };
+
+    form.fireCases[0] = { ...form.fireCases[0], detectionSource: "known" };
+    const known = toNaturalVentingRequest(parse(form)).fireCases[0];
+    expect(known.detectionTime).toBe(90);
+    expect(known.detectorDistance).toBeUndefined();
+    expect(known.detectorTemperatureRise).toBeUndefined();
+
+    form.fireCases[0] = { ...form.fireCases[0], detectionSource: "detector" };
+    const detector = toNaturalVentingRequest(parse(form)).fireCases[0];
+    expect(detector.detectionTime).toBeUndefined();
+    expect(detector.detectorDistance).toBe(6.5);
+    expect(detector.detectorTemperatureRise).toBe(15);
+  });
+
+  it("leaves the detector temperature rise out when blank, so the API takes the 20 degree minimum", () => {
+    const form = baseForm();
+    form.fireCases[0] = {
+      ...form.fireCases[0],
+      kind: "GROWING",
+      detectionSource: "detector",
+      detectorDistance: "0",
+      designInterval: "360",
+    };
+
+    const detector = JSON.parse(JSON.stringify(toNaturalVentingRequest(parse(form)).fireCases[0]));
+
+    expect(detector.detectorDistance).toBe(0);
+    expect(detector).not.toHaveProperty("detectorTemperatureRise");
+    expect(detector).not.toHaveProperty("detectionTime");
+  });
+
+  it("sends no detection fields for a steady fire", () => {
+    const form = baseForm();
+    form.fireCases[0] = { ...form.fireCases[0], detectionSource: "detector", detectorDistance: "6.5" };
+
+    const steady = JSON.parse(JSON.stringify(toNaturalVentingRequest(parse(form)).fireCases[0]));
+
+    expect(steady).not.toHaveProperty("detectionTime");
+    expect(steady).not.toHaveProperty("detectorDistance");
+    expect(steady).not.toHaveProperty("detectorTemperatureRise");
+  });
+
   it("sends nothing for the assumptions left blank, so the API's defaults apply", () => {
     const request = toNaturalVentingRequest(parse(baseForm()));
     const json = JSON.parse(JSON.stringify(request));
