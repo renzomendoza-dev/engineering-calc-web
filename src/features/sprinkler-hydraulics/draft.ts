@@ -1,3 +1,4 @@
+import { createDraftStorage, isObject } from "@/lib/draftStorage";
 import { DEFAULT_SPRINKLER_FORM } from "./defaults";
 import type { SprinklerFormInput } from "./schema";
 
@@ -44,10 +45,6 @@ function withBranchKeys(network: SprinklerFormInput["network"]): SprinklerFormIn
     };
   });
   return { ...network, branches };
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
 }
 
 /**
@@ -147,42 +144,14 @@ export function mergeDraft(raw: unknown): SprinklerFormInput {
   return mergeDraftDetailed(raw).values;
 }
 
-/**
- * The saved draft, or null when there is none. Returns null rather than throwing when storage is
- * unavailable (private browsing, disabled site data) or holds unparseable text.
- */
-export function loadDraftDetailed(): MergedDraft | null {
-  try {
-    const stored = window.localStorage.getItem(DRAFT_STORAGE_KEY);
-    if (!stored) return null;
-    return mergeDraftDetailed(JSON.parse(stored));
-  } catch {
-    return null;
-  }
-}
+const storage = createDraftStorage(DRAFT_STORAGE_KEY, mergeDraftDetailed);
+
+/** The saved draft and whether anything had to be let go, or null when there is none or storage is unavailable. */
+export const loadDraftDetailed = storage.load;
 
 /** The saved draft's values, or null when there is none. See loadDraftDetailed for what was dropped. */
 export function loadDraft(): SprinklerFormInput | null {
   return loadDraftDetailed()?.values ?? null;
 }
 
-/**
- * Writes the draft, ignoring failures — a full or blocked storage must not break the form.
- * Takes the already-serialized form values: the caller debounces on that string, so serializing
- * again here would just repeat the work.
- */
-export function saveDraft(serializedValues: string): void {
-  try {
-    window.localStorage.setItem(DRAFT_STORAGE_KEY, serializedValues);
-  } catch {
-    // Nothing to do: the draft is a convenience, not the source of truth.
-  }
-}
-
-export function clearDraft(): void {
-  try {
-    window.localStorage.removeItem(DRAFT_STORAGE_KEY);
-  } catch {
-    // Same as above.
-  }
-}
+export const { save: saveDraft, clear: clearDraft } = storage;

@@ -12,7 +12,7 @@ import { formatArea } from "../format";
 import { LayoutWorking } from "../LayoutWorking";
 import { UNITS } from "../labels";
 import { comparePlanCount } from "../planCount";
-import { sizeOptions } from "../pipeOptions";
+import { sizeOptions } from "@/features/pipe-velocity/pipeOptions";
 import { countSprinklers, isIdenticalBranch, riserNodeIds, riserNodeLabel } from "../network";
 import { PipeRowHeader, PipeRunRow } from "../PipeRunRow";
 import { RowActions, RowList } from "../RowList";

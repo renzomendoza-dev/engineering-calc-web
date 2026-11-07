@@ -8,7 +8,7 @@ import { TextField } from "@/components/ui/TextField";
 import { useNaturalVentingReference } from "@/hooks/useNaturalVentingReference";
 import { newFireCase } from "../defaults";
 import { KIND_LABELS } from "../format";
-import { QuickFillSelect } from "../QuickFillSelect";
+import { QuickFillSelect } from "@/components/ui/QuickFillSelect";
 import { commodityOptions, commodityValue } from "../referenceOptions";
 import type { FireCaseFormInput } from "../schema";
 import type { NaturalVentingForm, StepProps } from "../stepProps";

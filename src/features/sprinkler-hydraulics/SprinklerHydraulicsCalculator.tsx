@@ -24,7 +24,7 @@ import {
   type SprinklerFormValues,
   type StepId,
 } from "./schema";
-import { StepNav } from "./StepNav";
+import { StepNav } from "@/components/ui/StepNav";
 import { DesignDataStep } from "./steps/DesignDataStep";
 import { PipeNetworkStep } from "./steps/PipeNetworkStep";
 import { ProjectHazardStep } from "./steps/ProjectHazardStep";
@@ -179,7 +179,7 @@ export function SprinklerHydraulicsCalculator() {
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
       <div className="flex min-w-0 flex-1 flex-col gap-6 pb-20 lg:pb-0">
-        <StepNav current={step} onSelect={goTo} />
+        <StepNav steps={STEPS} labels={STEP_LABELS} current={step} onSelect={goTo} />
 
         <FormErrorBanner message={generalError} />
         {calculation.result && (

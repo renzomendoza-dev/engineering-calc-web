@@ -1,3 +1,4 @@
+import { createDraftStorage, isObject, mergeKeyedRows } from "@/lib/draftStorage";
 import { DEFAULT_NATURAL_VENTING_FORM, newFireCase, newZone } from "./defaults";
 import type { FireCaseFormInput, NaturalVentingFormInput, ZoneFormInput } from "./schema";
 
@@ -7,25 +8,6 @@ import type { FireCaseFormInput, NaturalVentingFormInput, ZoneFormInput } from "
  * anywhere else -- no database, no server copy.
  */
 export const DRAFT_STORAGE_KEY = "engineering-calc:natural-venting:draft:v1";
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-/** A stored row laid over a fresh one, so a field the draft lacks still has an input value. */
-function mergeRows<T extends { key: string; name: string }>(
-  stored: unknown,
-  fresh: (existing: { key: string; name: string }[]) => T,
-): T[] {
-  if (!Array.isArray(stored)) return [];
-  const rows: T[] = [];
-  for (const entry of stored) {
-    if (!isObject(entry) || typeof entry.key !== "string" || entry.key === "") continue;
-    if (rows.some((row) => row.key === entry.key)) continue;
-    rows.push({ ...fresh(rows), ...(entry as Partial<T>), key: entry.key });
-  }
-  return rows;
-}
 
 /**
  * Merges a parsed draft over the defaults, so a draft missing a field (an older build, hand-edited
@@ -39,10 +21,10 @@ export function mergeDraft(raw: unknown): NaturalVentingFormInput {
   if (!isObject(raw)) return DEFAULT_NATURAL_VENTING_FORM;
   const { zones: storedZones, fireCases: storedFireCases, ...flat } = raw;
 
-  const zones: ZoneFormInput[] = mergeRows(storedZones, newZone);
+  const zones: ZoneFormInput[] = mergeKeyedRows(storedZones, newZone);
   if (zones.length === 0) zones.push(...DEFAULT_NATURAL_VENTING_FORM.zones);
 
-  const fireCases: FireCaseFormInput[] = mergeRows(storedFireCases, (existing) =>
+  const fireCases: FireCaseFormInput[] = mergeKeyedRows<FireCaseFormInput>(storedFireCases, (existing) =>
     newFireCase(existing, zones[0].key),
   ).map((fire) => (zones.some((zone) => zone.key === fire.zoneKey) ? fire : { ...fire, zoneKey: zones[0].key }));
   if (fireCases.length === 0) fireCases.push(newFireCase([], zones[0].key));
@@ -55,33 +37,4 @@ export function mergeDraft(raw: unknown): NaturalVentingFormInput {
   };
 }
 
-/**
- * The saved draft, or null when there is none. Returns null rather than throwing when storage is
- * unavailable (private browsing, disabled site data) or holds unparseable text.
- */
-export function loadDraft(): NaturalVentingFormInput | null {
-  try {
-    const stored = window.localStorage.getItem(DRAFT_STORAGE_KEY);
-    if (!stored) return null;
-    return mergeDraft(JSON.parse(stored));
-  } catch {
-    return null;
-  }
-}
-
-/** Writes the draft, ignoring failures: a full or blocked storage must not break the form. */
-export function saveDraft(serializedValues: string): void {
-  try {
-    window.localStorage.setItem(DRAFT_STORAGE_KEY, serializedValues);
-  } catch {
-    // The draft is a convenience, not the source of truth.
-  }
-}
-
-export function clearDraft(): void {
-  try {
-    window.localStorage.removeItem(DRAFT_STORAGE_KEY);
-  } catch {
-    // Same as above.
-  }
-}
+export const { load: loadDraft, save: saveDraft, clear: clearDraft } = createDraftStorage(DRAFT_STORAGE_KEY, mergeDraft);

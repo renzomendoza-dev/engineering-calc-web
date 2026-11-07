@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import { get } from "react-hook-form";
 import type { PipeMaterialOption } from "@/features/pipe-velocity/types";
 import { UNITS } from "./labels";
-import { materialOptions, scheduleOptions, sizeOptions } from "./pipeOptions";
+import { materialOptions, scheduleOptions, sizeOptions } from "@/features/pipe-velocity/pipeOptions";
 import { PipeFittingsInput } from "./PipeFittingsInput";
 import type { SprinklerForm } from "./stepProps";
 import type { FittingEquivalentLengthTableRow } from "./types";

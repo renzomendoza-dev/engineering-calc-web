@@ -1,5 +1,4 @@
 import type {
-  CheckStatus,
   CombinedHazard,
   HoseConnectionSize,
   InletSize,
@@ -47,14 +46,6 @@ export const INLET_OPTION_LABELS: Record<InletSize, string> = {
   TWO_AND_HALF_INCH: "2.5 in. inlet (250 gpm each)",
   FOUR_INCH: "4 in. inlet (500 gpm each)",
   FIVE_INCH: "5 in. inlet (750 gpm each)",
-};
-
-export const STATUS_LABELS: Record<CheckStatus, string> = {
-  PASS: "Pass",
-  FAIL: "Fail",
-  CONFIRM: "Confirm",
-  OPEN: "Open",
-  INFO: "Info",
 };
 
 /** Said wherever the page shows the rules, because the rules were read from the 2024 edition. */

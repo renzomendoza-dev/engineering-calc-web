@@ -2,25 +2,20 @@
 
 import { HeadlineResult } from "@/components/ui/HeadlineResult";
 import { ResultCard } from "@/components/ui/ResultCard";
-import { CheckTable } from "../CheckTable";
+import { CheckSummary, CheckTable } from "@/components/ui/CheckTable";
 import {
-  STATUS_LABELS,
   formatArea,
+  formatCheckValue,
   formatFactor,
   formatFlow,
   formatKw,
   formatLength,
   formatSeconds,
   formatTemperature,
+  supplementaryNote,
 } from "../format";
 import type { NaturalVentingCalculationState } from "../useNaturalVentingCalculation";
-import {
-  CHECK_STATUSES,
-  type CheckStatus,
-  type FireCaseResult,
-  type NaturalVentingResponse,
-  type VentingCheck,
-} from "../types";
+import type { FireCaseResult, NaturalVentingResponse, VentingCheck } from "../types";
 
 interface ResultsStepProps {
   state: NaturalVentingCalculationState;
@@ -45,11 +40,10 @@ export function ResultsStep({ state }: ResultsStepProps) {
   }
 
   const dimmed = isStale || isCalculating;
-  const counts = countByStatus(result);
 
   return (
     <div className={`flex flex-col gap-8 transition-opacity ${dimmed ? "opacity-60" : ""}`}>
-      <StatusSummary counts={counts} updating={dimmed} />
+      <CheckSummary checks={allChecks(result)} updating={dimmed} />
 
       {result.zones.map((zone) => {
         const fires = result.fireCases.filter((fire) => fire.zoneName === zone.name);
@@ -61,7 +55,7 @@ export function ResultsStep({ state }: ResultsStepProps) {
               <h4 className="mb-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
                 Dimensions and spacing
               </h4>
-              <CheckTable checks={zone.checks} />
+              <CheckTable checks={zone.checks} formatValue={formatCheckValue} clauseNote={supplementaryNote} />
             </div>
             {fires.map((fire) => (
               <FireCasePanel key={fire.name} fire={fire} controlling={fire === controlling && fires.length > 1} />
@@ -79,17 +73,8 @@ export function ResultsStep({ state }: ResultsStepProps) {
   );
 }
 
-function countByStatus(result: NaturalVentingResponse): Record<CheckStatus, number> {
-  const counts = Object.fromEntries(CHECK_STATUSES.map((status) => [status, 0])) as Record<
-    CheckStatus,
-    number
-  >;
-  const all: VentingCheck[] = [
-    ...result.zones.flatMap((zone) => zone.checks),
-    ...result.fireCases.flatMap((fire) => fire.checks),
-  ];
-  for (const check of all) counts[check.status] += 1;
-  return counts;
+function allChecks(result: NaturalVentingResponse): VentingCheck[] {
+  return [...result.zones.flatMap((zone) => zone.checks), ...result.fireCases.flatMap((fire) => fire.checks)];
 }
 
 /** The fire case needing the largest vent area; cases with no area (inlet too small) are skipped. */
@@ -100,40 +85,6 @@ function controllingFire(fires: FireCaseResult[]): FireCaseResult | null {
     if (best === null || fire.requiredVentArea > (best.requiredVentArea ?? 0)) best = fire;
   }
   return best;
-}
-
-function StatusSummary({
-  counts,
-  updating,
-}: {
-  counts: Record<CheckStatus, number>;
-  updating: boolean;
-}) {
-  const hasFail = counts.FAIL > 0;
-  return (
-    <div
-      role="status"
-      className={`rounded-lg border p-4 ${
-        hasFail
-          ? "border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30"
-          : "border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900"
-      }`}
-    >
-      <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-        {hasFail
-          ? `${counts.FAIL} ${counts.FAIL === 1 ? "check fails" : "checks fail"}`
-          : "No check fails"}
-        {updating && <span className="ml-2 font-normal text-zinc-500">updating…</span>}
-      </p>
-      <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-zinc-700 dark:text-zinc-300">
-        {CHECK_STATUSES.map((status) => (
-          <li key={status}>
-            {STATUS_LABELS[status]}: <span className="font-semibold tabular-nums">{counts[status]}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
 }
 
 function FireCasePanel({ fire, controlling }: { fire: FireCaseResult; controlling: boolean }) {
@@ -222,7 +173,7 @@ function FireCasePanel({ fire, controlling }: { fire: FireCaseResult; controllin
 
       <SupplementaryPanel fire={fire} />
 
-      <CheckTable checks={fire.checks} />
+      <CheckTable checks={fire.checks} formatValue={formatCheckValue} clauseNote={supplementaryNote} />
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { NumberField } from "@/components/ui/NumberField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
 import { CONFIDENCE_LABELS, humanizeCode, UNITS } from "../labels";
-import { materialOptions, scheduleOptions } from "../pipeOptions";
+import { materialOptions, scheduleOptions } from "@/features/pipe-velocity/pipeOptions";
 import { StartingPressureReadout } from "../PlanReadouts";
 import type { StepProps } from "../stepProps";
 import { stepNumber } from "../schema";

@@ -1,3 +1,5 @@
+import type { CheckStatus } from "@/lib/checkStatus";
+
 export const STANDPIPE_CLASSES = ["CLASS_I", "CLASS_II", "CLASS_III"] as const;
 export type StandpipeClass = (typeof STANDPIPE_CLASSES)[number];
 
@@ -16,7 +18,7 @@ export type HoseConnectionSize = (typeof HOSE_CONNECTION_SIZES)[number];
 export const INLET_SIZES = ["TWO_AND_HALF_INCH", "FOUR_INCH", "FIVE_INCH"] as const;
 export type InletSize = (typeof INLET_SIZES)[number];
 
-export type CheckStatus = "PASS" | "FAIL" | "CONFIRM" | "OPEN" | "INFO";
+export type { CheckStatus } from "@/lib/checkStatus";
 
 /** Mirrors calc-api's StandpipeFittingDto: fittings of one type on a segment. */
 export interface StandpipeFittingRequest {

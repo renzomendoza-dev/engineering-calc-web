@@ -1,9 +1,10 @@
 import type { SelectOption } from "@/components/ui/SelectField";
-import type { PipeMaterialOption } from "@/features/pipe-velocity/types";
+import type { PipeMaterialOption } from "./types";
 
 /**
- * Dropdown options over the shared pipe catalog. The API takes the machine key (`material`,
- * `schedule`, `nominalSize`); the catalog's names and labels are what the user reads.
+ * Dropdown options over the shared pipe catalog, used by the sprinkler and standpipe calculators.
+ * The API takes the machine key (`material`, `schedule`, `nominalSize`); the catalog's names and
+ * labels are what the user reads.
  */
 export function materialOptions(materials: PipeMaterialOption[]): SelectOption[] {
   return materials.map((material) => ({ value: material.material, label: material.materialName }));

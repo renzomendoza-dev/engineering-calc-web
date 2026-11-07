@@ -5,7 +5,7 @@ import { NumberField } from "@/components/ui/NumberField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
 import type { PipeMaterialOption } from "@/features/pipe-velocity/types";
 import { UNITS } from "./labels";
-import { materialOptions, scheduleOptions, sizeOptions } from "./pipeOptions";
+import { materialOptions, scheduleOptions, sizeOptions } from "@/features/pipe-velocity/pipeOptions";
 import { RowCard, RowList } from "./RowList";
 import type { SprinklerForm } from "./stepProps";
 

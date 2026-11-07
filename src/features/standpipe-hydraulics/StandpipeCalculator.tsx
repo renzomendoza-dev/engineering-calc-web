@@ -19,7 +19,7 @@ import {
   type StandpipeFormValues,
   type StepId,
 } from "./schema";
-import { StepNav } from "./StepNav";
+import { StepNav } from "@/components/ui/StepNav";
 import { BasisStep } from "./steps/BasisStep";
 import { PathStep } from "./steps/PathStep";
 import { ResultsStep } from "./steps/ResultsStep";
@@ -129,7 +129,7 @@ export function StandpipeCalculator() {
 
   return (
     <div className="flex flex-col gap-6">
-      <StepNav current={step} onSelect={goTo} />
+      <StepNav steps={STEPS} labels={STEP_LABELS} current={step} onSelect={goTo} />
 
       <FormErrorBanner message={generalError} />
 

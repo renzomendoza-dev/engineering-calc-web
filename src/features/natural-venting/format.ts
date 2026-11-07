@@ -1,15 +1,10 @@
-import type { CheckBasis, CheckStatus, FireCaseKind } from "./types";
+import { formatFixed as fixed } from "@/lib/format";
+import type { CheckBasis, FireCaseKind, VentingCheck } from "./types";
 
 /**
  * Display formatting for the API's figures. Rounding here is presentation only: the values sent
  * to the API and the ones it returns are never altered.
  */
-function fixed(value: number, digits: number): string {
-  return value.toLocaleString(undefined, {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  });
-}
 
 /** Heat release rates run from hundreds of kW to tens of MW: whole kW is plenty. */
 export function formatKw(value: number): string {
@@ -69,18 +64,15 @@ export function formatCheckValue(value: number | null, unit: string | null): str
   return unit ? `${text} ${unitLabel(unit)}` : text;
 }
 
-export const STATUS_LABELS: Record<CheckStatus, string> = {
-  PASS: "Pass",
-  FAIL: "Fail",
-  CONFIRM: "Confirm",
-  OPEN: "Open",
-  INFO: "Info",
-};
-
 export const BASIS_LABELS: Record<CheckBasis, string> = {
   NFPA_204: "NFPA 204",
   SUPPLEMENTARY: "Not NFPA 204",
 };
+
+/** Under the clause of a line that is not a requirement of NFPA 204, so a report built from the table can't present it as one. */
+export function supplementaryNote(check: VentingCheck): string | null {
+  return check.basis === "SUPPLEMENTARY" ? BASIS_LABELS[check.basis] : null;
+}
 
 export const KIND_LABELS: Record<FireCaseKind, string> = {
   STEADY: "Steady fire (heat release rate known)",

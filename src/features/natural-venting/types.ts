@@ -1,9 +1,10 @@
+import type { CheckStatus } from "@/lib/checkStatus";
+
 /** How a fire case's heat release rate is given: directly, or grown from a t-squared fire. */
 export const FIRE_CASE_KINDS = ["STEADY", "GROWING"] as const;
 export type FireCaseKind = (typeof FIRE_CASE_KINDS)[number];
 
-export const CHECK_STATUSES = ["PASS", "FAIL", "CONFIRM", "OPEN", "INFO"] as const;
-export type CheckStatus = (typeof CHECK_STATUSES)[number];
+export { CHECK_STATUSES, type CheckStatus } from "@/lib/checkStatus";
 
 /** Whether a check is a requirement of NFPA 204 or something supplementary to it. */
 export const CHECK_BASES = ["NFPA_204", "SUPPLEMENTARY"] as const;

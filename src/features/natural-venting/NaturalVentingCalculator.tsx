@@ -17,7 +17,7 @@ import {
   type NaturalVentingFormValues,
   type StepId,
 } from "./schema";
-import { StepNav } from "./StepNav";
+import { StepNav } from "@/components/ui/StepNav";
 import { ConditionsStep } from "./steps/ConditionsStep";
 import { FireCasesStep } from "./steps/FireCasesStep";
 import { ResultsStep } from "./steps/ResultsStep";
@@ -115,7 +115,7 @@ export function NaturalVentingCalculator() {
 
   return (
     <div className="flex flex-col gap-6">
-      <StepNav current={step} onSelect={goTo} />
+      <StepNav steps={STEPS} labels={STEP_LABELS} current={step} onSelect={goTo} />
 
       <FormErrorBanner message={generalError} />
 

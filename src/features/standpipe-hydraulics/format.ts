@@ -1,13 +1,9 @@
+import { formatFixed as fixed } from "@/lib/format";
+
 /**
  * Display formatting for the API's figures. Rounding here is presentation only: the values sent
  * to the API and the ones it returns are never altered.
  */
-function fixed(value: number, digits: number): string {
-  return value.toLocaleString(undefined, {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  });
-}
 
 /** gpm to one decimal. */
 export function formatFlow(value: number): string {

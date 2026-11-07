@@ -2,8 +2,9 @@
 
 import { HeadlineResult } from "@/components/ui/HeadlineResult";
 import { ResultCard } from "@/components/ui/ResultCard";
-import { CheckTable } from "../CheckTable";
+import { CheckSummary, CheckTable } from "@/components/ui/CheckTable";
 import {
+  formatCheckValue,
   formatDiameter,
   formatFlow,
   formatFrictionRate,
@@ -12,13 +13,10 @@ import {
   formatVelocity,
   formatVolume,
 } from "../format";
-import { CONNECTION_LABELS, EDITION_NOTICE, INLET_LABELS, ROLE_LABELS, STATUS_LABELS } from "../labels";
+import { CONNECTION_LABELS, EDITION_NOTICE, INLET_LABELS, ROLE_LABELS } from "../labels";
 import { PumpAndStorageSection } from "../PumpAndStorageSection";
 import type { StandpipeForm } from "../stepProps";
 import type { StandpipeCalculationState } from "../useStandpipeCalculation";
-import { type CheckStatus, type StandpipeCheck } from "../types";
-
-const STATUS_ORDER: CheckStatus[] = ["PASS", "FAIL", "CONFIRM", "OPEN", "INFO"];
 
 /**
  * Step 3: what the API returned. Nothing is calculated here; the page lays out the response and
@@ -38,8 +36,6 @@ export function ResultsStep({ state, form }: { state: StandpipeCalculationState;
   }
 
   const dimmed = isStale || isCalculating;
-  const counts = countByStatus(result.checks);
-  const hasFail = counts.FAIL > 0;
 
   return (
     <div className={`flex flex-col gap-8 transition-opacity ${dimmed ? "opacity-60" : ""}`}>
@@ -235,26 +231,8 @@ export function ResultsStep({ state, form }: { state: StandpipeCalculationState;
       )}
 
       <section className="flex flex-col gap-3">
-        <div
-          role="status"
-          className={`rounded-lg border p-4 ${
-            hasFail
-              ? "border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30"
-              : "border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900"
-          }`}
-        >
-          <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-            {hasFail ? `${counts.FAIL} ${counts.FAIL === 1 ? "check fails" : "checks fail"}` : "No check fails"}
-          </p>
-          <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-zinc-700 dark:text-zinc-300">
-            {STATUS_ORDER.map((status) => (
-              <li key={status}>
-                {STATUS_LABELS[status]}: <span className="font-semibold tabular-nums">{counts[status]}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <CheckTable checks={result.checks} />
+        <CheckSummary checks={result.checks} />
+        <CheckTable checks={result.checks} formatValue={formatCheckValue} />
       </section>
 
       {/* A manual system is supplied by the fire department's pumper, so no fire pump is sized for it. */}
@@ -269,10 +247,4 @@ export function ResultsStep({ state, form }: { state: StandpipeCalculationState;
       )}
     </div>
   );
-}
-
-function countByStatus(checks: StandpipeCheck[]): Record<CheckStatus, number> {
-  const counts: Record<CheckStatus, number> = { PASS: 0, FAIL: 0, CONFIRM: 0, OPEN: 0, INFO: 0 };
-  for (const check of checks) counts[check.status] += 1;
-  return counts;
 }

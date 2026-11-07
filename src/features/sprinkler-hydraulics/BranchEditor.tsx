@@ -9,7 +9,7 @@ import type { PipeRunInput } from "./defaults";
 import { formatFlow, formatLength, formatPressure } from "./format";
 import { UNITS } from "./labels";
 import { junctionId, sprinklerNodeId } from "./network";
-import { sizeOptions } from "./pipeOptions";
+import { sizeOptions } from "@/features/pipe-velocity/pipeOptions";
 import { PipeRowHeader, PipeRunRow } from "./PipeRunRow";
 import { RowActions, RowList } from "./RowList";
 import type { SprinklerForm } from "./stepProps";

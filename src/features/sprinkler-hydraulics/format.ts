@@ -1,14 +1,10 @@
+import { formatFixed as fixed } from "@/lib/format";
+
 /**
  * Display formatting for the API's figures. Rounding here is presentation only — the values sent
  * to the API and the ones it returns are never altered, and nothing in this feature derives a
  * number from another.
  */
-function fixed(value: number, digits: number): string {
-  return value.toLocaleString(undefined, {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  });
-}
 
 /** gpm, to one decimal: a tenth of a gallon per minute is already below measurement precision. */
 export function formatFlow(value: number): string {

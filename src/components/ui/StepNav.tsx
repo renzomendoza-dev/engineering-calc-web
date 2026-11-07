@@ -1,24 +1,24 @@
 "use client";
 
-import { STEPS, STEP_LABELS, type StepId } from "./schema";
-
-interface StepNavProps {
-  current: StepId;
-  onSelect: (step: StepId) => void;
+interface StepNavProps<S extends string> {
+  steps: readonly S[];
+  labels: Record<S, string>;
+  current: S;
+  onSelect: (step: S) => void;
 }
 
 /**
- * The step indicator. Each step is a button: going back is always allowed, and going forward runs
- * the validation of every step passed (handled by the parent), so the user can move around
- * without losing anything they've typed.
+ * The step indicator of a multi-step calculator. Each step is a button: going back is always
+ * allowed, and going forward runs the validation of the steps passed (handled by the parent), so the
+ * user can move around without losing anything they've typed.
  */
-export function StepNav({ current, onSelect }: StepNavProps) {
-  const currentIndex = STEPS.indexOf(current);
+export function StepNav<S extends string>({ steps, labels, current, onSelect }: StepNavProps<S>) {
+  const currentIndex = steps.indexOf(current);
 
   return (
     <nav aria-label="Calculation steps">
       <ol className="flex flex-wrap gap-2">
-        {STEPS.map((step, index) => {
+        {steps.map((step, index) => {
           const isCurrent = step === current;
           const isPast = index < currentIndex;
           return (
@@ -44,7 +44,7 @@ export function StepNav({ current, onSelect }: StepNavProps) {
                 >
                   {index + 1}
                 </span>
-                {STEP_LABELS[step]}
+                {labels[step]}
               </button>
             </li>
           );

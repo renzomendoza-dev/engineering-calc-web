@@ -7,7 +7,7 @@ import { TextField } from "@/components/ui/TextField";
 import { useNaturalVentingReference } from "@/hooks/useNaturalVentingReference";
 import { newZone } from "../defaults";
 import { DISCHARGE_COEFFICIENT_HINT } from "../labels";
-import { QuickFillSelect } from "../QuickFillSelect";
+import { QuickFillSelect } from "@/components/ui/QuickFillSelect";
 import { dischargeOptions, dischargeValue } from "../referenceOptions";
 import type { ZoneFormInput } from "../schema";
 import type { NaturalVentingForm, StepProps } from "../stepProps";
