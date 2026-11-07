@@ -47,12 +47,18 @@ export function ResultsStep({ state }: { state: StandpipeCalculationState }) {
 
       <HeadlineResult
         label={result.manualSystem ? "Pressure required at the fire department connection" : "Pressure required at the supply"}
-        value={formatPressure(result.pressureAtSupplyPsi)}
+        value={formatPressure(
+          result.manualSystem && result.highestFdcPressurePsi !== null
+            ? result.highestFdcPressurePsi
+            : result.pressureAtSupplyPsi,
+        )}
         unit="psi"
         secondaryValue={`at ${formatFlow(result.flowAtSupplyGpm)} gpm`}
         note={
           result.manualSystem
-            ? "What the fire department must pump in, for the flow shown (10.2.6.1.2)."
+            ? result.highestFdcPressurePsi !== null
+              ? "What the fire department must pump in at the connection that needs the most, for the flow shown (10.2.6.1.2)."
+              : "What the fire department must pump in, for the flow shown (10.2.6.1.2)."
             : "At the base of the riser or the pump discharge, for the flow shown."
         }
       />
@@ -166,6 +172,49 @@ export function ResultsStep({ state }: { state: StandpipeCalculationState }) {
           </table>
         </div>
       </section>
+
+      {result.fdcLines.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Fire department connections</h3>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            The pressure the fire department must deliver at each connection to supply the flow it carries
+            (10.4.1, A.10.4.1). It starts from the pressure required at the supply end of the path.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[40rem] border-collapse text-left text-sm">
+              <thead>
+                <tr className="border-b border-zinc-200 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+                  <th className="py-2 pr-3 font-medium">Connection</th>
+                  <th className="py-2 pr-3 text-right font-medium">Flow (gpm)</th>
+                  <th className="py-2 pr-3 text-right font-medium">Friction (psi)</th>
+                  <th className="py-2 pr-3 text-right font-medium">Elevation (psi)</th>
+                  <th className="py-2 pr-3 text-right font-medium">System end (psi)</th>
+                  <th className="py-2 text-right font-medium">At the connection (psi)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {result.fdcLines.map((line) => (
+                  <tr key={line.label} className="border-b border-zinc-100 align-top dark:border-zinc-900">
+                    <td className="py-2 pr-3 text-zinc-800 dark:text-zinc-200">
+                      {line.label}
+                      {line.inlets !== null && (
+                        <span className="block text-xs text-zinc-500 dark:text-zinc-400">
+                          {line.inlets} {line.inlets === 1 ? "inlet" : "inlets"}
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2 pr-3 text-right tabular-nums">{formatFlow(line.flowGpm)}</td>
+                    <td className="py-2 pr-3 text-right tabular-nums">{formatPressure(line.totalFrictionLossPsi)}</td>
+                    <td className="py-2 pr-3 text-right tabular-nums">{formatPressure(line.totalElevationPsi)}</td>
+                    <td className="py-2 pr-3 text-right tabular-nums">{formatPressure(line.pressureAtSystemPsi)}</td>
+                    <td className="py-2 text-right tabular-nums font-medium">{formatPressure(line.pressureAtFdcPsi)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       <section className="flex flex-col gap-3">
         <div

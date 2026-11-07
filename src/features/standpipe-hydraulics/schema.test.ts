@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_STANDPIPE_FORM, newFitting, newSegment } from "./defaults";
+import { DEFAULT_STANDPIPE_FORM, newFdcLine, newFitting, newSegment } from "./defaults";
 import { EXPLICIT_FITTING, standpipeHydraulicSchema, type StandpipeFormInput } from "./schema";
 
 /** The Carmona hose station: a Class II 1.5 in. connection at 100 gpm on a 3 in. riser. */
@@ -67,6 +67,43 @@ describe("standpipeHydraulicSchema", () => {
     expect(issuePaths(blank)).toContain("singleConnectionLaterals");
     expect(issuePaths(badSize)).toContain("fireDepartmentConnectionInletSize");
     expect(issuePaths({ ...validForm(), singleConnectionLaterals: "3" })).toEqual([]);
+  });
+
+  it("accepts fire department connections, and asks for a name and a size for each", () => {
+    const form = validForm();
+    form.fireDepartmentConnections = [newFdcLine([], { label: "Street", nominalSize: "4", pipeLengthFt: "50" })];
+    expect(issuePaths(form)).toEqual([]);
+
+    form.fireDepartmentConnections = [newFdcLine([], { label: "", nominalSize: "", pipeLengthFt: "" })];
+    expect(issuePaths(form)).toEqual(
+      expect.arrayContaining([
+        "fireDepartmentConnections.0.label",
+        "fireDepartmentConnections.0.nominalSize",
+        "fireDepartmentConnections.0.pipeLengthFt",
+      ]),
+    );
+  });
+
+  it("takes a positive flow and a whole number of inlets for a connection, both optional", () => {
+    const form = validForm();
+    const base = { label: "Street", nominalSize: "4", pipeLengthFt: "50" };
+
+    form.fireDepartmentConnections = [newFdcLine([], { ...base, flowGpm: "-5", inlets: "1.5" })];
+    expect(issuePaths(form)).toEqual(
+      expect.arrayContaining(["fireDepartmentConnections.0.flowGpm", "fireDepartmentConnections.0.inlets"]),
+    );
+
+    form.fireDepartmentConnections = [newFdcLine([], { ...base, flowGpm: "250", inlets: "0" })];
+    expect(issuePaths(form)).toEqual([]);
+  });
+
+  it("rejects a repeated connection name", () => {
+    const form = validForm();
+    const first = newFdcLine([], { label: "Street", nominalSize: "4", pipeLengthFt: "50" });
+    const second = newFdcLine([first], { label: "Street", nominalSize: "4", pipeLengthFt: "20" });
+    form.fireDepartmentConnections = [first, second];
+
+    expect(issuePaths(form)).toContain("fireDepartmentConnections.1.label");
   });
 
   it("rejects a repeated segment name", () => {

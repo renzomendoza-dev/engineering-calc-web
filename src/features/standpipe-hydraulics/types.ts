@@ -43,6 +43,17 @@ export interface StandpipeSegmentRequest {
   fittings?: StandpipeFittingRequest[];
 }
 
+/**
+ * Mirrors calc-api's StandpipeFdcLineDto: the piping of one fire department connection, from the
+ * system to the connection. Units: gpm, ft.
+ */
+export interface StandpipeFdcLineRequest {
+  label: string;
+  flowGpm?: number;
+  inlets?: number;
+  segments: StandpipeSegmentRequest[];
+}
+
 /** Mirrors calc-api's StandpipeHydraulicRequest. */
 export interface StandpipeHydraulicRequest {
   standpipeClass: StandpipeClass;
@@ -59,6 +70,7 @@ export interface StandpipeHydraulicRequest {
   fireDepartmentConnectionInlets?: number;
   supplyDurationMinutes?: number;
   flowAddedAtSupplyGpm?: number;
+  fireDepartmentConnections?: StandpipeFdcLineRequest[];
   segments: StandpipeSegmentRequest[];
 }
 
@@ -105,6 +117,22 @@ export interface StandpipeSegmentRow {
   residualRaised: boolean;
 }
 
+/**
+ * Mirrors calc-api's FdcLineRowDto: the pressure required at one fire department connection. In
+ * each row of `segments` the "remote end" is the system side and the "supply end" the connection
+ * side. Units: psi, gpm.
+ */
+export interface FdcLineRow {
+  label: string;
+  flowGpm: number;
+  inlets: number | null;
+  segments: StandpipeSegmentRow[];
+  totalFrictionLossPsi: number;
+  totalElevationPsi: number;
+  pressureAtSystemPsi: number;
+  pressureAtFdcPsi: number;
+}
+
 /** Mirrors calc-api's StandpipeHydraulicResponse. */
 export interface StandpipeHydraulicResponse {
   demandLines: DemandLine[];
@@ -122,6 +150,8 @@ export interface StandpipeHydraulicResponse {
   manualSystem: boolean;
   supplyDurationMinutes: number;
   waterSupplyVolumeGal: number;
+  fdcLines: FdcLineRow[];
+  highestFdcPressurePsi: number | null;
   segments: StandpipeSegmentRow[];
   checks: StandpipeCheck[];
 }

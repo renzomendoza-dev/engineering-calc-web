@@ -1,6 +1,7 @@
 import { EXPLICIT_FITTING, type StandpipeFormValues } from "./schema";
 import type {
   HoseConnectionSize,
+  StandpipeFdcLineRequest,
   StandpipeFittingRequest,
   StandpipeHydraulicRequest,
   StandpipeSegmentRequest,
@@ -8,6 +9,7 @@ import type {
 
 type SegmentValues = StandpipeFormValues["segments"][number];
 type FittingValues = SegmentValues["fittings"][number];
+type FdcValues = StandpipeFormValues["fireDepartmentConnections"][number];
 
 function toFittingRequest(fitting: FittingValues): StandpipeFittingRequest {
   const explicit = fitting.fittingType === EXPLICIT_FITTING;
@@ -32,6 +34,29 @@ function toSegmentRequest(segment: SegmentValues): StandpipeSegmentRequest {
     pipeLengthFt: segment.pipeLengthFt,
     elevationRiseFt: segment.elevationRiseFt,
     fittings: segment.fittings.map(toFittingRequest),
+  };
+}
+
+/** One fire department connection: its one run of plain pipe, listed from the system outward. */
+function toFdcRequest(connection: FdcValues): StandpipeFdcLineRequest {
+  const label = connection.label.trim();
+  return {
+    label,
+    flowGpm: connection.flowGpm,
+    inlets: connection.inlets,
+    segments: [
+      {
+        label: `${label} pipe`,
+        role: "OTHER",
+        pipeMaterial: connection.pipeMaterial,
+        schedule: connection.schedule,
+        nominalSize: connection.nominalSize,
+        cFactor: connection.cFactor,
+        pipeLengthFt: connection.pipeLengthFt,
+        elevationRiseFt: connection.elevationRiseFt,
+        fittings: connection.fittings.map(toFittingRequest),
+      },
+    ],
   };
 }
 
@@ -62,6 +87,11 @@ export function toStandpipeRequest(values: StandpipeFormValues): StandpipeHydrau
     fireDepartmentConnectionInlets: values.fireDepartmentConnectionInlets,
     supplyDurationMinutes: values.supplyDurationMinutes,
     flowAddedAtSupplyGpm: values.flowAddedAtSupplyGpm,
+    // Fire department connections are a Class I and III matter (10.7.1): a Class II request leaves them out.
+    fireDepartmentConnections:
+      values.standpipeClass !== "CLASS_II" && values.fireDepartmentConnections.length > 0
+        ? values.fireDepartmentConnections.map(toFdcRequest)
+        : undefined,
     segments: values.segments.map(toSegmentRequest),
   };
 }

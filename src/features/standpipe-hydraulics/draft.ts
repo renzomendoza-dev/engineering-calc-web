@@ -1,5 +1,5 @@
-import { DEFAULT_STANDPIPE_FORM, newSegment } from "./defaults";
-import type { SegmentFormInput, StandpipeFormInput } from "./schema";
+import { DEFAULT_STANDPIPE_FORM, newFdcLine, newSegment } from "./defaults";
+import type { FdcFormInput, SegmentFormInput, StandpipeFormInput } from "./schema";
 
 /**
  * Versioned key: a draft written by an older build may not match today's field names, and bumping
@@ -24,6 +24,18 @@ function mergeSegments(stored: unknown): SegmentFormInput[] {
   return rows;
 }
 
+function mergeConnections(stored: unknown): FdcFormInput[] {
+  if (!Array.isArray(stored)) return [];
+  const rows: FdcFormInput[] = [];
+  for (const entry of stored) {
+    if (!isObject(entry) || typeof entry.key !== "string" || entry.key === "") continue;
+    if (rows.some((row) => row.key === entry.key)) continue;
+    const merged = { ...newFdcLine(rows), ...(entry as Partial<FdcFormInput>), key: entry.key };
+    rows.push({ ...merged, fittings: Array.isArray(entry.fittings) ? merged.fittings : [] });
+  }
+  return rows;
+}
+
 /**
  * Merges a parsed draft over the defaults, so a draft missing a field (an older build, hand-edited
  * storage) still produces a complete form. Values are not validated here: the schema does that once
@@ -31,11 +43,12 @@ function mergeSegments(stored: unknown): SegmentFormInput[] {
  */
 export function mergeDraft(raw: unknown): StandpipeFormInput {
   if (!isObject(raw)) return DEFAULT_STANDPIPE_FORM;
-  const { segments: storedSegments, ...flat } = raw;
+  const { segments: storedSegments, fireDepartmentConnections: storedConnections, ...flat } = raw;
   const segments = mergeSegments(storedSegments);
   return {
     ...DEFAULT_STANDPIPE_FORM,
     ...(flat as Partial<StandpipeFormInput>),
+    fireDepartmentConnections: mergeConnections(storedConnections),
     segments: segments.length > 0 ? segments : DEFAULT_STANDPIPE_FORM.segments,
   };
 }

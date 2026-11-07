@@ -68,6 +68,27 @@ const segmentSchema = z
     }
   });
 
+/**
+ * One fire department connection: its label, the flow it carries and the inlets on it (both
+ * optional), and one run of pipe from the system to the connection, with its fittings. The API
+ * takes a list of pipes per connection; the page offers one, and request.ts wraps it.
+ */
+const fdcSchema = z.object({
+  key: z.string().min(1),
+  label: z.string().trim().min(1, "Required"),
+  flowGpm: optionalNumber(positive()),
+  inlets: optionalNumber(
+    z.coerce.number("Must be a number").int("Must be a whole number").min(0, "Cannot be negative"),
+  ),
+  pipeMaterial: z.string().min(1, "Required"),
+  schedule: z.string().optional(),
+  nominalSize: z.string().min(1, "Required"),
+  cFactor: requiredNumber(positive("Required")),
+  pipeLengthFt: requiredNumber(z.coerce.number("Required").min(0, "Cannot be negative")),
+  elevationRiseFt: requiredNumber(z.coerce.number("Required")),
+  fittings: z.array(fittingSchema),
+});
+
 export const standpipeHydraulicSchema = z
   .object({
     projectName: z.string(), // FORM-ONLY
@@ -91,6 +112,7 @@ export const standpipeHydraulicSchema = z
     ),
     supplyDurationMinutes: optionalNumber(positive()),
     flowAddedAtSupplyGpm: optionalNumber(z.coerce.number("Must be a number").min(0, "Cannot be negative")),
+    fireDepartmentConnections: z.array(fdcSchema),
     segments: z.array(segmentSchema).min(1, "Add at least one pipe segment"),
   })
   .superRefine((input, ctx) => {
@@ -117,6 +139,18 @@ export const standpipeHydraulicSchema = z
       }
       labels.add(label);
     });
+    const connectionLabels = new Set<string>();
+    input.fireDepartmentConnections.forEach((connection, index) => {
+      const label = connection.label.trim();
+      if (connectionLabels.has(label)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["fireDepartmentConnections", index, "label"],
+          message: "Another connection already has this name",
+        });
+      }
+      connectionLabels.add(label);
+    });
     if (!input.segments.some((segment) => segment.hoseConnectionSize !== "")) {
       ctx.addIssue({
         code: "custom",
@@ -130,6 +164,7 @@ export type StandpipeFormInput = z.input<typeof standpipeHydraulicSchema>;
 export type StandpipeFormValues = z.output<typeof standpipeHydraulicSchema>;
 export type SegmentFormInput = StandpipeFormInput["segments"][number];
 export type FittingFormInput = SegmentFormInput["fittings"][number];
+export type FdcFormInput = StandpipeFormInput["fireDepartmentConnections"][number];
 
 export const STEPS = ["basis", "path", "results"] as const;
 export type StepId = (typeof STEPS)[number];
@@ -159,6 +194,6 @@ export const STEP_FIELDS: Record<StepId, string[]> = {
     "supplyDurationMinutes",
     "flowAddedAtSupplyGpm",
   ],
-  path: ["segments"],
+  path: ["segments", "fireDepartmentConnections"],
   results: [],
 };

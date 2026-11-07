@@ -22,6 +22,24 @@ describe("mergeDraft", () => {
     expect(merged.segments[0].fittings).toEqual([]);
   });
 
+  it("gives a draft saved before fire department connections existed none, and fills a saved one in", () => {
+    expect(mergeDraft({ standpipeClass: "CLASS_I" }).fireDepartmentConnections).toEqual([]);
+
+    const merged = mergeDraft({
+      fireDepartmentConnections: [
+        { key: "fdc-3", label: "Street", nominalSize: "4", fittings: "not a list" },
+        { key: "fdc-3", label: "Repeat" },
+        { label: "No key" },
+      ],
+    });
+
+    expect(merged.fireDepartmentConnections).toHaveLength(1);
+    expect(merged.fireDepartmentConnections[0].key).toBe("fdc-3");
+    expect(merged.fireDepartmentConnections[0].label).toBe("Street");
+    expect(merged.fireDepartmentConnections[0].cFactor).toBe("120");
+    expect(merged.fireDepartmentConnections[0].fittings).toEqual([]);
+  });
+
   it("gives a draft saved before the laterals, levels, manual system and inlet size existed their defaults", () => {
     const merged = mergeDraft({ standpipeClass: "CLASS_III", additionalStandpipes: "2" });
 

@@ -1,4 +1,4 @@
-import type { FittingFormInput, SegmentFormInput, StandpipeFormInput } from "./schema";
+import type { FdcFormInput, FittingFormInput, SegmentFormInput, StandpipeFormInput } from "./schema";
 
 /**
  * Keys are `segment-<n>`, with n one above the largest in use, so a new row never takes the key of
@@ -36,6 +36,25 @@ export function newSegment(
   };
 }
 
+/** Keys are `fdc-<n>`, with n one above the largest in use, so a new row never takes a deleted row's key. */
+export function newFdcLine(existing: { key: string }[], overrides: Partial<FdcFormInput> = {}): FdcFormInput {
+  const used = existing.map((row) => Number(row.key.slice("fdc-".length))).filter((n) => Number.isInteger(n));
+  return {
+    key: `fdc-${Math.max(0, ...used) + 1}`,
+    label: "",
+    flowGpm: "",
+    inlets: "",
+    pipeMaterial: "BI",
+    schedule: "SCH40",
+    nominalSize: "",
+    cFactor: "120",
+    pipeLengthFt: "",
+    elevationRiseFt: "0",
+    fittings: [],
+    ...overrides,
+  };
+}
+
 export function newFitting(): FittingFormInput {
   return { fittingType: "", quantity: "1", explicitEquivalentLengthFt: "" };
 }
@@ -62,5 +81,6 @@ export const DEFAULT_STANDPIPE_FORM: StandpipeFormInput = {
   fireDepartmentConnectionInlets: "",
   supplyDurationMinutes: "",
   flowAddedAtSupplyGpm: "",
+  fireDepartmentConnections: [],
   segments: [HOSE_SEGMENT, RISER_SEGMENT],
 };

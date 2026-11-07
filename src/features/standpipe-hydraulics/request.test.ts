@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_STANDPIPE_FORM, newSegment } from "./defaults";
+import { DEFAULT_STANDPIPE_FORM, newFdcLine, newSegment } from "./defaults";
 import { toStandpipeRequest } from "./request";
 import { EXPLICIT_FITTING, standpipeHydraulicSchema, type StandpipeFormInput } from "./schema";
 
@@ -90,6 +90,58 @@ describe("toStandpipeRequest", () => {
     expect(json).not.toHaveProperty("risersEndAtDifferentLevels");
     expect(json).not.toHaveProperty("manualSystem");
     expect(json.fireDepartmentConnectionInletSize).toBe("TWO_AND_HALF_INCH");
+  });
+
+  it("sends each fire department connection as one run of plain pipe from the system out", () => {
+    const form = baseForm();
+    form.standpipeClass = "CLASS_I";
+    form.fireDepartmentConnections = [
+      newFdcLine([], {
+        label: " Street ",
+        flowGpm: "250",
+        inlets: "2",
+        nominalSize: "4",
+        pipeLengthFt: "50",
+        elevationRiseFt: "3",
+        fittings: [{ fittingType: "GATE_VALVE", quantity: "1", explicitEquivalentLengthFt: "" }],
+      }),
+    ];
+
+    const [line] = toStandpipeRequest(parse(form)).fireDepartmentConnections ?? [];
+
+    expect(line.label).toBe("Street");
+    expect(line.flowGpm).toBe(250);
+    expect(line.inlets).toBe(2);
+    expect(line.segments).toHaveLength(1);
+    expect(line.segments[0]).toMatchObject({
+      label: "Street pipe",
+      role: "OTHER",
+      pipeMaterial: "BI",
+      nominalSize: "4",
+      cFactor: 120,
+      pipeLengthFt: 50,
+      elevationRiseFt: 3,
+    });
+    expect(line.segments[0].flowAddedGpm).toBeUndefined();
+    expect(line.segments[0].hoseConnectionSize).toBeUndefined();
+    expect(line.segments[0].fittings).toEqual([
+      { fittingType: "GATE_VALVE", quantity: 1, explicitEquivalentLengthFt: undefined },
+    ]);
+  });
+
+  it("sends no fire department connections when none are given, and none for a Class II system", () => {
+    const form = baseForm();
+    form.standpipeClass = "CLASS_I";
+    expect(JSON.parse(JSON.stringify(toStandpipeRequest(parse(form))))).not.toHaveProperty("fireDepartmentConnections");
+
+    form.fireDepartmentConnections = [newFdcLine([], { label: "Street", nominalSize: "4", pipeLengthFt: "50" })];
+    form.standpipeClass = "CLASS_II";
+    expect(toStandpipeRequest(parse(form)).fireDepartmentConnections).toBeUndefined();
+
+    const withoutFlow = { ...form, standpipeClass: "CLASS_III" as const };
+    const request = toStandpipeRequest(parse(withoutFlow));
+    expect(JSON.parse(JSON.stringify(request.fireDepartmentConnections))[0]).not.toHaveProperty("flowGpm");
+    expect(JSON.parse(JSON.stringify(request.fireDepartmentConnections))[0]).not.toHaveProperty("inlets");
   });
 
   it("leaves the sprinkler demand and hazard out unless the building has the sprinklers that read them", () => {
