@@ -22,6 +22,13 @@ describe("mergeDraft", () => {
     expect(merged.segments[0].fittings).toEqual([]);
   });
 
+  it("gives a segment saved before the other-standpipe mark existed no mark", () => {
+    const merged = mergeDraft({ segments: [{ key: "segment-1", label: "Riser", flowAddedGpm: "250" }] });
+
+    expect(merged.segments[0].otherStandpipeConnection).toBe(false);
+    expect(merged.segments[0].flowAddedGpm).toBe("250");
+  });
+
   it("gives a draft saved before the static pressure fields existed blanks for them", () => {
     const merged = mergeDraft({ standpipeClass: "CLASS_I" });
 

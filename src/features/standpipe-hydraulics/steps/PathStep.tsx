@@ -389,6 +389,20 @@ function SegmentCard({
           hint={hasConnection ? undefined : "Optional."}
           {...number("flowAddedGpm")}
         />
+        {!hasConnection && (
+          <label className="flex items-start gap-2 text-sm text-zinc-700 sm:col-span-2 dark:text-zinc-300">
+            <input type="checkbox" className="mt-1" {...register(`segments.${index}.otherStandpipeConnection`)} />
+            <span>
+              The flow joining here is another standpipe&apos;s, at its connection point to the common supply
+              piping
+              <span className="block text-xs text-zinc-500 dark:text-zinc-400">
+                The pressure there is held at the minimum residual, 100 psi, and its flow is not balanced to
+                a higher pressure (10.6.1.2.1, 10.6.1.2.4). Flow of other standpipes left off the path joins
+                at the supply end instead.
+              </span>
+            </span>
+          </label>
+        )}
       </div>
 
       <div className="grid items-end gap-4 sm:grid-cols-2">

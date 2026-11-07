@@ -157,7 +157,11 @@ export function ResultsStep({ state }: { state: StandpipeCalculationState }) {
                   <td className="py-2 pr-3 text-zinc-800 dark:text-zinc-200">
                     {row.label}
                     <span className="block text-xs text-zinc-500 dark:text-zinc-400">
-                      {row.hoseConnectionSize ? CONNECTION_LABELS[row.hoseConnectionSize] : ROLE_LABELS[row.role]}
+                      {row.hoseConnectionSize
+                        ? CONNECTION_LABELS[row.hoseConnectionSize]
+                        : row.otherStandpipeConnection
+                          ? "Another standpipe's connection point"
+                          : ROLE_LABELS[row.role]}
                     </span>
                   </td>
                   <td className="py-2 pr-3 whitespace-nowrap text-zinc-700 dark:text-zinc-300">

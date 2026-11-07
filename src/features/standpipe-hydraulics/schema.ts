@@ -50,6 +50,7 @@ const segmentSchema = z
     role: z.enum(PIPE_ROLES),
     flowAddedGpm: optionalNumber(positive()),
     hoseConnectionSize: z.union([z.literal(""), z.enum(HOSE_CONNECTION_SIZES)]),
+    otherStandpipeConnection: z.boolean(),
     pipeMaterial: z.string().min(1, "Required"),
     schedule: z.string().optional(),
     nominalSize: z.string().min(1, "Required"),
@@ -64,6 +65,14 @@ const segmentSchema = z
         code: "custom",
         path: ["flowAddedGpm"],
         message: "A hose connection needs its flow",
+      });
+    }
+    // A hose connection takes the node, so the other-standpipe flag only counts where there is none.
+    if (segment.hoseConnectionSize === "" && segment.otherStandpipeConnection && segment.flowAddedGpm === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["flowAddedGpm"],
+        message: "Give the flow of the other standpipe",
       });
     }
   });

@@ -34,6 +34,7 @@ export interface StandpipeSegmentRequest {
   role: PipeRole;
   flowAddedGpm?: number;
   hoseConnectionSize?: HoseConnectionSize;
+  otherStandpipeConnection?: boolean;
   pipeMaterial: string;
   schedule?: string;
   nominalSize: string;
@@ -117,6 +118,7 @@ export interface StandpipeSegmentRow {
   pressureAtRemoteEndPsi: number;
   pressureAtSupplyEndPsi: number;
   residualRaised: boolean;
+  otherStandpipeConnection: boolean;
 }
 
 /**

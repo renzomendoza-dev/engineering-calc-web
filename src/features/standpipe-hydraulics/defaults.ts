@@ -25,6 +25,7 @@ export function newSegment(
     role: "STANDPIPE",
     flowAddedGpm: "",
     hoseConnectionSize: "",
+    otherStandpipeConnection: false,
     pipeMaterial: "BI",
     schedule: "SCH40",
     nominalSize: "",

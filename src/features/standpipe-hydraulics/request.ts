@@ -27,6 +27,9 @@ function toSegmentRequest(segment: SegmentValues): StandpipeSegmentRequest {
     flowAddedGpm: segment.flowAddedGpm,
     hoseConnectionSize:
       segment.hoseConnectionSize === "" ? undefined : (segment.hoseConnectionSize as HoseConnectionSize),
+    // Only where no hose connection takes the node; a flag left on behind a hose connection is dropped.
+    otherStandpipeConnection:
+      segment.hoseConnectionSize === "" && segment.otherStandpipeConnection ? true : undefined,
     pipeMaterial: segment.pipeMaterial,
     schedule: segment.schedule,
     nominalSize: segment.nominalSize,

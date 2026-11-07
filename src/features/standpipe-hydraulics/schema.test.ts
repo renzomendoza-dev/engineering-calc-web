@@ -69,6 +69,19 @@ describe("standpipeHydraulicSchema", () => {
     expect(issuePaths({ ...validForm(), singleConnectionLaterals: "3" })).toEqual([]);
   });
 
+  it("wants a flow wherever another standpipe's connection point is marked, and ignores the mark behind a hose connection", () => {
+    const form = validForm();
+    form.segments[1] = { ...form.segments[1], otherStandpipeConnection: true, flowAddedGpm: "" };
+    expect(issuePaths(form)).toContain("segments.1.flowAddedGpm");
+
+    form.segments[1] = { ...form.segments[1], flowAddedGpm: "250" };
+    expect(issuePaths(form)).toEqual([]);
+
+    // The first segment has a hose connection with its own flow, so a mark left on it asks for nothing more.
+    form.segments[0] = { ...form.segments[0], otherStandpipeConnection: true };
+    expect(issuePaths(form)).toEqual([]);
+  });
+
   it("takes a positive static pressure, a height that may be negative, and wants the pressure for a height", () => {
     const form = validForm();
 
