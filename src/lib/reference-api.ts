@@ -35,6 +35,7 @@ import type {
   SprinklerKFactorTableRow,
 } from "@/features/sprinkler-hydraulics/types";
 import type { GeneratorSetReference } from "@/features/generator-set-sizing/types";
+import type { StandpipeReference } from "@/features/standpipe-hydraulics/types";
 
 /**
  * Wraps calc-api's electrical reference endpoints
@@ -156,6 +157,11 @@ export function getMotorVoltages(
  */
 export function getGeneratorSetReference(): Promise<GeneratorSetReference> {
   return apiGet<GeneratorSetReference>("/api/electrical/generator-set-sizing/reference");
+}
+
+/** The standpipe equivalent length chart and C table, with the edition they were read from. */
+export function getStandpipeReference(): Promise<StandpipeReference> {
+  return apiGet<StandpipeReference>("/api/mechanical/standpipe/reference");
 }
 
 /** Raw rows of the combined PEC Article 4.30 full-load current tables (4.30.14.1–4.30.14.4). */

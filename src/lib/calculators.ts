@@ -174,6 +174,14 @@ export const calculators: CalculatorConfig[] = [
     status: "available",
   },
   {
+    name: "Standpipe Hydraulic Calculation (NFPA 14)",
+    description:
+      "Flow a standpipe system must deliver for its class, and the pressure needed at the supply, worked back from the most remote hose connection.",
+    category: "Mechanical",
+    href: "/mechanical/standpipe/hydraulics",
+    status: "available",
+  },
+  {
     name: "Fire Water Storage",
     description: "Required fire water storage volume from rated pump flow and NFPA 13 hazard classification duration.",
     category: "Mechanical",
