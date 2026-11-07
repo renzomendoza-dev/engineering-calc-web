@@ -223,6 +223,20 @@ export function BasisStep({ form }: StepProps) {
             error={errors.fireDepartmentConnectionInlets?.message}
             {...register("fireDepartmentConnectionInlets")}
           />
+          <NumberField
+            label="Static pressure at the supply"
+            unit="psi"
+            hint="The highest static (nonflowing) pressure at the base of the system. For a fire pump it is the pump boost at churn plus the supply pressure at the suction (A.10.2). Blank leaves the 175 psi and 400 psi static checks open."
+            error={errors.supplyStaticPressurePsi?.message}
+            {...register("supplyStaticPressurePsi")}
+          />
+          <NumberField
+            label="Height of the lowest hose connection above the supply"
+            unit="ft"
+            hint="Where the static pressure is highest. Blank takes 0, the supply level. Negative if it is below the supply."
+            error={errors.lowestHoseConnectionHeightFt?.message}
+            {...register("lowestHoseConnectionHeightFt")}
+          />
         </div>
         {classIOrIII && (
           <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">

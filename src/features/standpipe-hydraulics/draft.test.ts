@@ -22,6 +22,14 @@ describe("mergeDraft", () => {
     expect(merged.segments[0].fittings).toEqual([]);
   });
 
+  it("gives a draft saved before the static pressure fields existed blanks for them", () => {
+    const merged = mergeDraft({ standpipeClass: "CLASS_I" });
+
+    expect(merged.supplyStaticPressurePsi).toBe("");
+    expect(merged.lowestHoseConnectionHeightFt).toBe("");
+    expect(mergeDraft({ supplyStaticPressurePsi: "180" }).supplyStaticPressurePsi).toBe("180");
+  });
+
   it("gives a draft saved before fire department connections existed none, and fills a saved one in", () => {
     expect(mergeDraft({ standpipeClass: "CLASS_I" }).fireDepartmentConnections).toEqual([]);
 

@@ -81,6 +81,8 @@ export const DEFAULT_STANDPIPE_FORM: StandpipeFormInput = {
   fireDepartmentConnectionInlets: "",
   supplyDurationMinutes: "",
   flowAddedAtSupplyGpm: "",
+  supplyStaticPressurePsi: "",
+  lowestHoseConnectionHeightFt: "",
   fireDepartmentConnections: [],
   segments: [HOSE_SEGMENT, RISER_SEGMENT],
 };

@@ -89,6 +89,18 @@ export function ResultsStep({ state }: { state: StandpipeCalculationState }) {
           unit="psi"
           note="Over the whole path."
         />
+        {result.staticPressureAtLowestConnectionPsi !== null && (
+          <ResultCard
+            label="Static pressure at the lowest hose connection"
+            value={formatPressure(result.staticPressureAtLowestConnectionPsi)}
+            unit="psi"
+            note={
+              result.staticPressureAtLowestConnectionPsi > 175
+                ? "Above 175 psi: a listed pressure-regulating device is required (10.2.4)."
+                : "Not above the 175 psi limit (10.2.4)."
+            }
+          />
+        )}
         <ResultCard
           label="Fire department connection inlets"
           value={result.requiredFdcInlets}

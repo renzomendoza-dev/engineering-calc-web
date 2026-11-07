@@ -70,6 +70,8 @@ export interface StandpipeHydraulicRequest {
   fireDepartmentConnectionInlets?: number;
   supplyDurationMinutes?: number;
   flowAddedAtSupplyGpm?: number;
+  supplyStaticPressurePsi?: number;
+  lowestHoseConnectionHeightFt?: number;
   fireDepartmentConnections?: StandpipeFdcLineRequest[];
   segments: StandpipeSegmentRequest[];
 }
@@ -152,6 +154,7 @@ export interface StandpipeHydraulicResponse {
   waterSupplyVolumeGal: number;
   fdcLines: FdcLineRow[];
   highestFdcPressurePsi: number | null;
+  staticPressureAtLowestConnectionPsi: number | null;
   segments: StandpipeSegmentRow[];
   checks: StandpipeCheck[];
 }

@@ -112,6 +112,8 @@ export const standpipeHydraulicSchema = z
     ),
     supplyDurationMinutes: optionalNumber(positive()),
     flowAddedAtSupplyGpm: optionalNumber(z.coerce.number("Must be a number").min(0, "Cannot be negative")),
+    supplyStaticPressurePsi: optionalNumber(positive()),
+    lowestHoseConnectionHeightFt: optionalNumber(z.coerce.number("Must be a number")),
     fireDepartmentConnections: z.array(fdcSchema),
     segments: z.array(segmentSchema).min(1, "Add at least one pipe segment"),
   })
@@ -125,6 +127,13 @@ export const standpipeHydraulicSchema = z
         code: "custom",
         path: ["sprinklerHazard"],
         message: "Choose light or ordinary for a partly sprinklered building",
+      });
+    }
+    if (input.lowestHoseConnectionHeightFt !== undefined && input.supplyStaticPressurePsi === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["supplyStaticPressurePsi"],
+        message: "Give the static pressure the height is measured against",
       });
     }
     const labels = new Set<string>();
@@ -193,6 +202,8 @@ export const STEP_FIELDS: Record<StepId, string[]> = {
     "fireDepartmentConnectionInlets",
     "supplyDurationMinutes",
     "flowAddedAtSupplyGpm",
+    "supplyStaticPressurePsi",
+    "lowestHoseConnectionHeightFt",
   ],
   path: ["segments", "fireDepartmentConnections"],
   results: [],

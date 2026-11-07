@@ -69,6 +69,19 @@ describe("standpipeHydraulicSchema", () => {
     expect(issuePaths({ ...validForm(), singleConnectionLaterals: "3" })).toEqual([]);
   });
 
+  it("takes a positive static pressure, a height that may be negative, and wants the pressure for a height", () => {
+    const form = validForm();
+
+    expect(issuePaths({ ...form, supplyStaticPressurePsi: "180" })).toEqual([]);
+    expect(issuePaths({ ...form, supplyStaticPressurePsi: "180", lowestHoseConnectionHeightFt: "-12" })).toEqual([]);
+    expect(issuePaths({ ...form, supplyStaticPressurePsi: "0" })).toContain("supplyStaticPressurePsi");
+    expect(issuePaths({ ...form, supplyStaticPressurePsi: "-5" })).toContain("supplyStaticPressurePsi");
+    expect(issuePaths({ ...form, lowestHoseConnectionHeightFt: "10" })).toContain("supplyStaticPressurePsi");
+    expect(issuePaths({ ...form, supplyStaticPressurePsi: "180", lowestHoseConnectionHeightFt: "abc" })).toContain(
+      "lowestHoseConnectionHeightFt",
+    );
+  });
+
   it("accepts fire department connections, and asks for a name and a size for each", () => {
     const form = validForm();
     form.fireDepartmentConnections = [newFdcLine([], { label: "Street", nominalSize: "4", pipeLengthFt: "50" })];

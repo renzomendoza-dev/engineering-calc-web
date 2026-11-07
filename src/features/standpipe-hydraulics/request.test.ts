@@ -92,6 +92,19 @@ describe("toStandpipeRequest", () => {
     expect(json.fireDepartmentConnectionInletSize).toBe("TWO_AND_HALF_INCH");
   });
 
+  it("sends the static pressure and the height of the lowest hose connection only when given", () => {
+    const form = baseForm();
+    expect(JSON.parse(JSON.stringify(toStandpipeRequest(parse(form))))).not.toHaveProperty("supplyStaticPressurePsi");
+    expect(JSON.parse(JSON.stringify(toStandpipeRequest(parse(form))))).not.toHaveProperty("lowestHoseConnectionHeightFt");
+
+    form.supplyStaticPressurePsi = "180";
+    form.lowestHoseConnectionHeightFt = "-12";
+    const request = toStandpipeRequest(parse(form));
+
+    expect(request.supplyStaticPressurePsi).toBe(180);
+    expect(request.lowestHoseConnectionHeightFt).toBe(-12);
+  });
+
   it("sends each fire department connection as one run of plain pipe from the system out", () => {
     const form = baseForm();
     form.standpipeClass = "CLASS_I";

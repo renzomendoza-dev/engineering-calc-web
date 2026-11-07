@@ -87,6 +87,8 @@ export function toStandpipeRequest(values: StandpipeFormValues): StandpipeHydrau
     fireDepartmentConnectionInlets: values.fireDepartmentConnectionInlets,
     supplyDurationMinutes: values.supplyDurationMinutes,
     flowAddedAtSupplyGpm: values.flowAddedAtSupplyGpm,
+    supplyStaticPressurePsi: values.supplyStaticPressurePsi,
+    lowestHoseConnectionHeightFt: values.lowestHoseConnectionHeightFt,
     // Fire department connections are a Class I and III matter (10.7.1): a Class II request leaves them out.
     fireDepartmentConnections:
       values.standpipeClass !== "CLASS_II" && values.fireDepartmentConnections.length > 0
