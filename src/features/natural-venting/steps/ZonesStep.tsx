@@ -142,8 +142,14 @@ function ZoneCard({ form, index, onRemove, removeDisabled }: ZoneCardProps) {
         <NumberField
           label="Height to the middle of the vents"
           unit="m"
-          hint="Above the floor. Blank takes the ceiling. The smoke layer depth d runs from the layer boundary to here."
+          hint="Above the floor. Blank takes the ceiling. The smoke layer depth d runs from the layer boundary to here. May be above the ceiling, for a raised roof monitor."
           {...number("ventCentreHeight")}
+        />
+        <NumberField
+          label="Eave height of a gable roof"
+          unit="m"
+          hint="Optional. With the ceiling height taken as the ridge, it gives the smoke volume for the time-stepping check (not NFPA 204). Blank is a flat ceiling."
+          {...number("eaveHeight")}
         />
         <NumberField
           label="Draft curtain depth"

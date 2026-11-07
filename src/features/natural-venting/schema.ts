@@ -52,11 +52,13 @@ const zoneSchema = z
     maxLayerTemperatureRise: optionalNumber(positive()),
     maxFloorRadiantFlux: optionalNumber(positive()),
     aisleWidth: optionalNumber(positive()),
+    eaveHeight: optionalNumber(positive()),
   })
   .superRefine((zone, ctx) => {
-    if (zone.ventCentreHeight !== undefined && zone.ceilingHeight !== undefined) {
-      if (zone.ventCentreHeight > zone.ceilingHeight) {
-        ctx.addIssue({ code: "custom", path: ["ventCentreHeight"], message: "Cannot be above the ceiling" });
+    // The middle of the vents may be above the ceiling: a raised roof monitor puts them there.
+    if (zone.eaveHeight !== undefined && zone.ceilingHeight !== undefined) {
+      if (zone.eaveHeight > zone.ceilingHeight) {
+        ctx.addIssue({ code: "custom", path: ["eaveHeight"], message: "Cannot be above the ridge (the ceiling height)" });
       }
     }
     if (zone.curtainDepth !== undefined && zone.ceilingHeight !== undefined) {

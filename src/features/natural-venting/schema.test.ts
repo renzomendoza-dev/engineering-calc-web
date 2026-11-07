@@ -120,6 +120,20 @@ describe("naturalVentingSchema", () => {
     expect(issuePaths(form)).toContain("fireCases.0.smokeLayerHeight");
   });
 
+  it("takes the middle of the vents above the ceiling for a raised monitor, and an eave only up to the ridge", () => {
+    const monitor = validForm();
+    monitor.zones[0] = { ...monitor.zones[0], ventCentreHeight: "9.85", eaveHeight: "6" };
+    expect(issuePaths(monitor)).toEqual([]);
+
+    const tooHigh = validForm();
+    tooHigh.zones[0] = { ...tooHigh.zones[0], eaveHeight: "9.5" };
+    expect(issuePaths(tooHigh)).toContain("zones.0.eaveHeight");
+
+    const notPositive = validForm();
+    notPositive.zones[0] = { ...notPositive.zones[0], eaveHeight: "0" };
+    expect(issuePaths(notPositive)).toContain("zones.0.eaveHeight");
+  });
+
   it("rejects repeated names and a fire case in a zone that does not exist", () => {
     const form = validForm();
     const second = { ...form.zones[0], key: "zone-2" };

@@ -220,7 +220,93 @@ function FireCasePanel({ fire, controlling }: { fire: FireCaseResult; controllin
         />
       </div>
 
+      <SupplementaryPanel fire={fire} />
+
       <CheckTable checks={fire.checks} />
+    </div>
+  );
+}
+
+/**
+ * The two supplementary methods, set apart because neither is part of NFPA 204: the layer for a fire
+ * against a wall or in a corner (image-fire screening), and the layer boundary while the fire grows.
+ */
+function SupplementaryPanel({ fire }: { fire: FireCaseResult }) {
+  const step = fire.transientInterface;
+  return (
+    <div className="flex flex-col gap-3 rounded-md border border-dashed border-zinc-300 p-3 dark:border-zinc-700">
+      <h5 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+        Supplementary, not NFPA 204
+      </h5>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm text-zinc-700 dark:text-zinc-300">
+          <caption className="pb-2 text-left text-xs text-zinc-500 dark:text-zinc-400">
+            Fire against a wall or in a corner, by the image-fire method: the fire is treated as 2 or 4
+            times its size in open space and the plume flow is divided by it.
+          </caption>
+          <thead>
+            <tr className="border-b border-zinc-200 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+              <th className="py-1 pr-3 font-medium">Location</th>
+              <th className="py-1 pr-3 text-right font-medium">Treated as, kW</th>
+              <th className="py-1 pr-3 text-right font-medium">Plume flow, kg/s</th>
+              <th className="py-1 pr-3 text-right font-medium">Rise, K</th>
+              <th className="py-1 text-right font-medium">Layer, K</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(
+              [
+                ["Against a wall", fire.imageFire.wall],
+                ["In a corner", fire.imageFire.corner],
+              ] as const
+            ).map(([label, scenario]) => (
+              <tr key={label} className="border-b border-zinc-100 dark:border-zinc-900">
+                <td className="py-1.5 pr-3">{label}</td>
+                <td className="py-1.5 pr-3 text-right tabular-nums">{formatKw(scenario.equivalentHeatReleaseRate)}</td>
+                <td className="py-1.5 pr-3 text-right tabular-nums">{formatFlow(scenario.plumeMassFlow)}</td>
+                <td className="py-1.5 pr-3 text-right tabular-nums">{formatTemperature(scenario.layerTemperatureRise)}</td>
+                <td className="py-1.5 text-right tabular-nums">{formatTemperature(scenario.layerTemperature)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {step !== null && (
+        <div className="grid gap-3 sm:grid-cols-3">
+          <ResultCard
+            label="Layer boundary at the end of the design interval"
+            value={formatLength(step.interfaceHeightAtEnd)}
+            unit="m"
+            note={`At ${formatSeconds(step.endTime)} s, stepped as the fire grows.`}
+          />
+          <ResultCard
+            label="Time to fall below the design height, vents working"
+            value={step.timeToDesignHeight === null ? "Not reached" : formatSeconds(step.timeToDesignHeight)}
+            unit={step.timeToDesignHeight === null ? undefined : "s"}
+            note={
+              step.timeToDesignHeight === null
+                ? `Within ${formatSeconds(step.horizon / 60)} minutes.`
+                : "From ignition, if the fire kept growing."
+            }
+          />
+          <ResultCard
+            label="Time to fall below the design height, no venting"
+            value={
+              step.timeToDesignHeightWithoutVents === null
+                ? "Not reached"
+                : formatSeconds(step.timeToDesignHeightWithoutVents)
+            }
+            unit={step.timeToDesignHeightWithoutVents === null ? undefined : "s"}
+            note={
+              step.timeToDesignHeightWithoutVents === null
+                ? `Within ${formatSeconds(step.horizon / 60)} minutes.`
+                : "From ignition."
+            }
+          />
+        </div>
+      )}
     </div>
   );
 }

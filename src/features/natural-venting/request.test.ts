@@ -40,6 +40,14 @@ describe("toNaturalVentingRequest", () => {
     expect(request.fireCases[0].smokeLayerHeight).toBe(6);
   });
 
+  it("sends the eave height of a gable roof only when given", () => {
+    expect(JSON.parse(JSON.stringify(toNaturalVentingRequest(parse(baseForm())))).zones[0]).not.toHaveProperty("eaveHeight");
+
+    const form = baseForm();
+    form.zones[0] = { ...form.zones[0], eaveHeight: "6" };
+    expect(toNaturalVentingRequest(parse(form)).zones[0].eaveHeight).toBe(6);
+  });
+
   it("sends only the chosen way of giving the inlet", () => {
     const byRatio = toNaturalVentingRequest(parse(baseForm()));
     expect(byRatio.zones[0].inletAreaRatio).toBe(1.5);

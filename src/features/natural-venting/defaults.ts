@@ -35,6 +35,7 @@ export function newZone(existing: { key: string; name: string }[]): ZoneFormInpu
     maxLayerTemperatureRise: "",
     maxFloorRadiantFlux: "",
     aisleWidth: "",
+    eaveHeight: "",
   };
 }
 

@@ -27,6 +27,7 @@ function toZoneRequest(zone: ZoneValues): VentZoneRequest {
     maxLayerTemperatureRise: zone.maxLayerTemperatureRise,
     maxFloorRadiantFlux: zone.maxFloorRadiantFlux,
     aisleWidth: zone.aisleWidth,
+    eaveHeight: zone.eaveHeight,
   };
 }
 

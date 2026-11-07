@@ -22,6 +22,19 @@ describe("mergeDraft", () => {
     expect(merged.fireCases[0].kind).toBe("STEADY");
   });
 
+  it("gives a zone saved before the eave height existed a blank one, and keeps a saved one", () => {
+    const merged = mergeDraft({
+      zones: [
+        { key: "zone-1", name: "Hall" },
+        { key: "zone-2", name: "Warehouse", eaveHeight: "8" },
+      ],
+      fireCases: [{ key: "fire-1", name: "A", zoneKey: "zone-1" }],
+    });
+
+    expect(merged.zones[0].eaveHeight).toBe("");
+    expect(merged.zones[1].eaveHeight).toBe("8");
+  });
+
   it("gives a fire case saved before the smoke detector option existed a known detection time", () => {
     const merged = mergeDraft({
       zones: [{ key: "zone-1", name: "Hall" }],

@@ -36,6 +36,7 @@ export interface VentZoneRequest {
   maxLayerTemperatureRise?: number;
   maxFloorRadiantFlux?: number;
   aisleWidth?: number;
+  eaveHeight?: number;
 }
 
 /** Mirrors calc-api's FireCaseDto: one design fire in one zone. Units: kW, s, m, m2, kW/m2. */
@@ -82,6 +83,37 @@ export interface VentingCheck {
 }
 
 /**
+ * Mirrors calc-api's ImageFireScenarioDto: the smoke layer of a fire against a wall (multiplier 2) or in a
+ * corner (4) by the image-fire method. Supplementary, not NFPA 204. Units: kW, kg/s, K.
+ */
+export interface ImageFireScenario {
+  multiplier: number;
+  equivalentHeatReleaseRate: number;
+  plumeMassFlow: number;
+  layerTemperatureRise: number;
+  layerTemperature: number;
+}
+
+/** Mirrors calc-api's ImageFireDto: the layer for a fire against a wall and in a corner. */
+export interface ImageFire {
+  wall: ImageFireScenario;
+  corner: ImageFireScenario;
+}
+
+/**
+ * Mirrors calc-api's TransientInterfaceDto: the supplementary time-stepping check of the smoke layer
+ * boundary (not NFPA 204). Units: s, m. The two times are null when the boundary does not fall below the
+ * design height within the horizon.
+ */
+export interface TransientInterface {
+  endTime: number;
+  interfaceHeightAtEnd: number;
+  timeToDesignHeight: number | null;
+  timeToDesignHeightWithoutVents: number | null;
+  horizon: number;
+}
+
+/**
  * Mirrors calc-api's FireCaseResultDto. Units: m, m2, kW, kW/m2, K, kg/s, kg/m3, m/s.
  * Every figure comes from the API; nothing in the page recomputes one.
  */
@@ -115,6 +147,8 @@ export interface FireCaseResult {
   feasibleHeatReleaseRate: number;
   minimumAisleWidth: number | null;
   checks: VentingCheck[];
+  imageFire: ImageFire;
+  transientInterface: TransientInterface | null;
 }
 
 /** Mirrors calc-api's ZoneResultDto: the checks for a zone that do not depend on a fire. */
