@@ -36,6 +36,7 @@ import type {
 } from "@/features/sprinkler-hydraulics/types";
 import type { GeneratorSetReference } from "@/features/generator-set-sizing/types";
 import type { StandpipeReference } from "@/features/standpipe-hydraulics/types";
+import type { NaturalVentingReference } from "@/features/natural-venting/types";
 
 /**
  * Wraps calc-api's electrical reference endpoints
@@ -157,6 +158,11 @@ export function getMotorVoltages(
  */
 export function getGeneratorSetReference(): Promise<GeneratorSetReference> {
   return apiGet<GeneratorSetReference>("/api/electrical/generator-set-sizing/reference");
+}
+
+/** The NFPA 204 discharge coefficients (Table 9.2.4.2) and unit heat release rates (Table A.8.2.6), with their edition. */
+export function getNaturalVentingReference(): Promise<NaturalVentingReference> {
+  return apiGet<NaturalVentingReference>("/api/smoke-control/natural-venting/reference");
 }
 
 /** The standpipe equivalent length chart and C table, with the edition they were read from. */

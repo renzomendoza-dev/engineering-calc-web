@@ -124,3 +124,28 @@ export interface NaturalVentingResponse {
   fireCases: FireCaseResult[];
   zones: ZoneResult[];
 }
+
+/** Mirrors calc-api's DischargeCoefficientEntryDto: one default Cd for a vent or inlet type. */
+export interface DischargeCoefficientEntry {
+  key: string;
+  label: string;
+  dischargeCoefficient: number;
+  clause: string;
+  confidence: string;
+}
+
+/** Mirrors calc-api's CommodityHeatReleaseEntryDto: one row of Table A.8.2.6, kW per m2 of floor area. */
+export interface CommodityHeatReleaseEntry {
+  key: string;
+  label: string;
+  heatReleaseRateKwPerM2: number;
+  confidence: string;
+}
+
+/** Mirrors calc-api's NaturalVentingReferenceResponse. */
+export interface NaturalVentingReference {
+  edition: string;
+  note: string;
+  dischargeCoefficients: DischargeCoefficientEntry[];
+  commodities: CommodityHeatReleaseEntry[];
+}

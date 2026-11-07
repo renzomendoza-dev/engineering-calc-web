@@ -4,8 +4,11 @@ import { useFieldArray } from "react-hook-form";
 import { NumberField } from "@/components/ui/NumberField";
 import { RadioGroupField } from "@/components/ui/RadioGroupField";
 import { TextField } from "@/components/ui/TextField";
+import { useNaturalVentingReference } from "@/hooks/useNaturalVentingReference";
 import { newZone } from "../defaults";
 import { DISCHARGE_COEFFICIENT_HINT } from "../labels";
+import { QuickFillSelect } from "../QuickFillSelect";
+import { dischargeOptions, dischargeValue } from "../referenceOptions";
 import type { ZoneFormInput } from "../schema";
 import type { NaturalVentingForm, StepProps } from "../stepProps";
 
@@ -88,10 +91,21 @@ function ZoneCard({ form, index, onRemove, removeDisabled }: ZoneCardProps) {
   const {
     register,
     watch,
+    setValue,
     formState: { errors },
   } = form;
   const zoneErrors = errors.zones?.[index];
   const inletMode = watch(`zones.${index}.inletMode`);
+  const reference = useNaturalVentingReference();
+  const cdOptions = dischargeOptions(reference.dischargeCoefficients);
+
+  /** Puts a Table 9.2.4.2 coefficient in the vent or inlet field; the field can still be typed over. */
+  function fillDischargeCoefficient(name: "ventDischargeCoefficient" | "inletDischargeCoefficient", key: string) {
+    const value = dischargeValue(reference.dischargeCoefficients, key);
+    if (value !== undefined) {
+      setValue(`zones.${index}.${name}`, value, { shouldDirty: true, shouldValidate: true });
+    }
+  }
 
   const number = (name: ZoneNumberField) => ({
     ...register(`zones.${index}.${name}` as const),
@@ -152,6 +166,16 @@ function ZoneCard({ form, index, onRemove, removeDisabled }: ZoneCardProps) {
           tooltip={DISCHARGE_COEFFICIENT_HINT}
           {...number("ventDischargeCoefficient")}
         />
+        <QuickFillSelect
+          id={`zones-${index}-vent-cd-table`}
+          label="Fill Cd,v from Table 9.2.4.2"
+          hint="For when the manufacturer gives no value (9.2.4.2). You can still change the number."
+          placeholder="Choose a vent type…"
+          options={cdOptions}
+          loading={reference.isLoading}
+          failed={reference.error !== null}
+          onPick={(key) => fillDischargeCoefficient("ventDischargeCoefficient", key)}
+        />
         <NumberField label="Number of vents" {...number("ventCount")} />
         <NumberField
           label="Total vent area provided"
@@ -208,6 +232,16 @@ function ZoneCard({ form, index, onRemove, removeDisabled }: ZoneCardProps) {
           label="Inlet discharge coefficient Cd,i"
           hint="Blank takes the vent's."
           {...number("inletDischargeCoefficient")}
+        />
+        <QuickFillSelect
+          id={`zones-${index}-inlet-cd-table`}
+          label="Fill Cd,i from Table 9.2.4.2"
+          hint="The same table gives the default for an inlet."
+          placeholder="Choose an inlet type…"
+          options={cdOptions}
+          loading={reference.isLoading}
+          failed={reference.error !== null}
+          onPick={(key) => fillDischargeCoefficient("inletDischargeCoefficient", key)}
         />
       </Group>
 

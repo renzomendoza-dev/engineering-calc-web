@@ -5,8 +5,11 @@ import { NumberField } from "@/components/ui/NumberField";
 import { RadioGroupField } from "@/components/ui/RadioGroupField";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
+import { useNaturalVentingReference } from "@/hooks/useNaturalVentingReference";
 import { newFireCase } from "../defaults";
 import { KIND_LABELS } from "../format";
+import { QuickFillSelect } from "../QuickFillSelect";
+import { commodityOptions, commodityValue } from "../referenceOptions";
 import type { FireCaseFormInput } from "../schema";
 import type { NaturalVentingForm, StepProps } from "../stepProps";
 import { FIRE_CASE_KINDS } from "../types";
@@ -80,12 +83,22 @@ function FireCaseCard({ form, index, onRemove, removeDisabled }: FireCaseCardPro
   const {
     register,
     watch,
+    setValue,
     formState: { errors },
   } = form;
   const fireErrors = errors.fireCases?.[index];
   const kind = watch(`fireCases.${index}.kind`);
   const source = watch(`fireCases.${index}.diameterSource`);
   const zones = watch("zones");
+  const reference = useNaturalVentingReference();
+
+  /** Puts a Table A.8.2.6 rate in the Q″ field; the field can still be typed over. */
+  function fillUnitHeatReleaseRate(key: string) {
+    const value = commodityValue(reference.commodities, key);
+    if (value !== undefined) {
+      setValue(`fireCases.${index}.unitHeatReleaseRate`, value, { shouldDirty: true, shouldValidate: true });
+    }
+  }
 
   const number = (name: FireNumberField) => ({
     ...register(`fireCases.${index}.${name}` as const),
@@ -172,12 +185,24 @@ function FireCaseCard({ form, index, onRemove, removeDisabled }: FireCaseCardPro
         />
         <div className="grid items-end gap-4 sm:grid-cols-2">
           {source === "unitHrr" && (
-            <NumberField
-              label="Heat release rate per unit area Q″"
-              unit="kW/m²"
-              hint="From test data or Table A.8.2.6. D = (4Q/πQ″)^½ (8.3.7)."
-              {...number("unitHeatReleaseRate")}
-            />
+            <>
+              <NumberField
+                label="Heat release rate per unit area Q″"
+                unit="kW/m²"
+                hint="From test data or Table A.8.2.6. D = (4Q/πQ″)^½ (8.3.7)."
+                {...number("unitHeatReleaseRate")}
+              />
+              <QuickFillSelect
+                id={`fireCases-${index}-commodity-table`}
+                label="Fill Q″ from Table A.8.2.6"
+                hint="The rate is for the stack height named. A rate for another height can be taken as proportional to height (A.8.2.6)."
+                placeholder="Choose a commodity…"
+                options={commodityOptions(reference.commodities)}
+                loading={reference.isLoading}
+                failed={reference.error !== null}
+                onPick={fillUnitHeatReleaseRate}
+              />
+            </>
           )}
           {source === "area" && (
             <NumberField label="Floor area of the fuel" unit="m²" {...number("fireArea")} />
