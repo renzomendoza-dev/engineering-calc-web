@@ -12,7 +12,7 @@ import {
   formatVelocity,
   formatVolume,
 } from "../format";
-import { CONNECTION_LABELS, EDITION_NOTICE, ROLE_LABELS, STATUS_LABELS } from "../labels";
+import { CONNECTION_LABELS, EDITION_NOTICE, INLET_LABELS, ROLE_LABELS, STATUS_LABELS } from "../labels";
 import type { StandpipeCalculationState } from "../useStandpipeCalculation";
 import { type CheckStatus, type StandpipeCheck } from "../types";
 
@@ -46,11 +46,15 @@ export function ResultsStep({ state }: { state: StandpipeCalculationState }) {
       </p>
 
       <HeadlineResult
-        label="Pressure required at the supply"
+        label={result.manualSystem ? "Pressure required at the fire department connection" : "Pressure required at the supply"}
         value={formatPressure(result.pressureAtSupplyPsi)}
         unit="psi"
         secondaryValue={`at ${formatFlow(result.flowAtSupplyGpm)} gpm`}
-        note="At the base of the riser or the pump discharge, for the flow shown."
+        note={
+          result.manualSystem
+            ? "What the fire department must pump in, for the flow shown (10.2.6.1.2)."
+            : "At the base of the riser or the pump discharge, for the flow shown."
+        }
       />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -82,7 +86,7 @@ export function ResultsStep({ state }: { state: StandpipeCalculationState }) {
         <ResultCard
           label="Fire department connection inlets"
           value={result.requiredFdcInlets}
-          unit="x 2.5 in."
+          unit={`x ${INLET_LABELS[result.fdcInletSize]}`}
         />
         <ResultCard
           label="Water supply volume"

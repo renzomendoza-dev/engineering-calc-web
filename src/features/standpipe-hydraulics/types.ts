@@ -13,6 +13,9 @@ export type PipeRole = (typeof PIPE_ROLES)[number];
 export const HOSE_CONNECTION_SIZES = ["ONE_AND_HALF_INCH", "TWO_AND_HALF_INCH"] as const;
 export type HoseConnectionSize = (typeof HOSE_CONNECTION_SIZES)[number];
 
+export const INLET_SIZES = ["TWO_AND_HALF_INCH", "FOUR_INCH", "FIVE_INCH"] as const;
+export type InletSize = (typeof INLET_SIZES)[number];
+
 export type CheckStatus = "PASS" | "FAIL" | "CONFIRM" | "OPEN" | "INFO";
 
 /** Mirrors calc-api's StandpipeFittingDto: fittings of one type on a segment. */
@@ -49,6 +52,10 @@ export interface StandpipeHydraulicRequest {
   additionalStandpipes: number;
   floorAreaOver80000SqFt: boolean;
   horizontalStandpipeOnThreeConnections: boolean;
+  singleConnectionLaterals?: number;
+  risersEndAtDifferentLevels?: boolean;
+  manualSystem?: boolean;
+  fireDepartmentConnectionInletSize?: InletSize;
   fireDepartmentConnectionInlets?: number;
   supplyDurationMinutes?: number;
   flowAddedAtSupplyGpm?: number;
@@ -111,6 +118,8 @@ export interface StandpipeHydraulicResponse {
   totalFrictionLossPsi: number;
   totalElevationPsi: number;
   requiredFdcInlets: number;
+  fdcInletSize: InletSize;
+  manualSystem: boolean;
   supplyDurationMinutes: number;
   waterSupplyVolumeGal: number;
   segments: StandpipeSegmentRow[];

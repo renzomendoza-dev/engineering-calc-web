@@ -56,6 +56,19 @@ describe("standpipeHydraulicSchema", () => {
     expect(issuePaths(none)).toContain("segments.0.hoseConnectionSize");
   });
 
+  it("takes the laterals as a whole number from zero and the inlet size from the list", () => {
+    const negative = { ...validForm(), singleConnectionLaterals: "-1" };
+    const fractional = { ...validForm(), singleConnectionLaterals: "1.5" };
+    const blank = { ...validForm(), singleConnectionLaterals: "" };
+    const badSize = { ...validForm(), fireDepartmentConnectionInletSize: "SIX_INCH" as never };
+
+    expect(issuePaths(negative)).toContain("singleConnectionLaterals");
+    expect(issuePaths(fractional)).toContain("singleConnectionLaterals");
+    expect(issuePaths(blank)).toContain("singleConnectionLaterals");
+    expect(issuePaths(badSize)).toContain("fireDepartmentConnectionInletSize");
+    expect(issuePaths({ ...validForm(), singleConnectionLaterals: "3" })).toEqual([]);
+  });
+
   it("rejects a repeated segment name", () => {
     const form = validForm();
     form.segments[1] = { ...form.segments[1], label: "A" };

@@ -3,6 +3,7 @@ import { optionalNumber, requiredNumber } from "@/lib/zodHelpers";
 import {
   COMBINED_HAZARDS,
   HOSE_CONNECTION_SIZES,
+  INLET_SIZES,
   PIPE_ROLES,
   SPRINKLER_PROTECTIONS,
   STANDPIPE_CLASSES,
@@ -79,6 +80,12 @@ export const standpipeHydraulicSchema = z
     ),
     floorAreaOver80000SqFt: z.boolean(),
     horizontalStandpipeOnThreeConnections: z.boolean(),
+    singleConnectionLaterals: requiredNumber(
+      z.coerce.number("Required").int("Must be a whole number").min(0, "Cannot be negative"),
+    ),
+    risersEndAtDifferentLevels: z.boolean(),
+    manualSystem: z.boolean(),
+    fireDepartmentConnectionInletSize: z.enum(INLET_SIZES),
     fireDepartmentConnectionInlets: optionalNumber(
       z.coerce.number("Must be a number").int("Must be a whole number").min(0, "Cannot be negative"),
     ),
@@ -144,6 +151,10 @@ export const STEP_FIELDS: Record<StepId, string[]> = {
     "additionalStandpipes",
     "floorAreaOver80000SqFt",
     "horizontalStandpipeOnThreeConnections",
+    "singleConnectionLaterals",
+    "risersEndAtDifferentLevels",
+    "manualSystem",
+    "fireDepartmentConnectionInletSize",
     "fireDepartmentConnectionInlets",
     "supplyDurationMinutes",
     "flowAddedAtSupplyGpm",

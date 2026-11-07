@@ -62,6 +62,36 @@ describe("toStandpipeRequest", () => {
     expect(json.floorAreaOver80000SqFt).toBe(false);
   });
 
+  it("sends the laterals, levels, manual system and inlet size for Class I and III", () => {
+    const form = baseForm();
+    form.standpipeClass = "CLASS_I";
+    form.singleConnectionLaterals = "2";
+    form.risersEndAtDifferentLevels = true;
+    form.manualSystem = true;
+    form.fireDepartmentConnectionInletSize = "FOUR_INCH";
+
+    const request = toStandpipeRequest(parse(form));
+
+    expect(request.singleConnectionLaterals).toBe(2);
+    expect(request.risersEndAtDifferentLevels).toBe(true);
+    expect(request.manualSystem).toBe(true);
+    expect(request.fireDepartmentConnectionInletSize).toBe("FOUR_INCH");
+  });
+
+  it("leaves the laterals, levels and manual system out of a Class II request, which has none of them", () => {
+    const form = baseForm();
+    form.singleConnectionLaterals = "2";
+    form.risersEndAtDifferentLevels = true;
+    form.manualSystem = true;
+
+    const json = JSON.parse(JSON.stringify(toStandpipeRequest(parse(form))));
+
+    expect(json).not.toHaveProperty("singleConnectionLaterals");
+    expect(json).not.toHaveProperty("risersEndAtDifferentLevels");
+    expect(json).not.toHaveProperty("manualSystem");
+    expect(json.fireDepartmentConnectionInletSize).toBe("TWO_AND_HALF_INCH");
+  });
+
   it("leaves the sprinkler demand and hazard out unless the building has the sprinklers that read them", () => {
     const form = baseForm();
     form.sprinklerDemandGpm = "300";

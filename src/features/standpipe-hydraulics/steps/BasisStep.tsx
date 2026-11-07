@@ -4,10 +4,11 @@ import { NumberField } from "@/components/ui/NumberField";
 import { RadioGroupField } from "@/components/ui/RadioGroupField";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
-import { CLASS_LABELS, EDITION_NOTICE, HAZARD_LABELS, PROTECTION_LABELS } from "../labels";
+import { CLASS_LABELS, EDITION_NOTICE, HAZARD_LABELS, INLET_OPTION_LABELS, PROTECTION_LABELS } from "../labels";
 import type { StepProps } from "../stepProps";
 import {
   COMBINED_HAZARDS,
+  INLET_SIZES,
   SPRINKLER_PROTECTIONS,
   STANDPIPE_CLASSES,
   type StandpipeClass,
@@ -18,6 +19,7 @@ const PROTECTION_OPTIONS = SPRINKLER_PROTECTIONS.map((value) => ({
   value,
   label: PROTECTION_LABELS[value],
 }));
+const INLET_OPTIONS = INLET_SIZES.map((value) => ({ value, label: INLET_OPTION_LABELS[value] }));
 const HAZARD_OPTIONS = [
   { value: "", label: "Choose…" },
   ...COMBINED_HAZARDS.map((value) => ({ value, label: HAZARD_LABELS[value] })),
@@ -95,6 +97,7 @@ export function BasisStep({ form }: StepProps) {
   const protection = watch("sprinklerProtection");
   const sprinklered = protection !== "NONE";
   const classIOrIII = standpipeClass !== "CLASS_II";
+  const riserLevels = watch("risersEndAtDifferentLevels");
 
   return (
     <div className="flex flex-col gap-6">
@@ -163,6 +166,25 @@ export function BasisStep({ form }: StepProps) {
             <input type="checkbox" {...register("horizontalStandpipeOnThreeConnections")} />
             A horizontal standpipe serves three or more hose connections on a floor
           </label>
+          <div className="grid items-end gap-4 sm:grid-cols-2">
+            <NumberField
+              label="Laterals serving a single hose connection"
+              hint="Each one is counted as a separate standpipe for the flow (10.6.1.1.7). Leave at 0 if none."
+              error={errors.singleConnectionLaterals?.message}
+              {...register("singleConnectionLaterals")}
+            />
+          </div>
+          <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+            <input type="checkbox" {...register("risersEndAtDifferentLevels")} />
+            The standpipes end at different floor levels
+          </label>
+          {riserLevels && (
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              This calculation follows one path. Run it once for the standpipes on each level, counting
+              only the standpipes that exist on that level as additional standpipes (10.6.1.2.1.1 and
+              10.6.1.2.1.2).
+            </p>
+          )}
         </section>
       )}
 
@@ -188,13 +210,26 @@ export function BasisStep({ form }: StepProps) {
             error={errors.supplyDurationMinutes?.message}
             {...register("supplyDurationMinutes")}
           />
+          <SelectField
+            label="Fire department connection inlet size"
+            options={INLET_OPTIONS}
+            hint="A large inlet carries more flow, so fewer are needed (10.7.3.1). Check the hose pressure limit before choosing one."
+            error={errors.fireDepartmentConnectionInletSize?.message}
+            {...register("fireDepartmentConnectionInletSize")}
+          />
           <NumberField
             label="Fire department connection inlets provided"
-            hint="2.5 in. inlets. Blank leaves the check as information."
+            hint="Inlets of the size above. Blank leaves the check as information."
             error={errors.fireDepartmentConnectionInlets?.message}
             {...register("fireDepartmentConnectionInlets")}
           />
         </div>
+        {classIOrIII && (
+          <label className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+            <input type="checkbox" {...register("manualSystem")} />
+            Manual system: the water comes from the fire department through the fire department connection
+          </label>
+        )}
       </section>
     </div>
   );

@@ -41,6 +41,8 @@ function toSegmentRequest(segment: SegmentValues): StandpipeSegmentRequest {
  */
 export function toStandpipeRequest(values: StandpipeFormValues): StandpipeHydraulicRequest {
   const sprinklered = values.sprinklerProtection !== "NONE";
+  // Laterals, levels and a manual system are Class I and III matters; a Class II request leaves them out.
+  const classIOrIII = values.standpipeClass !== "CLASS_II";
   return {
     standpipeClass: values.standpipeClass,
     sprinklerProtection: values.sprinklerProtection,
@@ -53,6 +55,10 @@ export function toStandpipeRequest(values: StandpipeFormValues): StandpipeHydrau
     additionalStandpipes: values.additionalStandpipes,
     floorAreaOver80000SqFt: values.floorAreaOver80000SqFt,
     horizontalStandpipeOnThreeConnections: values.horizontalStandpipeOnThreeConnections,
+    singleConnectionLaterals: classIOrIII ? values.singleConnectionLaterals : undefined,
+    risersEndAtDifferentLevels: classIOrIII ? values.risersEndAtDifferentLevels : undefined,
+    manualSystem: classIOrIII ? values.manualSystem : undefined,
+    fireDepartmentConnectionInletSize: values.fireDepartmentConnectionInletSize,
     fireDepartmentConnectionInlets: values.fireDepartmentConnectionInlets,
     supplyDurationMinutes: values.supplyDurationMinutes,
     flowAddedAtSupplyGpm: values.flowAddedAtSupplyGpm,

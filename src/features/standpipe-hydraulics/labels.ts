@@ -2,6 +2,7 @@ import type {
   CheckStatus,
   CombinedHazard,
   HoseConnectionSize,
+  InletSize,
   PipeRole,
   SprinklerProtection,
   StandpipeClass,
@@ -34,6 +35,18 @@ export const ROLE_LABELS: Record<PipeRole, string> = {
 export const CONNECTION_LABELS: Record<HoseConnectionSize, string> = {
   ONE_AND_HALF_INCH: "1.5 in. hose connection",
   TWO_AND_HALF_INCH: "2.5 in. hose connection",
+};
+
+export const INLET_LABELS: Record<InletSize, string> = {
+  TWO_AND_HALF_INCH: "2.5 in.",
+  FOUR_INCH: "4 in.",
+  FIVE_INCH: "5 in.",
+};
+
+export const INLET_OPTION_LABELS: Record<InletSize, string> = {
+  TWO_AND_HALF_INCH: "2.5 in. inlet (250 gpm each)",
+  FOUR_INCH: "4 in. inlet (500 gpm each)",
+  FIVE_INCH: "5 in. inlet (750 gpm each)",
 };
 
 export const STATUS_LABELS: Record<CheckStatus, string> = {

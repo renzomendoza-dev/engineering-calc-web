@@ -22,6 +22,16 @@ describe("mergeDraft", () => {
     expect(merged.segments[0].fittings).toEqual([]);
   });
 
+  it("gives a draft saved before the laterals, levels, manual system and inlet size existed their defaults", () => {
+    const merged = mergeDraft({ standpipeClass: "CLASS_III", additionalStandpipes: "2" });
+
+    expect(merged.additionalStandpipes).toBe("2");
+    expect(merged.singleConnectionLaterals).toBe("0");
+    expect(merged.risersEndAtDifferentLevels).toBe(false);
+    expect(merged.manualSystem).toBe(false);
+    expect(merged.fireDepartmentConnectionInletSize).toBe("TWO_AND_HALF_INCH");
+  });
+
   it("falls back to the starting path when the draft has no usable segment", () => {
     const merged = mergeDraft({ segments: [{ label: "No key" }] });
 
