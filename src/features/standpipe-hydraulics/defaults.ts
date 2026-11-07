@@ -86,4 +86,8 @@ export const DEFAULT_STANDPIPE_FORM: StandpipeFormInput = {
   lowestHoseConnectionHeightFt: "",
   fireDepartmentConnections: [],
   segments: [HOSE_SEGMENT, RISER_SEGMENT],
+  pumpSuctionCondition: "FLOODED",
+  pumpSuctionPressurePsi: "",
+  pumpSuctionLiftFt: "",
+  pumpSafetyMarginPercent: "",
 };

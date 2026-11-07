@@ -136,7 +136,7 @@ export function StandpipeCalculator() {
 
         {step === "basis" && <BasisStep {...stepProps} />}
         {step === "path" && <PathStep {...stepProps} />}
-        {step === "results" && <ResultsStep state={calculation} />}
+        {step === "results" && <ResultsStep state={calculation} form={form} />}
       </form>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 pt-4 dark:border-zinc-800">

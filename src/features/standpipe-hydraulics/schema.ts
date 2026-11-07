@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SUCTION_CONDITIONS } from "@/features/firepump/types";
 import { optionalNumber, requiredNumber } from "@/lib/zodHelpers";
 import {
   COMBINED_HAZARDS,
@@ -125,6 +126,12 @@ export const standpipeHydraulicSchema = z
     lowestHoseConnectionHeightFt: optionalNumber(z.coerce.number("Must be a number")),
     fireDepartmentConnections: z.array(fdcSchema),
     segments: z.array(segmentSchema).min(1, "Add at least one pipe segment"),
+    // FORM-ONLY, for the fire pump sizing on the results step (request.ts does not send them). What is
+    // missing is said where it is entered (pumpStorage.ts), not by blocking a result.
+    pumpSuctionCondition: z.enum(SUCTION_CONDITIONS),
+    pumpSuctionPressurePsi: optionalNumber(z.coerce.number("Must be a number")),
+    pumpSuctionLiftFt: optionalNumber(z.coerce.number("Must be a number")),
+    pumpSafetyMarginPercent: optionalNumber(z.coerce.number("Must be a number")),
   })
   .superRefine((input, ctx) => {
     if (
@@ -215,5 +222,5 @@ export const STEP_FIELDS: Record<StepId, string[]> = {
     "lowestHoseConnectionHeightFt",
   ],
   path: ["segments", "fireDepartmentConnections"],
-  results: [],
+  results: ["pumpSuctionCondition", "pumpSuctionPressurePsi", "pumpSuctionLiftFt", "pumpSafetyMarginPercent"],
 };

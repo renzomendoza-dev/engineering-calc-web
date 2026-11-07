@@ -22,6 +22,16 @@ describe("mergeDraft", () => {
     expect(merged.segments[0].fittings).toEqual([]);
   });
 
+  it("gives a draft saved before the fire pump fields existed a flooded suction and blanks", () => {
+    const merged = mergeDraft({ standpipeClass: "CLASS_I" });
+
+    expect(merged.pumpSuctionCondition).toBe("FLOODED");
+    expect(merged.pumpSuctionPressurePsi).toBe("");
+    expect(merged.pumpSuctionLiftFt).toBe("");
+    expect(merged.pumpSafetyMarginPercent).toBe("");
+    expect(mergeDraft({ pumpSuctionCondition: "LIFT", pumpSuctionLiftFt: "8" }).pumpSuctionLiftFt).toBe("8");
+  });
+
   it("gives a segment saved before the other-standpipe mark existed no mark", () => {
     const merged = mergeDraft({ segments: [{ key: "segment-1", label: "Riser", flowAddedGpm: "250" }] });
 

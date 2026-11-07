@@ -92,6 +92,20 @@ describe("toStandpipeRequest", () => {
     expect(json.fireDepartmentConnectionInletSize).toBe("TWO_AND_HALF_INCH");
   });
 
+  it("keeps the fire pump fields to the form: none of them is sent to the standpipe API", () => {
+    const form = baseForm();
+    form.pumpSuctionCondition = "LIFT";
+    form.pumpSuctionPressurePsi = "20";
+    form.pumpSuctionLiftFt = "8";
+    form.pumpSafetyMarginPercent = "10";
+
+    const json = JSON.parse(JSON.stringify(toStandpipeRequest(parse(form))));
+
+    for (const field of ["pumpSuctionCondition", "pumpSuctionPressurePsi", "pumpSuctionLiftFt", "pumpSafetyMarginPercent"]) {
+      expect(json).not.toHaveProperty(field);
+    }
+  });
+
   it("sends another standpipe's connection point only where no hose connection takes the node", () => {
     const form = baseForm();
     form.segments[0] = { ...form.segments[0], otherStandpipeConnection: true };

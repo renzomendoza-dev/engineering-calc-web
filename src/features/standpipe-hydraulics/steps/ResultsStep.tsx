@@ -13,6 +13,8 @@ import {
   formatVolume,
 } from "../format";
 import { CONNECTION_LABELS, EDITION_NOTICE, INLET_LABELS, ROLE_LABELS, STATUS_LABELS } from "../labels";
+import { PumpAndStorageSection } from "../PumpAndStorageSection";
+import type { StandpipeForm } from "../stepProps";
 import type { StandpipeCalculationState } from "../useStandpipeCalculation";
 import { type CheckStatus, type StandpipeCheck } from "../types";
 
@@ -22,7 +24,7 @@ const STATUS_ORDER: CheckStatus[] = ["PASS", "FAIL", "CONFIRM", "OPEN", "INFO"];
  * Step 3: what the API returned. Nothing is calculated here; the page lays out the response and
  * counts the compliance lines by status.
  */
-export function ResultsStep({ state }: { state: StandpipeCalculationState }) {
+export function ResultsStep({ state, form }: { state: StandpipeCalculationState; form: StandpipeForm }) {
   const { result, isCalculating, isStale, isComplete } = state;
 
   if (!result) {
@@ -254,6 +256,9 @@ export function ResultsStep({ state }: { state: StandpipeCalculationState }) {
         </div>
         <CheckTable checks={result.checks} />
       </section>
+
+      {/* A manual system is supplied by the fire department's pumper, so no fire pump is sized for it. */}
+      {!result.manualSystem && <PumpAndStorageSection form={form} result={result} />}
     </div>
   );
 }

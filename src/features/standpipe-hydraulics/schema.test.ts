@@ -82,6 +82,15 @@ describe("standpipeHydraulicSchema", () => {
     expect(issuePaths(form)).toEqual([]);
   });
 
+  it("takes the fire pump fields as optional numbers and a suction condition from the list", () => {
+    const form = validForm();
+
+    expect(issuePaths({ ...form, pumpSuctionCondition: "LIFT", pumpSuctionLiftFt: "8", pumpSafetyMarginPercent: "10" })).toEqual([]);
+    expect(issuePaths({ ...form, pumpSuctionPressurePsi: "abc" })).toContain("pumpSuctionPressurePsi");
+    expect(issuePaths({ ...form, pumpSafetyMarginPercent: "x" })).toContain("pumpSafetyMarginPercent");
+    expect(issuePaths({ ...form, pumpSuctionCondition: "SIPHON" as never })).toContain("pumpSuctionCondition");
+  });
+
   it("takes a positive static pressure, a height that may be negative, and wants the pressure for a height", () => {
     const form = validForm();
 
