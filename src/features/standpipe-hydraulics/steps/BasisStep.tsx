@@ -226,7 +226,7 @@ export function BasisStep({ form }: StepProps) {
           <NumberField
             label="Static pressure at the supply"
             unit="psi"
-            hint="The highest static (nonflowing) pressure at the base of the system. For a fire pump it is the pump boost at churn plus the supply pressure at the suction (A.10.2). Blank leaves the 175 psi and 400 psi static checks open."
+            hint="The highest static (nonflowing) pressure at the base of the system. For a fire pump it is the pump boost at churn plus the supply pressure at the suction (A.10.2). Use the highest the supply reaches over the day and the seasons (A.5.3.2). Blank leaves the 175 psi and 400 psi static checks open."
             error={errors.supplyStaticPressurePsi?.message}
             {...register("supplyStaticPressurePsi")}
           />

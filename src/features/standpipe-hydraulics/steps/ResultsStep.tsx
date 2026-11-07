@@ -258,7 +258,15 @@ export function ResultsStep({ state, form }: { state: StandpipeCalculationState;
       </section>
 
       {/* A manual system is supplied by the fire department's pumper, so no fire pump is sized for it. */}
-      {!result.manualSystem && <PumpAndStorageSection form={form} result={result} />}
+      {result.manualSystem ? (
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          No fire pump is sized for a manual system: the fire department&apos;s pumper supplies it through the fire
+          department connection. A fire pump on a building can serve the sprinkler demand and the inside hose
+          requirements only, and is not required to supply the manual wet standpipe demand (A.8.2.1.1).
+        </p>
+      ) : (
+        <PumpAndStorageSection form={form} result={result} />
+      )}
     </div>
   );
 }
