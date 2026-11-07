@@ -39,6 +39,18 @@ describe("mergeDraft", () => {
     expect(merged.segments[0].flowAddedGpm).toBe("250");
   });
 
+  it("gives a segment saved before the design residual pressure existed a blank one, and keeps a saved one", () => {
+    const merged = mergeDraft({
+      segments: [
+        { key: "segment-1", label: "Hose" },
+        { key: "segment-2", label: "Hose 2", designResidualPressurePsi: "135" },
+      ],
+    });
+
+    expect(merged.segments[0].designResidualPressurePsi).toBe("");
+    expect(merged.segments[1].designResidualPressurePsi).toBe("135");
+  });
+
   it("gives a draft saved before the static pressure fields existed blanks for them", () => {
     const merged = mergeDraft({ standpipeClass: "CLASS_I" });
 

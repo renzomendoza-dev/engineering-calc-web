@@ -4,7 +4,9 @@ import { useFieldArray } from "react-hook-form";
 import { NumberField } from "@/components/ui/NumberField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
+import { QuickFillSelect } from "@/features/natural-venting/QuickFillSelect";
 import { newFdcLine, newFitting, newSegment } from "../defaults";
+import { hoseNozzleOptions, hoseNozzleValue } from "../hoseNozzleOptions";
 import { CONNECTION_LABELS, ROLE_LABELS } from "../labels";
 import { materialOptions, scheduleOptions, sizeOptions } from "../pipeOptions";
 import { EXPLICIT_FITTING, type SegmentFormInput } from "../schema";
@@ -13,7 +15,7 @@ import { HOSE_CONNECTION_SIZES, PIPE_ROLES } from "../types";
 
 type SegmentNumberField = Extract<
   keyof SegmentFormInput,
-  "flowAddedGpm" | "cFactor" | "pipeLengthFt" | "elevationRiseFt"
+  "flowAddedGpm" | "designResidualPressurePsi" | "cFactor" | "pipeLengthFt" | "elevationRiseFt"
 >;
 
 const ROLE_OPTIONS = PIPE_ROLES.map((value) => ({ value, label: ROLE_LABELS[value] }));
@@ -29,7 +31,18 @@ const C_FACTOR_HINT =
  * Step 2: the pipe path from the hydraulically most remote hose connection back to the supply, one
  * row per run of pipe, remote end first, like the rows of a hydraulic calculation sheet.
  */
-export function PathStep({ form, materials, materialsLoading, fittings, cFactors, referenceEdition }: StepProps) {
+export function PathStep({
+  form,
+  materials,
+  materialsLoading,
+  fittings,
+  cFactors,
+  referenceEdition,
+  hoseNozzles,
+  hoseNozzleNote,
+  referenceLoading,
+  referenceFailed,
+}: StepProps) {
   const {
     control,
     getValues,
@@ -73,6 +86,9 @@ export function PathStep({ form, materials, materialsLoading, fittings, cFactors
           materials={materials}
           materialsLoading={materialsLoading}
           fittings={fittings}
+          hoseNozzles={hoseNozzles}
+          referenceLoading={referenceLoading}
+          referenceFailed={referenceFailed}
           onRemove={() => remove(index)}
           onMove={(by) => move(index, index + by)}
           removeDisabled={fields.length === 1}
@@ -80,6 +96,49 @@ export function PathStep({ form, materials, materialsLoading, fittings, cFactors
       ))}
 
       <FdcSection form={form} materials={materials} materialsLoading={materialsLoading} fittings={fittings} />
+
+      {hoseNozzles.length > 0 && (
+        <details className="rounded-lg border border-zinc-200 p-4 text-sm dark:border-zinc-800">
+          <summary className="cursor-pointer font-medium text-zinc-700 dark:text-zinc-300">
+            Hose and nozzle combinations, Table A.10.2.6 ({referenceEdition})
+          </summary>
+          <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">{hoseNozzleNote}</p>
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-left text-zinc-700 dark:text-zinc-300">
+              <thead>
+                <tr className="border-b border-zinc-200 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+                  <th className="py-1 pr-3 font-medium">No.</th>
+                  <th className="py-1 pr-3 font-medium">Hose and nozzle</th>
+                  <th className="py-1 pr-3 text-right font-medium">Outlet pressure, psi</th>
+                  <th className="py-1 text-right font-medium">Flow, gpm</th>
+                </tr>
+              </thead>
+              <tbody>
+                {hoseNozzles.map((row) => (
+                  <tr key={row.number} className="border-b border-zinc-100 align-top dark:border-zinc-900">
+                    <td className="py-1.5 pr-3 tabular-nums">
+                      {row.number}
+                      {row.aboveMinimumResidual ? "*" : ""}
+                    </td>
+                    <td className="py-1.5 pr-3">
+                      {row.hose}
+                      {row.nozzle !== null ? `, ${row.nozzle}` : ""}
+                      {row.sourceNote !== null && (
+                        <span className="block text-xs text-zinc-500 dark:text-zinc-400">{row.sourceNote}</span>
+                      )}
+                    </td>
+                    <td className="py-1.5 pr-3 text-right tabular-nums">{row.outletPressurePsi}</td>
+                    <td className="py-1.5 text-right tabular-nums">{row.flowGpm}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+            * Requires an operating pressure above the minimum required hose connection residual pressure.
+          </p>
+        </details>
+      )}
 
       {cFactors.length > 0 && (
         <details className="rounded-lg border border-zinc-200 p-4 text-sm dark:border-zinc-800">
@@ -279,6 +338,9 @@ interface SegmentCardProps {
   materials: StepProps["materials"];
   materialsLoading: boolean;
   fittings: StepProps["fittings"];
+  hoseNozzles: StepProps["hoseNozzles"];
+  referenceLoading: boolean;
+  referenceFailed: boolean;
   onRemove: () => void;
   onMove: (by: -1 | 1) => void;
   removeDisabled: boolean;
@@ -291,6 +353,9 @@ function SegmentCard({
   materials,
   materialsLoading,
   fittings,
+  hoseNozzles,
+  referenceLoading,
+  referenceFailed,
   onRemove,
   onMove,
   removeDisabled,
@@ -389,6 +454,34 @@ function SegmentCard({
           hint={hasConnection ? undefined : "Optional."}
           {...number("flowAddedGpm")}
         />
+        {hasConnection && (
+          <>
+            <QuickFillSelect
+              id={`segments-${index}-hose-nozzle`}
+              label="Fire department hose and nozzle"
+              hint="Fills the pressure beside it from Table A.10.2.6. Friction loss varies with the hose, and the fire department should flow test its own choice (A.10.2.6)."
+              placeholder="Choose one to fill the pressure…"
+              options={hoseNozzleOptions(hoseNozzles)}
+              loading={referenceLoading}
+              failed={referenceFailed}
+              onPick={(key) => {
+                const pressure = hoseNozzleValue(hoseNozzles, key);
+                if (pressure !== undefined) {
+                  setValue(`segments.${index}.designResidualPressurePsi`, pressure, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  });
+                }
+              }}
+            />
+            <NumberField
+              label="Design residual pressure at the outlet"
+              unit="psi"
+              hint="Optional. Blank holds the outlet at the minimum for its size (10.2.6.1). A higher figure holds it there, for example what the fire department's hose and nozzle need. A figure below the minimum changes nothing."
+              {...number("designResidualPressurePsi")}
+            />
+          </>
+        )}
         {!hasConnection && (
           <label className="flex items-start gap-2 text-sm text-zinc-700 sm:col-span-2 dark:text-zinc-300">
             <input type="checkbox" className="mt-1" {...register(`segments.${index}.otherStandpipeConnection`)} />

@@ -120,6 +120,20 @@ describe("toStandpipeRequest", () => {
     expect(plain).not.toHaveProperty("otherStandpipeConnection");
   });
 
+  it("sends a design residual pressure only on a hose connection, and nothing for a blank one", () => {
+    const form = baseForm();
+    const blank = JSON.parse(JSON.stringify(toStandpipeRequest(parse(form))));
+    expect(blank.segments[0]).not.toHaveProperty("designResidualPressurePsi");
+
+    form.segments[0] = { ...form.segments[0], designResidualPressurePsi: "135" };
+    // A value left on a segment that has no hose connection is dropped.
+    form.segments[1] = { ...form.segments[1], designResidualPressurePsi: "120" };
+    const [hose, riser] = toStandpipeRequest(parse(form)).segments;
+
+    expect(hose.designResidualPressurePsi).toBe(135);
+    expect(riser.designResidualPressurePsi).toBeUndefined();
+  });
+
   it("sends the static pressure and the height of the lowest hose connection only when given", () => {
     const form = baseForm();
     expect(JSON.parse(JSON.stringify(toStandpipeRequest(parse(form))))).not.toHaveProperty("supplyStaticPressurePsi");

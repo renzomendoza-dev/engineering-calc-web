@@ -35,6 +35,7 @@ export interface StandpipeSegmentRequest {
   flowAddedGpm?: number;
   hoseConnectionSize?: HoseConnectionSize;
   otherStandpipeConnection?: boolean;
+  designResidualPressurePsi?: number;
   pipeMaterial: string;
   schedule?: string;
   nominalSize: string;
@@ -177,10 +178,28 @@ export interface StandpipeCFactorEntry {
   confidence: string;
 }
 
+/**
+ * Mirrors calc-api's StandpipeHoseNozzleEntryDto: one row of Table A.10.2.6, a hose and nozzle
+ * combination with the pressure needed at the hose valve outlet to flow it.
+ */
+export interface StandpipeHoseNozzleEntry {
+  number: number;
+  label: string;
+  hose: string;
+  nozzle: string | null;
+  outletPressurePsi: number;
+  flowGpm: number;
+  aboveMinimumResidual: boolean;
+  confidence: string;
+  sourceNote: string | null;
+}
+
 /** Mirrors calc-api's StandpipeReferenceResponse. */
 export interface StandpipeReference {
   edition: string;
   note: string;
   fittings: StandpipeFittingEntry[];
   cFactors: StandpipeCFactorEntry[];
+  hoseNozzleNote: string;
+  hoseNozzleCombinations: StandpipeHoseNozzleEntry[];
 }

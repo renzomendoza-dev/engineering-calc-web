@@ -121,6 +121,10 @@ export function StandpipeCalculator() {
     fittings: reference.fittings,
     cFactors: reference.cFactors,
     referenceEdition: reference.edition,
+    hoseNozzles: reference.hoseNozzleCombinations,
+    hoseNozzleNote: reference.hoseNozzleNote,
+    referenceLoading: reference.isLoading,
+    referenceFailed: reference.error !== null,
   };
 
   return (

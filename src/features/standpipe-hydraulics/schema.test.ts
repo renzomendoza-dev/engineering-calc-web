@@ -82,6 +82,20 @@ describe("standpipeHydraulicSchema", () => {
     expect(issuePaths(form)).toEqual([]);
   });
 
+  it("takes a design residual pressure as an optional positive number", () => {
+    const withResidual = (value: string) => {
+      const form = validForm();
+      form.segments[0] = { ...form.segments[0], designResidualPressurePsi: value };
+      return form;
+    };
+
+    expect(issuePaths(withResidual(""))).toEqual([]);
+    expect(issuePaths(withResidual("135"))).toEqual([]);
+    expect(issuePaths(withResidual("0"))).toContain("segments.0.designResidualPressurePsi");
+    expect(issuePaths(withResidual("-5"))).toContain("segments.0.designResidualPressurePsi");
+    expect(issuePaths(withResidual("abc"))).toContain("segments.0.designResidualPressurePsi");
+  });
+
   it("takes the fire pump fields as optional numbers and a suction condition from the list", () => {
     const form = validForm();
 

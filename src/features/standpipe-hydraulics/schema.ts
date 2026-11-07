@@ -52,6 +52,7 @@ const segmentSchema = z
     flowAddedGpm: optionalNumber(positive()),
     hoseConnectionSize: z.union([z.literal(""), z.enum(HOSE_CONNECTION_SIZES)]),
     otherStandpipeConnection: z.boolean(),
+    designResidualPressurePsi: optionalNumber(positive()),
     pipeMaterial: z.string().min(1, "Required"),
     schedule: z.string().optional(),
     nominalSize: z.string().min(1, "Required"),

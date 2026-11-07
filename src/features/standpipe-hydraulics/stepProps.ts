@@ -1,7 +1,7 @@
 import type { UseFormReturn } from "react-hook-form";
 import type { PipeMaterialOption } from "@/features/pipe-velocity/types";
 import type { StandpipeFormInput, StandpipeFormValues } from "./schema";
-import type { StandpipeCFactorEntry, StandpipeFittingEntry } from "./types";
+import type { StandpipeCFactorEntry, StandpipeFittingEntry, StandpipeHoseNozzleEntry } from "./types";
 
 /** The single react-hook-form instance shared by every step. */
 export type StandpipeForm = UseFormReturn<StandpipeFormInput, unknown, StandpipeFormValues>;
@@ -14,4 +14,10 @@ export interface StepProps {
   cFactors: StandpipeCFactorEntry[];
   /** Edition the reference tables were read from, as the API reports it. */
   referenceEdition: string;
+  /** Table A.10.2.6, the hose and nozzle combinations, and the Annex's caution about using it. */
+  hoseNozzles: StandpipeHoseNozzleEntry[];
+  hoseNozzleNote: string;
+  /** The reference tables are still loading, or could not be loaded: the field they fill still takes a typed value. */
+  referenceLoading: boolean;
+  referenceFailed: boolean;
 }

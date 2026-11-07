@@ -30,6 +30,8 @@ function toSegmentRequest(segment: SegmentValues): StandpipeSegmentRequest {
     // Only where no hose connection takes the node; a flag left on behind a hose connection is dropped.
     otherStandpipeConnection:
       segment.hoseConnectionSize === "" && segment.otherStandpipeConnection ? true : undefined,
+    // The design residual belongs to a hose connection; one left behind after the connection was removed is dropped.
+    designResidualPressurePsi: segment.hoseConnectionSize === "" ? undefined : segment.designResidualPressurePsi,
     pipeMaterial: segment.pipeMaterial,
     schedule: segment.schedule,
     nominalSize: segment.nominalSize,

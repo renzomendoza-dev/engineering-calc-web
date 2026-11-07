@@ -14,6 +14,8 @@ const EMPTY: StandpipeReference = {
   note: "",
   fittings: EMPTY_LIST,
   cFactors: EMPTY_LIST,
+  hoseNozzleNote: "",
+  hoseNozzleCombinations: EMPTY_LIST,
 };
 
 /** Fetches the equivalent length chart and C table once on mount; neither depends on user input. */
