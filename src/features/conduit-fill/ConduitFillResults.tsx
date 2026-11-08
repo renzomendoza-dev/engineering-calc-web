@@ -11,6 +11,9 @@ const TIGHT_FIT_MARGIN_PERCENT = 5;
 const DEFAULT_PULL_EASE_NOTE =
   "This combination may be difficult to pull through the conduit — consider a larger trade size or fewer conductors.";
 
+const NIPPLE_NOTE =
+  "A nipple of not more than 600 mm is filled to 60 % (PEC Chapter 10, note 4), and the 3.10.2.6(B)(3)(a) adjustment factors for more than three conductors need not apply to it.";
+
 export function ConduitFillResults({ result }: ConduitFillResultsProps) {
   // Null-safe by construction: `practicalFillAdvisory` is null whenever the backend has
   // nothing to flag (including, per the sanity check below, whenever requiresMultipleConduits
@@ -38,6 +41,7 @@ export function ConduitFillResults({ result }: ConduitFillResultsProps) {
           />
           <ResultCard label="Total Conductor Count" value={result.totalConductorCount} />
         </div>
+        {result.nippleFill && <p className="text-xs text-zinc-500 dark:text-zinc-400">{NIPPLE_NOTE}</p>}
         {advisory && (
           <AdvisoryNote label="Installation Tip">{advisory.note ?? DEFAULT_PULL_EASE_NOTE}</AdvisoryNote>
         )}
@@ -65,7 +69,12 @@ export function ConduitFillResults({ result }: ConduitFillResultsProps) {
               : undefined
           }
         />
-        <ResultCard label="Allowed Fill" value={result.allowedFillPercent.toFixed(2)} unit="%" />
+        <ResultCard
+          label="Allowed Fill"
+          value={result.allowedFillPercent.toFixed(2)}
+          unit="%"
+          note={result.nippleFill ? NIPPLE_NOTE : undefined}
+        />
         <ResultCard
           label="Total Conductor Area"
           value={result.totalConductorAreaMm2.toFixed(2)}

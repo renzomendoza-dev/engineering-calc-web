@@ -6,13 +6,15 @@ import { PEC_CITATION, PEC_TABLES } from "@/lib/pec-reference";
 const HEADER_CELL = "whitespace-nowrap py-1 pr-4 font-medium last:pr-0";
 const DATA_CELL = "whitespace-nowrap py-1 pr-4 last:pr-0";
 
-/** Mirrors calc-core's FillPercentageRule constants — only three values, hardcoded there
- * too (not JSON-backed), so hardcoding the same three here isn't a reference-data drift
- * risk the way conductor/conduit dimensions would be. */
+/** Mirrors calc-core's FillPercentageRule constants — only four values, hardcoded there
+ * too (not JSON-backed), so hardcoding the same four here isn't a reference-data drift
+ * risk the way conductor/conduit dimensions would be. The last is the 60 % of Chapter 10
+ * note (4), for a nipple of not more than 600 mm. */
 const FILL_PERCENTAGE_RULE = [
   { conductorCount: "1", allowedPercent: 53 },
   { conductorCount: "2", allowedPercent: 31 },
   { conductorCount: "3 or more", allowedPercent: 40 },
+  { conductorCount: "Nipple of not more than 600 mm, any number", allowedPercent: 60 },
 ];
 
 function tableCitation(table: { number: string; title: string; page?: number }): string {

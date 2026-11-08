@@ -23,6 +23,7 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 const defaultValues: ConduitFillFormInput = {
   conductors: [{ insulationType: "", sizeLabel: "", quantity: 1 }],
   conduitType: "",
+  nipple: false,
 };
 
 interface ConductorEntryErrors {
@@ -158,6 +159,7 @@ export function ConduitFillForm({ onResult }: ConduitFillFormProps) {
     const request: ConduitFillRequest = {
       conductors: values.conductors,
       conduitType: values.conduitType,
+      nipple: values.nipple,
     };
 
     try {
@@ -213,6 +215,21 @@ export function ConduitFillForm({ onResult }: ConduitFillFormProps) {
         error={errors.conduitType?.message}
         {...register("conduitType")}
       />
+
+      <div className="flex flex-col gap-1">
+        <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
+            {...register("nipple")}
+          />
+          Nipple of not more than 600 mm
+        </label>
+        <p className="pl-6 text-xs text-zinc-500 dark:text-zinc-400">
+          A short piece between boxes, cabinets or similar enclosures may be filled to 60 % of its area
+          (PEC Chapter 10, note 4), whatever the number of conductors.
+        </p>
+      </div>
 
       <FormErrorBanner message={generalError} />
 

@@ -17,6 +17,7 @@ const conductorFillEntrySchema = z.object({
 export const conduitFillSchema = z.object({
   conductors: z.array(conductorFillEntrySchema).min(1, "At least one conductor is required"),
   conduitType: z.string().min(1, "Conduit type is required"),
+  nipple: z.boolean(),
 });
 
 /** Pre-coercion shape react-hook-form edits (quantity comes in as a string). */

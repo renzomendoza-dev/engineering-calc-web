@@ -9,6 +9,8 @@ export interface ConductorFillEntry {
 export interface ConduitFillRequest {
   conductors: ConductorFillEntry[];
   conduitType: string;
+  /** A nipple of not more than 600 mm between boxes or cabinets: PEC Chapter 10 note (4) lets it be filled to 60 %. */
+  nipple?: boolean;
 }
 
 /**
@@ -30,6 +32,8 @@ export interface ConduitFillResponse {
   actualFillPercentAtRecommendedSize: number | null;
   requiresMultipleConduits: boolean;
   practicalFillAdvisory: PracticalFillAdvisory | null;
+  /** True when the run was taken as a nipple of not more than 600 mm, filled to 60 %. */
+  nippleFill: boolean;
 }
 
 /**
