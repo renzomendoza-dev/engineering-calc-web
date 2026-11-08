@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { optionalNumber } from "@/lib/zodHelpers";
 import { CIRCUIT_TYPES, CONDUCTOR_MATERIALS, CONDUIT_MATERIALS } from "@/features/voltage-drop/types";
 import { TERMINATION_TEMP_RATINGS } from "./types";
 
@@ -47,6 +48,7 @@ export const wireSizingSchema = z
           (TERMINATION_TEMP_RATINGS as readonly number[]).includes(value),
         { message: "Must be 60, 75, or 90" },
       ),
+    overcurrentDeviceAmps: optionalNumber(z.coerce.number("Must be a number").positive("Must be positive")),
     includeVoltageDropCheck: z.boolean(),
     voltageDropCheck: z.object({
       circuitType: z.union([z.enum(CIRCUIT_TYPES), z.literal("")]).optional(),

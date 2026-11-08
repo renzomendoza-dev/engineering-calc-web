@@ -38,6 +38,8 @@ export interface WireSizingRequest {
   conductorMaterial: ConductorMaterial;
   terminationTempRatingCelsius: number;
   voltageDropCheck: VoltageDropCheckRequest | null;
+  /** The device that will protect the conductor, A. Optional: given, a size it may not protect (2.40.1.4(D)) is passed over. */
+  overcurrentDeviceAmps?: number;
 }
 
 /** Mirrors calc-api's VoltageDropCheckResponseDto field-for-field. */
@@ -68,6 +70,13 @@ export interface WireSizingResponse {
   requiredAmpacityPerSetAmps: number;
   meetsTerminationRating: boolean;
   voltageDropCheckResult: VoltageDropCheckResult | null;
+  /** Largest overcurrent device that may protect the recommended size under PEC 2.40.1.4(D); null for a size the clause does not cap. */
+  maximumOvercurrentDeviceAmps: number | null;
+  /** The overcurrent device given in the request; null when none was. */
+  overcurrentDeviceAmps: number | null;
+  /** The smallest size that satisfies the ampacity alone; differs from recommendedSizeLabel when sizeRaisedForOvercurrentLimit. */
+  ampacitySizeLabel: string;
+  sizeRaisedForOvercurrentLimit: boolean;
 }
 
 /** Mirrors calc-api's AmpacityEntryDto field-for-field — one row of PEC Table 3.10.2.6(B)(16). */

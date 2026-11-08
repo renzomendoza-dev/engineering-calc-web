@@ -47,6 +47,7 @@ const defaultValues: WireSizingFormInput = {
   insulationType: "",
   conductorMaterial: "",
   terminationTempRatingCelsius: "" as unknown as WireSizingFormInput["terminationTempRatingCelsius"],
+  overcurrentDeviceAmps: "",
   includeVoltageDropCheck: false,
   voltageDropCheck: {
     circuitType: "",
@@ -156,6 +157,7 @@ export function WireSizingForm({ onResult }: WireSizingFormProps) {
       insulationType: values.insulationType,
       conductorMaterial: values.conductorMaterial || "COPPER",
       terminationTempRatingCelsius: values.terminationTempRatingCelsius,
+      overcurrentDeviceAmps: values.overcurrentDeviceAmps,
       voltageDropCheck: values.includeVoltageDropCheck
         ? {
             circuitType: values.voltageDropCheck.circuitType || "THREE_PHASE_AC",
@@ -208,6 +210,13 @@ export function WireSizingForm({ onResult }: WireSizingFormProps) {
           tooltip="How many identical conductors run in parallel to carry this circuit's current — e.g. 2 if a single conductor sized for the full load would be too large or isn't listed in the table. All parallel conductors must match in size, material, and length. 1 is the normal single-conductor case."
           error={errors.numberOfParallelSets?.message}
           {...register("numberOfParallelSets")}
+        />
+        <NumberField
+          label="Overcurrent Device Rating (optional)"
+          unit="A"
+          tooltip="The breaker or fuse that will protect this conductor. PEC 2.40.1.4(D) limits the device that may protect a small conductor, for example 15 A for 2.0 mm² copper and 20 A for 3.5 mm² copper, whatever its ampacity. Give it and a size that device may not protect is passed over for the next one up. Blank sizes by ampacity alone and states the limit."
+          error={errors.overcurrentDeviceAmps?.message}
+          {...register("overcurrentDeviceAmps")}
         />
       </div>
 

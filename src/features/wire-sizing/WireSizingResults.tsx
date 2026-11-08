@@ -27,6 +27,19 @@ export function WireSizingResults({ result }: WireSizingResultsProps) {
         }
       />
 
+      {result.sizeRaisedForOvercurrentLimit && result.overcurrentDeviceAmps !== null && (
+        <div className="rounded-lg border border-violet-400 bg-violet-50 p-4 dark:border-violet-500 dark:bg-violet-950/40">
+          <p className="text-sm font-medium text-violet-800 dark:text-violet-300">
+            Raised for the overcurrent device
+          </p>
+          <p className="mt-1 text-sm text-violet-700 dark:text-violet-400">
+            {result.ampacitySizeLabel} carries the load, but a {result.overcurrentDeviceAmps} A device is above what
+            PEC 2.40.1.4(D) lets protect a conductor that small. Use{" "}
+            <strong>{result.recommendedSizeLabel}</strong> with that device.
+          </p>
+        </div>
+      )}
+
       {!result.meetsTerminationRating && (
         <div className="rounded-lg border border-amber-400 bg-amber-50 p-4 dark:border-amber-500 dark:bg-amber-950/40">
           <p className="text-sm font-medium text-amber-800 dark:text-amber-400">
@@ -56,6 +69,20 @@ export function WireSizingResults({ result }: WireSizingResultsProps) {
             value={result.requiredAmpacityPerSetAmps.toFixed(2)}
             unit="A"
             note={`Total ÷ ${result.numberOfParallelSets} sets — this is what the recommended size was actually sized against.`}
+          />
+        )}
+        {result.maximumOvercurrentDeviceAmps !== null && (
+          <ResultCard
+            label="Largest Overcurrent Device"
+            value={String(result.maximumOvercurrentDeviceAmps)}
+            unit="A"
+            tone={
+              result.overcurrentDeviceAmps !== null &&
+              result.overcurrentDeviceAmps > result.maximumOvercurrentDeviceAmps
+                ? "warning"
+                : "default"
+            }
+            note="PEC 2.40.1.4(D) Small Conductors: the most that may protect this size, whatever its ampacity. Does not apply to taps (2.40.1.4(E)) or the cases of 2.40.1.4(G)."
           />
         )}
         <ResultCard label="Base Ampacity" value={result.baseAmpacityAmps.toFixed(2)} unit="A" />
