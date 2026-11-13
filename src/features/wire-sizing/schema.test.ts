@@ -13,6 +13,7 @@ function validForm(): WireSizingFormInput {
     terminationTempRatingCelsius: 75,
     overcurrentDeviceAmps: "",
     nipple: false,
+    multipleReceptacleBranchCircuit: false,
     includeVoltageDropCheck: false,
     voltageDropCheck: {},
   };
@@ -42,6 +43,17 @@ describe("wireSizingSchema overcurrent device", () => {
     for (const value of ["0", "-20", "abc"]) {
       expect(issuePaths({ ...validForm(), overcurrentDeviceAmps: value })).toContain("overcurrentDeviceAmps");
     }
+  });
+});
+
+describe("wireSizingSchema multi-receptacle branch circuit", () => {
+  it("takes the flag either way", () => {
+    const yes = wireSizingSchema.safeParse({ ...validForm(), multipleReceptacleBranchCircuit: true });
+
+    expect(yes.success && yes.data.multipleReceptacleBranchCircuit).toBe(true);
+    expect(issuePaths({ ...validForm(), multipleReceptacleBranchCircuit: "no" as unknown as boolean })).toContain(
+      "multipleReceptacleBranchCircuit",
+    );
   });
 });
 

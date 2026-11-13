@@ -4,9 +4,30 @@ import type { WireSizingResponse } from "./types";
 
 interface WireSizingResultsProps {
   result: WireSizingResponse;
+  /**
+   * The 2.40.1.4 overcurrent limits. Off where the conductor's protection follows its own article
+   * (motor circuits, Article 4.30, through Table 2.40.1.4(G)).
+   */
+  showProtectionLimits?: boolean;
 }
 
-export function WireSizingResults({ result }: WireSizingResultsProps) {
+/** Why the given device may not protect the size that carries the load, for the banner. */
+function limitReason(result: WireSizingResponse): string {
+  switch (result.overcurrentLimitClause) {
+    case "2.40.1.4(B)":
+      return result.multipleReceptacleBranchCircuit
+        ? "is above its ampacity, and PEC 2.40.1.4(B)(1) allows no rating above it on a branch circuit with more than one receptacle for portable loads"
+        : "is above its ampacity by more than the next standard rating PEC 2.40.1.4(B) allows";
+    case "2.40.1.4(C)":
+      return "is over 800 A, and PEC 2.40.1.4(C) then wants the ampacity to reach it";
+    case "2.40.1.4(D)":
+      return "is above what PEC 2.40.1.4(D) lets protect a conductor that small";
+    default:
+      return "is more than PEC 2.40.1.4 lets protect it";
+  }
+}
+
+export function WireSizingResults({ result, showProtectionLimits = true }: WireSizingResultsProps) {
   const vdCheck = result.voltageDropCheckResult;
 
   return (
@@ -27,14 +48,14 @@ export function WireSizingResults({ result }: WireSizingResultsProps) {
         }
       />
 
-      {result.sizeRaisedForOvercurrentLimit && result.overcurrentDeviceAmps !== null && (
+      {showProtectionLimits && result.sizeRaisedForOvercurrentLimit && result.overcurrentDeviceAmps !== null && (
         <div className="rounded-lg border border-violet-400 bg-violet-50 p-4 dark:border-violet-500 dark:bg-violet-950/40">
           <p className="text-sm font-medium text-violet-800 dark:text-violet-300">
             Raised for the overcurrent device
           </p>
           <p className="mt-1 text-sm text-violet-700 dark:text-violet-400">
-            {result.ampacitySizeLabel} carries the load, but a {result.overcurrentDeviceAmps} A device is above what
-            PEC 2.40.1.4(D) lets protect a conductor that small. Use{" "}
+            {result.ampacitySizeLabel} carries the load, but a {result.overcurrentDeviceAmps} A device{" "}
+            {limitReason(result)}. Use{" "}
             <strong>{result.recommendedSizeLabel}</strong> with that device.
           </p>
         </div>
@@ -71,7 +92,19 @@ export function WireSizingResults({ result }: WireSizingResultsProps) {
             note={`Total ÷ ${result.numberOfParallelSets} sets — this is what the recommended size was actually sized against.`}
           />
         )}
-        {result.maximumOvercurrentDeviceAmps !== null && (
+        {showProtectionLimits && result.standardRatingLimitAmps !== null && (
+          <ResultCard
+            label="Largest Standard Device"
+            value={String(result.standardRatingLimitAmps)}
+            unit="A"
+            note={
+              result.multipleReceptacleBranchCircuit
+                ? `PEC 2.40.1.4(B)(1): a branch circuit with more than one receptacle for portable loads takes no rating above the ${result.protectedAmpacityAmps.toFixed(2)} A ampacity (Table 2.40.1.6(A)).`
+                : `PEC 2.40.1.4(B) and (C): the ${result.protectedAmpacityAmps.toFixed(2)} A ampacity, or the next standard rating above it up to 800 A (Table 2.40.1.6(A)).`
+            }
+          />
+        )}
+        {showProtectionLimits && result.maximumOvercurrentDeviceAmps !== null && (
           <ResultCard
             label="Largest Overcurrent Device"
             value={String(result.maximumOvercurrentDeviceAmps)}

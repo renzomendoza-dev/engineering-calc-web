@@ -42,6 +42,8 @@ export interface WireSizingRequest {
   overcurrentDeviceAmps?: number;
   /** A nipple of not more than 600 mm: PEC Chapter 10 note (4) lets the conductor-count adjustment go unapplied. Optional; absent is a run. */
   nipple?: boolean;
+  /** A branch circuit supplying more than one receptacle for cord-and-plug portable loads: 2.40.1.4(B)(1) then allows no rating above the ampacity. Optional. */
+  multipleReceptacleBranchCircuit?: boolean;
 }
 
 /** Mirrors calc-api's VoltageDropCheckResponseDto field-for-field. */
@@ -81,6 +83,13 @@ export interface WireSizingResponse {
   sizeRaisedForOvercurrentLimit: boolean;
   /** True when the run was taken as a nipple of not more than 600 mm, so adjustmentFactor is 1 whatever the conductor count. */
   nipple: boolean;
+  /** The ampacity the overcurrent device protects: deratedAmpacityAmps times numberOfParallelSets. */
+  protectedAmpacityAmps: number;
+  /** Largest Table 2.40.1.6(A) rating 2.40.1.4(B)/(C) lets protect protectedAmpacityAmps; null when none fits. */
+  standardRatingLimitAmps: number | null;
+  multipleReceptacleBranchCircuit: boolean;
+  /** The 2.40.1.4 clause, "2.40.1.4(B)", "(C)" or "(D)", that did not let the given device protect ampacitySizeLabel; null unless raised. */
+  overcurrentLimitClause: string | null;
 }
 
 /** Mirrors calc-api's AmpacityEntryDto field-for-field — one row of PEC Table 3.10.2.6(B)(16). */

@@ -49,6 +49,7 @@ const defaultValues: WireSizingFormInput = {
   terminationTempRatingCelsius: "" as unknown as WireSizingFormInput["terminationTempRatingCelsius"],
   overcurrentDeviceAmps: "",
   nipple: false,
+  multipleReceptacleBranchCircuit: false,
   includeVoltageDropCheck: false,
   voltageDropCheck: {
     circuitType: "",
@@ -160,6 +161,7 @@ export function WireSizingForm({ onResult }: WireSizingFormProps) {
       terminationTempRatingCelsius: values.terminationTempRatingCelsius,
       overcurrentDeviceAmps: values.overcurrentDeviceAmps,
       nipple: values.nipple,
+      multipleReceptacleBranchCircuit: values.multipleReceptacleBranchCircuit,
       voltageDropCheck: values.includeVoltageDropCheck
         ? {
             circuitType: values.voltageDropCheck.circuitType || "THREE_PHASE_AC",
@@ -216,7 +218,7 @@ export function WireSizingForm({ onResult }: WireSizingFormProps) {
         <NumberField
           label="Overcurrent Device Rating (optional)"
           unit="A"
-          tooltip="The breaker or fuse that will protect this conductor. PEC 2.40.1.4(D) limits the device that may protect a small conductor, for example 15 A for 2.0 mm² copper and 20 A for 3.5 mm² copper, whatever its ampacity. Give it and a size that device may not protect is passed over for the next one up. Blank sizes by ampacity alone and states the limit."
+          tooltip="The breaker or fuse that will protect this conductor. PEC 2.40.1.4 lets it be no more than the conductor's ampacity, or the next standard rating above it up to 800 A (2.40.1.4(B)); above 800 A the ampacity must reach it (C); and a small conductor has its own cap, for example 15 A for 2.0 mm² copper (D). Give it and a size it may not protect is passed over for the next one up. Blank sizes by ampacity alone and states the limits."
           error={errors.overcurrentDeviceAmps?.message}
           {...register("overcurrentDeviceAmps")}
         />
@@ -248,6 +250,21 @@ export function WireSizingForm({ onResult }: WireSizingFormProps) {
         <p className="pl-6 text-xs text-zinc-500 dark:text-zinc-400">
           A short piece between boxes, cabinets or similar enclosures: the 3.10.2.6(B)(3)(a) adjustment for
           more than three conductors need not apply (PEC Chapter 10, note 4). The ambient correction still does.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
+            {...register("multipleReceptacleBranchCircuit")}
+          />
+          Branch circuit with more than one receptacle for portable loads
+        </label>
+        <p className="pl-6 text-xs text-zinc-500 dark:text-zinc-400">
+          Supplying more than one receptacle for cord-and-plug-connected portable loads: the next standard device
+          rating above the ampacity is not allowed (PEC 2.40.1.4(B)(1)).
         </p>
       </div>
 
