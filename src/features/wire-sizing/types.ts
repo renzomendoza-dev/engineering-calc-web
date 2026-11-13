@@ -125,6 +125,29 @@ export interface AmbientTempCorrectionTableRow {
 }
 
 /**
+ * Mirrors calc-api's SmallConductorLimitEntryDto field-for-field — one line of PEC 2.40.1.4(D)
+ * Small Conductors. ALUMINUM also stands for copper-clad aluminum; conditions is null for a line
+ * with none.
+ */
+export interface SmallConductorLimitTableRow {
+  conductorMaterial: ConductorMaterial;
+  sizeLabel: string;
+  maximumOvercurrentDeviceAmps: number;
+  conditions: string | null;
+}
+
+/**
+ * Mirrors calc-api's StandardAmpereRatingsDto field-for-field — PEC Table 2.40.1.6(A), the
+ * standard ratings of fuses and inverse time circuit breakers, ascending; the ratings added for
+ * fuses only; and the 800 A ceiling on taking the next rating up (2.40.1.4(B)).
+ */
+export interface StandardAmpereRatings {
+  ratings: number[];
+  additionalFuseRatings: number[];
+  nextHigherRatingMaximumAmps: number;
+}
+
+/**
  * Mirrors calc-api's ConductorCountAdjustmentEntryDto field-for-field — one row of PEC Table
  * 3.10.2.6(B)(3)(a). conductorCountMax is nullable for the open-ended "41 and above" row.
  * adjustmentFactorPercent is the published percentage (e.g. 80), not yet divided by 100.

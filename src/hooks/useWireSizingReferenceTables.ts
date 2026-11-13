@@ -5,12 +5,16 @@ import {
   getAmpacityTable,
   getConductorCountAdjustmentTable,
   getInsulationTypeTempRatingTable,
+  getSmallConductorLimitTable,
+  getStandardAmpereRatings,
 } from "@/lib/reference-api";
 import type {
   AmbientTempCorrectionTableRow,
   AmpacityTableRow,
   ConductorCountAdjustmentTableRow,
   InsulationTypeTempRatingTableRow,
+  SmallConductorLimitTableRow,
+  StandardAmpereRatings,
 } from "@/features/wire-sizing/types";
 import { EMPTY_LIST, useReferenceData } from "./useReferenceData";
 
@@ -19,6 +23,8 @@ interface WireSizingReferenceTables {
   insulationTempRatingRows: InsulationTypeTempRatingTableRow[];
   ambientTempCorrectionRows: AmbientTempCorrectionTableRow[];
   conductorCountAdjustmentRows: ConductorCountAdjustmentTableRow[];
+  smallConductorLimitRows: SmallConductorLimitTableRow[];
+  standardAmpereRatings: StandardAmpereRatings | null;
 }
 
 interface UseWireSizingReferenceTablesResult extends WireSizingReferenceTables {
@@ -31,22 +37,39 @@ const EMPTY: WireSizingReferenceTables = {
   insulationTempRatingRows: EMPTY_LIST,
   ambientTempCorrectionRows: EMPTY_LIST,
   conductorCountAdjustmentRows: EMPTY_LIST,
+  smallConductorLimitRows: EMPTY_LIST,
+  standardAmpereRatings: null,
 };
 
 async function load(): Promise<WireSizingReferenceTables> {
-  const [ampacityRows, insulationTempRatingRows, ambientTempCorrectionRows, conductorCountAdjustmentRows] =
-    await Promise.all([
-      getAmpacityTable(),
-      getInsulationTypeTempRatingTable(),
-      getAmbientTempCorrectionTable(),
-      getConductorCountAdjustmentTable(),
-    ]);
-  return { ampacityRows, insulationTempRatingRows, ambientTempCorrectionRows, conductorCountAdjustmentRows };
+  const [
+    ampacityRows,
+    insulationTempRatingRows,
+    ambientTempCorrectionRows,
+    conductorCountAdjustmentRows,
+    smallConductorLimitRows,
+    standardAmpereRatings,
+  ] = await Promise.all([
+    getAmpacityTable(),
+    getInsulationTypeTempRatingTable(),
+    getAmbientTempCorrectionTable(),
+    getConductorCountAdjustmentTable(),
+    getSmallConductorLimitTable(),
+    getStandardAmpereRatings(),
+  ]);
+  return {
+    ampacityRows,
+    insulationTempRatingRows,
+    ambientTempCorrectionRows,
+    conductorCountAdjustmentRows,
+    smallConductorLimitRows,
+    standardAmpereRatings,
+  };
 }
 
 /**
- * Fetches the four raw reference tables wire sizing's core ampacity calculation actually
- * pulls from, for display purposes only — separate from useWireSizingReferenceData, which
+ * Fetches the raw reference tables wire sizing's calculation pulls from (the four ampacity and
+ * derating tables, and the 2.40.1.4 overcurrent limits), for display purposes only — separate from useWireSizingReferenceData, which
  * fetches the much smaller dropdown-population lists the form needs on every render. Mirrors
  * useConductorReferenceTables' role for voltage drop.
  */

@@ -91,4 +91,18 @@ export const PEC_TABLES = {
     number: "3.10.2.6(B)(3)(a)",
     title: "Ampacity Adjustment for More Than Three Current-Carrying Conductors",
   },
+  STANDARD_AMPERE_RATINGS: {
+    number: "2.40.1.6(A)",
+    title: "Standard Ampere Ratings for Fuses and Inverse Time Circuit Breakers",
+    page: 86,
+  },
+} as const;
+
+/** Clauses (not numbered tables) that hold tabular data, cited the same way. Pages checked against the book. */
+export const PEC_CLAUSES = {
+  SMALL_CONDUCTORS: {
+    number: "2.40.1.4(D)",
+    title: "Small Conductors",
+    page: 84,
+  },
 } as const;

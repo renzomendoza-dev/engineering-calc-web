@@ -18,6 +18,8 @@ import type {
   AmpacityTableRow,
   ConductorCountAdjustmentTableRow,
   InsulationTypeTempRatingTableRow,
+  SmallConductorLimitTableRow,
+  StandardAmpereRatings,
 } from "@/features/wire-sizing/types";
 import type {
   OccupancyTypeTableRow,
@@ -222,6 +224,16 @@ export function getConductorCountAdjustmentTable(): Promise<ConductorCountAdjust
   return apiGet<ConductorCountAdjustmentTableRow[]>(
     "/api/electrical/reference/conductor-count-adjustment-table",
   );
+}
+
+/** The lines of PEC 2.40.1.4(D) Small Conductors, in the order printed. */
+export function getSmallConductorLimitTable(): Promise<SmallConductorLimitTableRow[]> {
+  return apiGet<SmallConductorLimitTableRow[]>("/api/electrical/reference/small-conductor-limit-table");
+}
+
+/** PEC Table 2.40.1.6(A), the standard ampere ratings of fuses and inverse time circuit breakers. */
+export function getStandardAmpereRatings(): Promise<StandardAmpereRatings> {
+  return apiGet<StandardAmpereRatings>("/api/electrical/reference/standard-ampere-ratings");
 }
 
 /**
