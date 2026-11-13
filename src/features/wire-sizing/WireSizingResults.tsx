@@ -90,7 +90,15 @@ export function WireSizingResults({ result }: WireSizingResultsProps) {
           label="Temp Correction Factor"
           value={result.tempCorrectionFactor.toFixed(3)}
         />
-        <ResultCard label="Adjustment Factor" value={result.adjustmentFactor.toFixed(3)} />
+        <ResultCard
+          label="Adjustment Factor"
+          value={result.adjustmentFactor.toFixed(3)}
+          note={
+            result.nipple
+              ? "Nipple of not more than 600 mm: the 3.10.2.6(B)(3)(a) factor for the number of conductors need not apply (PEC Chapter 10, note 4)."
+              : undefined
+          }
+        />
       </div>
 
       {vdCheck && (

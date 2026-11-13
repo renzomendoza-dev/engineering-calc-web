@@ -12,6 +12,7 @@ function validForm(): WireSizingFormInput {
     conductorMaterial: "COPPER",
     terminationTempRatingCelsius: 75,
     overcurrentDeviceAmps: "",
+    nipple: false,
     includeVoltageDropCheck: false,
     voltageDropCheck: {},
   };
@@ -41,5 +42,19 @@ describe("wireSizingSchema overcurrent device", () => {
     for (const value of ["0", "-20", "abc"]) {
       expect(issuePaths({ ...validForm(), overcurrentDeviceAmps: value })).toContain("overcurrentDeviceAmps");
     }
+  });
+});
+
+describe("wireSizingSchema nipple", () => {
+  it("takes a nipple or a run", () => {
+    const run = wireSizingSchema.safeParse(validForm());
+    const nipple = wireSizingSchema.safeParse({ ...validForm(), nipple: true });
+
+    expect(run.success && run.data.nipple).toBe(false);
+    expect(nipple.success && nipple.data.nipple).toBe(true);
+  });
+
+  it("rejects a nipple that is not a boolean", () => {
+    expect(issuePaths({ ...validForm(), nipple: "yes" as unknown as boolean })).toContain("nipple");
   });
 });

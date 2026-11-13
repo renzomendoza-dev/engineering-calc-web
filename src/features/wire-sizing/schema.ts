@@ -49,6 +49,7 @@ export const wireSizingSchema = z
         { message: "Must be 60, 75, or 90" },
       ),
     overcurrentDeviceAmps: optionalNumber(z.coerce.number("Must be a number").positive("Must be positive")),
+    nipple: z.boolean(),
     includeVoltageDropCheck: z.boolean(),
     voltageDropCheck: z.object({
       circuitType: z.union([z.enum(CIRCUIT_TYPES), z.literal("")]).optional(),

@@ -40,6 +40,8 @@ export interface WireSizingRequest {
   voltageDropCheck: VoltageDropCheckRequest | null;
   /** The device that will protect the conductor, A. Optional: given, a size it may not protect (2.40.1.4(D)) is passed over. */
   overcurrentDeviceAmps?: number;
+  /** A nipple of not more than 600 mm: PEC Chapter 10 note (4) lets the conductor-count adjustment go unapplied. Optional; absent is a run. */
+  nipple?: boolean;
 }
 
 /** Mirrors calc-api's VoltageDropCheckResponseDto field-for-field. */
@@ -77,6 +79,8 @@ export interface WireSizingResponse {
   /** The smallest size that satisfies the ampacity alone; differs from recommendedSizeLabel when sizeRaisedForOvercurrentLimit. */
   ampacitySizeLabel: string;
   sizeRaisedForOvercurrentLimit: boolean;
+  /** True when the run was taken as a nipple of not more than 600 mm, so adjustmentFactor is 1 whatever the conductor count. */
+  nipple: boolean;
 }
 
 /** Mirrors calc-api's AmpacityEntryDto field-for-field — one row of PEC Table 3.10.2.6(B)(16). */

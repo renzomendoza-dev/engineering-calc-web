@@ -48,6 +48,7 @@ const defaultValues: WireSizingFormInput = {
   conductorMaterial: "",
   terminationTempRatingCelsius: "" as unknown as WireSizingFormInput["terminationTempRatingCelsius"],
   overcurrentDeviceAmps: "",
+  nipple: false,
   includeVoltageDropCheck: false,
   voltageDropCheck: {
     circuitType: "",
@@ -158,6 +159,7 @@ export function WireSizingForm({ onResult }: WireSizingFormProps) {
       conductorMaterial: values.conductorMaterial || "COPPER",
       terminationTempRatingCelsius: values.terminationTempRatingCelsius,
       overcurrentDeviceAmps: values.overcurrentDeviceAmps,
+      nipple: values.nipple,
       voltageDropCheck: values.includeVoltageDropCheck
         ? {
             circuitType: values.voltageDropCheck.circuitType || "THREE_PHASE_AC",
@@ -231,6 +233,21 @@ export function WireSizingForm({ onResult }: WireSizingFormProps) {
         </label>
         <p className="pl-6 text-xs text-zinc-500 dark:text-zinc-400">
           Loads running 3+ hours require 125% sizing per PEC.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label className="flex items-center gap-2 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
+            {...register("nipple")}
+          />
+          Nipple of not more than 600 mm
+        </label>
+        <p className="pl-6 text-xs text-zinc-500 dark:text-zinc-400">
+          A short piece between boxes, cabinets or similar enclosures: the 3.10.2.6(B)(3)(a) adjustment for
+          more than three conductors need not apply (PEC Chapter 10, note 4). The ambient correction still does.
         </p>
       </div>
 
