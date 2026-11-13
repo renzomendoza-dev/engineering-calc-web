@@ -1,5 +1,5 @@
 import { formatFixed as fixed } from "@/lib/format";
-import type { CheckBasis, FireCaseKind, VentingCheck } from "./types";
+import type { CheckBasis, ComplianceCheck, FireCaseKind } from "./types";
 
 /**
  * Display formatting for the API's figures. Rounding here is presentation only: the values sent
@@ -70,7 +70,7 @@ export const BASIS_LABELS: Record<CheckBasis, string> = {
 };
 
 /** Under the clause of a line that is not a requirement of NFPA 204, so a report built from the table can't present it as one. */
-export function supplementaryNote(check: VentingCheck): string | null {
+export function supplementaryNote(check: ComplianceCheck): string | null {
   return check.basis === "SUPPLEMENTARY" ? BASIS_LABELS[check.basis] : null;
 }
 

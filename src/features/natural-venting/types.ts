@@ -1,14 +1,10 @@
-import type { CheckStatus } from "@/lib/checkStatus";
+import type { ComplianceCheck } from "@/lib/checkStatus";
 
 /** How a fire case's heat release rate is given: directly, or grown from a t-squared fire. */
 export const FIRE_CASE_KINDS = ["STEADY", "GROWING"] as const;
 export type FireCaseKind = (typeof FIRE_CASE_KINDS)[number];
 
-export { CHECK_STATUSES, type CheckStatus } from "@/lib/checkStatus";
-
-/** Whether a check is a requirement of NFPA 204 or something supplementary to it. */
-export const CHECK_BASES = ["NFPA_204", "SUPPLEMENTARY"] as const;
-export type CheckBasis = (typeof CHECK_BASES)[number];
+export { CHECK_STATUSES, type CheckBasis, type CheckStatus, type ComplianceCheck } from "@/lib/checkStatus";
 
 export type PlumeRegime = "BELOW_LAYER" | "REACHES_LAYER";
 
@@ -69,18 +65,6 @@ export interface NaturalVentingRequest {
   growthConstant?: number;
   zones: VentZoneRequest[];
   fireCases: FireCaseRequest[];
-}
-
-/** Mirrors calc-api's VentingCheckDto: one line of the compliance table. */
-export interface VentingCheck {
-  clause: string;
-  description: string;
-  basis: CheckBasis;
-  status: CheckStatus;
-  actual: number | null;
-  limit: number | null;
-  unit: string | null;
-  note: string | null;
 }
 
 /**
@@ -147,7 +131,7 @@ export interface FireCaseResult {
   floorRadiantFlux: number;
   feasibleHeatReleaseRate: number;
   minimumAisleWidth: number | null;
-  checks: VentingCheck[];
+  checks: ComplianceCheck[];
   imageFire: ImageFire;
   transientInterface: TransientInterface | null;
 }
@@ -155,7 +139,7 @@ export interface FireCaseResult {
 /** Mirrors calc-api's ZoneResultDto: the checks for a zone that do not depend on a fire. */
 export interface ZoneResult {
   name: string;
-  checks: VentingCheck[];
+  checks: ComplianceCheck[];
 }
 
 /** Mirrors calc-api's NaturalVentingResponse. */

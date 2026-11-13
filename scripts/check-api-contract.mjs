@@ -241,7 +241,8 @@ function main() {
     javaFiles.set(file.split(/[\\/]/).pop().replace(/\.java$/, ""), file);
   }
 
-  const tsFiles = walk(join(WEB_ROOT, "src", "features"), "types.ts");
+  // Shared types live beside the code that uses them in src/lib; the ones that mirror a DTO are checked too.
+  const tsFiles = [...walk(join(WEB_ROOT, "src", "features"), "types.ts"), join(WEB_ROOT, "src", "lib", "checkStatus.ts")];
   const problems = [];
   let checked = 0;
   let untagged = 0;

@@ -5,6 +5,25 @@
 export const CHECK_STATUSES = ["PASS", "FAIL", "CONFIRM", "OPEN", "INFO"] as const;
 export type CheckStatus = (typeof CHECK_STATUSES)[number];
 
+/** Whether a check is a requirement of the standard (NFPA 204 for natural venting) or something supplementary to it. */
+export const CHECK_BASES = ["NFPA_204", "SUPPLEMENTARY"] as const;
+export type CheckBasis = (typeof CHECK_BASES)[number];
+
+/**
+ * Mirrors calc-api's ComplianceCheckDto: one line of a compliance table. `basis` is sent only by
+ * the calculators that label their checks that way (natural venting) and is absent from the rest.
+ */
+export interface ComplianceCheck {
+  clause: string;
+  description: string;
+  basis?: CheckBasis;
+  status: CheckStatus;
+  actual: number | null;
+  limit: number | null;
+  unit: string | null;
+  note: string | null;
+}
+
 export const CHECK_STATUS_LABELS: Record<CheckStatus, string> = {
   PASS: "Pass",
   FAIL: "Fail",

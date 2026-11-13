@@ -15,7 +15,7 @@ import {
   supplementaryNote,
 } from "../format";
 import type { NaturalVentingCalculationState } from "../useNaturalVentingCalculation";
-import type { FireCaseResult, NaturalVentingResponse, VentingCheck } from "../types";
+import type { ComplianceCheck, FireCaseResult, NaturalVentingResponse } from "../types";
 
 interface ResultsStepProps {
   state: NaturalVentingCalculationState;
@@ -73,7 +73,7 @@ export function ResultsStep({ state }: ResultsStepProps) {
   );
 }
 
-function allChecks(result: NaturalVentingResponse): VentingCheck[] {
+function allChecks(result: NaturalVentingResponse): ComplianceCheck[] {
   return [...result.zones.flatMap((zone) => zone.checks), ...result.fireCases.flatMap((fire) => fire.checks)];
 }
 

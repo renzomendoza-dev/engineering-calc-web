@@ -1,4 +1,4 @@
-import type { CheckStatus } from "@/lib/checkStatus";
+import type { ComplianceCheck } from "@/lib/checkStatus";
 
 export const STANDPIPE_CLASSES = ["CLASS_I", "CLASS_II", "CLASS_III"] as const;
 export type StandpipeClass = (typeof STANDPIPE_CLASSES)[number];
@@ -80,17 +80,6 @@ export interface StandpipeHydraulicRequest {
   segments: StandpipeSegmentRequest[];
 }
 
-/** Mirrors calc-api's StandpipeCheckDto: one line of the compliance table. */
-export interface StandpipeCheck {
-  clause: string;
-  description: string;
-  status: CheckStatus;
-  actual: number | null;
-  limit: number | null;
-  unit: string | null;
-  note: string | null;
-}
-
 /** Mirrors calc-api's DemandLineDto: one step of the demand build-up, in gpm. */
 export interface DemandLine {
   clause: string;
@@ -161,7 +150,7 @@ export interface StandpipeHydraulicResponse {
   highestFdcPressurePsi: number | null;
   staticPressureAtLowestConnectionPsi: number | null;
   segments: StandpipeSegmentRow[];
-  checks: StandpipeCheck[];
+  checks: ComplianceCheck[];
 }
 
 /** Mirrors calc-api's StandpipeFittingEntryDto: one fitting of the equivalent length chart. */
