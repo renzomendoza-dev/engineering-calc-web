@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
@@ -45,7 +45,7 @@ export function FireWaterStorageForm({ onResult, initialRatedPumpFlow }: FireWat
     register,
     handleSubmit,
     setError,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FireWaterStorageFormInput, unknown, FireWaterStorageFormValues>({
     resolver: zodResolver(fireWaterStorageSchema),
@@ -53,7 +53,7 @@ export function FireWaterStorageForm({ onResult, initialRatedPumpFlow }: FireWat
   });
   const { generalError, setGeneralError, handleApiError } = useApiFormError(setError, defaultValues);
 
-  const hazardClassification = watch("hazardClassification") as HazardClassification;
+  const hazardClassification = useWatch({ control, name: "hazardClassification" }) as HazardClassification;
   const range = HAZARD_DURATION_RANGES[hazardClassification];
   const isFixedDuration = range.minMinutes === range.maxMinutes;
 

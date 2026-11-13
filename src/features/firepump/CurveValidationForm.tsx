@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
 import { apiPost } from "@/lib/api-client";
@@ -51,7 +51,7 @@ export function CurveValidationForm({
   });
   const { generalError, setGeneralError, handleApiError } = useApiFormError(setError, defaultValues);
 
-  const candidateRatedFlowGpm = Number(watch("candidateRatedFlowGpm")) || undefined;
+  const candidateRatedFlowGpm = Number(useWatch({ control, name: "candidateRatedFlowGpm" })) || undefined;
 
   const onSubmit = async (values: CurveValidationFormValues) => {
     setGeneralError(null);

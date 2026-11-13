@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useFieldArray, useForm, type Resolver } from "react-hook-form";
+import { useFieldArray, useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormErrorBanner } from "@/components/ui/FormErrorBanner";
 import { NumberField } from "@/components/ui/NumberField";
@@ -159,13 +159,13 @@ export function GeneratorSetSizingForm({ onResult }: GeneratorSetSizingFormProps
   const wireReference = useWireSizingReferenceData();
   const referenceDisabled = reference.isLoading || !!reference.error;
 
-  const standbyClass = watch("standbyClass");
-  const optionalTransfer = watch("optionalTransfer");
-  const phaseType = watch("phaseType");
-  const systemVoltageInput = watch("voltage");
-  const sizeOutputConductor = watch("sizeOutputConductor");
-  const loadEntryMode = watch("loadEntryMode");
-  const includeFirePump = watch("includeFirePump");
+  const standbyClass = useWatch({ control, name: "standbyClass" });
+  const optionalTransfer = useWatch({ control, name: "optionalTransfer" });
+  const phaseType = useWatch({ control, name: "phaseType" });
+  const systemVoltageInput = useWatch({ control, name: "voltage" });
+  const sizeOutputConductor = useWatch({ control, name: "sizeOutputConductor" });
+  const loadEntryMode = useWatch({ control, name: "loadEntryMode" });
+  const includeFirePump = useWatch({ control, name: "includeFirePump" });
   const isDirect = loadEntryMode === "DIRECT";
   // Motor starting applies to motors (only in the build-up mode) and to the fire pump.
   const hasStartingLoads = includeFirePump || (!isDirect && motors.fields.length > 0);

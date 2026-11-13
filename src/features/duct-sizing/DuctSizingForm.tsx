@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
@@ -51,7 +51,7 @@ export function DuctSizingForm({ onResult, onShapeChange, onMethodChange }: Duct
     handleSubmit,
     setError,
     setValue,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<DuctSizingFormInput, unknown, DuctSizingFormValues>({
     resolver: zodResolver(ductSizingSchema),
@@ -61,9 +61,10 @@ export function DuctSizingForm({ onResult, onShapeChange, onMethodChange }: Duct
 
   const { materials, isLoading: materialsLoading, error: materialsError } = useDuctRoughnessMaterials();
 
-  const shape = watch("shape");
-  const method = watch("method");
-  const ductMaterial = watch("ductMaterial");
+  const shape = useWatch({ control, name: "shape" });
+  const method = useWatch({ control, name: "method" });
+  const ductMaterial = useWatch({ control, name: "ductMaterial" });
+  const fixedDimensionType = useWatch({ control, name: "fixedDimensionType" });
   const isRectangular = shape === "RECTANGULAR";
   const isVelocity = method === "VELOCITY";
 
@@ -195,7 +196,7 @@ export function DuctSizingForm({ onResult, onShapeChange, onMethodChange }: Duct
               {...register("fixedDimensionType")}
             />
             <NumberField
-              label={watch("fixedDimensionType") === "WIDTH" ? "Duct Width" : "Duct Height"}
+              label={fixedDimensionType === "WIDTH" ? "Duct Width" : "Duct Height"}
               unit="mm"
               error={errors.fixedDimensionValueMm?.message}
               {...register("fixedDimensionValueMm")}

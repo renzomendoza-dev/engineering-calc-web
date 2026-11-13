@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
@@ -72,7 +72,7 @@ export function WireSizingForm({ onResult }: WireSizingFormProps) {
     setError,
     setValue,
     getValues,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<WireSizingFormInput, unknown, WireSizingFormValues>({
     resolver: zodResolver(wireSizingSchema),
@@ -89,8 +89,8 @@ export function WireSizingForm({ onResult }: WireSizingFormProps) {
     error: referenceError,
   } = useWireSizingReferenceData();
 
-  const includeVoltageDropCheck = watch("includeVoltageDropCheck");
-  const vdCircuitType = watch("voltageDropCheck.circuitType");
+  const includeVoltageDropCheck = useWatch({ control, name: "includeVoltageDropCheck" });
+  const vdCircuitType = useWatch({ control, name: "voltageDropCheck.circuitType" });
   const isDc = vdCircuitType === "DC";
 
   // Clear the voltage drop check sub-section when it's toggled off, so a stale value from

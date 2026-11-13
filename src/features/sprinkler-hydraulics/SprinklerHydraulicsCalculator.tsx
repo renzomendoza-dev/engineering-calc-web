@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useState } from "react";
-import { useForm, type Path } from "react-hook-form";
+import { useForm, useWatch, type Path } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormErrorBanner } from "@/components/ui/FormErrorBanner";
 import { useApiFormError } from "@/hooks/useApiFormError";
@@ -52,10 +52,10 @@ export function SprinklerHydraulicsCalculator() {
     mode: "onChange",
   });
   const {
+    control,
     reset,
     setError,
     trigger,
-    watch,
     formState: { isDirty },
   } = form;
   const [step, setStep] = useState<StepId>("project");
@@ -68,7 +68,8 @@ export function SprinklerHydraulicsCalculator() {
   const reference = useSprinklerReferenceData();
   const { materials, isLoading: materialsLoading } = usePipeMaterials();
 
-  const values = watch();
+  // useWatch types the whole form as a deep partial; at runtime it holds every field, as watch() did.
+  const values = useWatch({ control }) as SprinklerFormInput;
   const calculation = useSprinklerCalculation(values, reference.fittings);
   // The hazard's published maximum coverage per sprinkler, so the plan can flag spacing that
   // exceeds it. Null while the preset table loads: the plan then just doesn't check.
@@ -101,6 +102,7 @@ export function SprinklerHydraulicsCalculator() {
     // there is something worth keeping.
     if (draft) {
       reset(draft.values, { keepDefaultValues: true });
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- known only once the draft is read from localStorage, after hydration
       setLegacyNetworkDropped(draft.droppedLegacyNetwork);
     }
     setRestored(true);

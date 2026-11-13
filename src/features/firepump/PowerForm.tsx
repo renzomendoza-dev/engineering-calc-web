@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
 import { apiPost } from "@/lib/api-client";
@@ -48,8 +48,8 @@ export function PowerForm({ onResult }: PowerFormProps) {
   });
   const { generalError, setGeneralError, handleApiError } = useApiFormError(setError, defaultValues);
 
-  const inputType = watch("inputType");
-  const curveRatedFlowGpm = Number(watch("curveRatedFlowGpm")) || undefined;
+  const inputType = useWatch({ control, name: "inputType" });
+  const curveRatedFlowGpm = Number(useWatch({ control, name: "curveRatedFlowGpm" })) || undefined;
 
   // Clear the other mode's fields when the input type toggles, so unmounted/invalid leftover
   // data (e.g. curvePoints' unrendered-and-thus-invisible validation errors) can never block

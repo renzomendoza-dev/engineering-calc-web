@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
 import { apiPost } from "@/lib/api-client";
@@ -33,7 +33,7 @@ export function ExpansionTankForm({ onResult }: ExpansionTankFormProps) {
     register,
     handleSubmit,
     setError,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<ExpansionTankFormInput, unknown, ExpansionTankFormValues>({
     resolver: zodResolver(expansionTankSchema),
@@ -41,7 +41,7 @@ export function ExpansionTankForm({ onResult }: ExpansionTankFormProps) {
   });
   const { generalError, setGeneralError, handleApiError } = useApiFormError(setError, defaultValues);
 
-  const systemType = watch("systemType");
+  const systemType = useWatch({ control, name: "systemType" });
   const vesselVolumeLabel =
     systemType === "HYDRONIC_HEATING" ? "Boiler Water Content" : "Water Heater Tank Volume";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
@@ -82,7 +82,7 @@ export function MotorFlcForm({ onResult }: MotorFlcFormProps) {
     setError,
     setValue,
     getValues,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<MotorFlcFormInput, unknown, MotorFlcFormValues>({
     resolver: zodResolver(motorFlcSchema),
@@ -101,12 +101,12 @@ export function MotorFlcForm({ onResult }: MotorFlcFormProps) {
     error: wireSizingRefError,
   } = useWireSizingReferenceData();
 
-  const phaseType = watch("phaseType");
-  const motorClass = watch("motorClass") ?? "";
-  const horsepowerLabel = watch("horsepowerLabel");
-  const includeWireSizing = watch("includeWireSizing");
-  const includeVoltageDropCheck = watch("includeVoltageDropCheck");
-  const vdCircuitType = watch("voltageDropCheck.circuitType");
+  const phaseType = useWatch({ control, name: "phaseType" });
+  const motorClass = useWatch({ control, name: "motorClass" }) ?? "";
+  const horsepowerLabel = useWatch({ control, name: "horsepowerLabel" });
+  const includeWireSizing = useWatch({ control, name: "includeWireSizing" });
+  const includeVoltageDropCheck = useWatch({ control, name: "includeVoltageDropCheck" });
+  const vdCircuitType = useWatch({ control, name: "voltageDropCheck.circuitType" });
 
   const isThreePhase = phaseType === "THREE_PHASE";
   const isSynchronous = isThreePhase && motorClass === "SYNCHRONOUS";

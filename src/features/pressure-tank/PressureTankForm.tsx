@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
 import { apiPost, ApiError } from "@/lib/api-client";
@@ -63,7 +63,7 @@ export function PressureTankForm({ onResult }: PressureTankFormProps) {
     register,
     handleSubmit,
     setError,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<PressureTankFormInput, unknown, PressureTankFormValues>({
     resolver: zodResolver(pressureTankSchema),
@@ -71,7 +71,7 @@ export function PressureTankForm({ onResult }: PressureTankFormProps) {
   });
   const { generalError, setGeneralError, handleApiError } = useApiFormError(setError, defaultValues);
 
-  const controlType = watch("controlType");
+  const controlType = useWatch({ control, name: "controlType" });
   const labels = LABELS[controlType];
 
   const onSubmit = async (values: PressureTankFormValues) => {

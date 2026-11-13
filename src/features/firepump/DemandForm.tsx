@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
@@ -41,7 +41,7 @@ export function DemandForm({ onResult }: DemandFormProps) {
     handleSubmit,
     setError,
     setValue,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<DemandFormInput, unknown, DemandFormValues>({
     resolver: zodResolver(demandSchema),
@@ -49,7 +49,7 @@ export function DemandForm({ onResult }: DemandFormProps) {
   });
   const { generalError, setGeneralError, handleApiError } = useApiFormError(setError, defaultValues);
 
-  const suctionCondition = watch("suctionCondition");
+  const suctionCondition = useWatch({ control, name: "suctionCondition" });
 
   // Clear the other suction mode's field when toggling, so a stale value from the previously-
   // visible field never gets silently submitted -- same reasoning as voltage drop's schema.

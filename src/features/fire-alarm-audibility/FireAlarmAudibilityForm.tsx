@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
 import { apiPost } from "@/lib/api-client";
@@ -39,7 +39,7 @@ export function FireAlarmAudibilityForm({ onResult, onModeChange }: FireAlarmAud
     register,
     handleSubmit,
     setError,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FireAlarmAudibilityFormInput, unknown, FireAlarmAudibilityFormValues>({
     resolver: zodResolver(fireAlarmAudibilitySchema),
@@ -47,7 +47,7 @@ export function FireAlarmAudibilityForm({ onResult, onModeChange }: FireAlarmAud
   });
   const { generalError, setGeneralError, handleApiError } = useApiFormError(setError, defaultValues);
 
-  const mode = watch("mode");
+  const mode = useWatch({ control, name: "mode" });
 
   // Reports the selected mode up to the calculator so the formula-reference block can swap
   // to the formula for the mode currently selected in this form.

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useState } from "react";
-import { useForm, type Path } from "react-hook-form";
+import { useForm, useWatch, type Path } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormErrorBanner } from "@/components/ui/FormErrorBanner";
 import { useApiFormError } from "@/hooks/useApiFormError";
@@ -39,17 +39,18 @@ export function NaturalVentingCalculator() {
     mode: "onChange",
   });
   const {
+    control,
     reset,
     setError,
     trigger,
-    watch,
     formState: { isDirty },
   } = form;
   const [step, setStep] = useState<StepId>("conditions");
   const [restored, setRestored] = useState(false);
   const [confirmingClear, setConfirmingClear] = useState(false);
 
-  const values = watch();
+  // useWatch types the whole form as a deep partial; at runtime it holds every field, as watch() did.
+  const values = useWatch({ control }) as NaturalVentingFormInput;
   const calculation = useNaturalVentingCalculation(values);
   const { generalError, setGeneralError, handleApiError } = useApiFormError(
     setError,
@@ -63,6 +64,7 @@ export function NaturalVentingCalculator() {
     // keepDefaultValues leaves the blank form as the baseline, so a restored draft still counts as
     // dirty, which is what tells the save effect below that there is something worth keeping.
     if (draft) reset(draft, { keepDefaultValues: true });
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the draft comes from localStorage after hydration; the save effect must see the restored form on the next render, so this is state, not a ref
     setRestored(true);
   }, [reset]);
 

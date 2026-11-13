@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
@@ -41,7 +41,7 @@ export function SizePipeForm({ onResult }: SizePipeFormProps) {
     handleSubmit,
     setError,
     setValue,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<SizePipeFormInput, unknown, SizePipeFormValues>({
     resolver: zodResolver(sizePipeSchema),
@@ -51,8 +51,8 @@ export function SizePipeForm({ onResult }: SizePipeFormProps) {
 
   const { materials, isLoading: referenceLoading, error: referenceError } = usePipeMaterials();
 
-  const pipeMaterial = watch("pipeMaterial");
-  const schedule = watch("schedule");
+  const pipeMaterial = useWatch({ control, name: "pipeMaterial" });
+  const schedule = useWatch({ control, name: "schedule" });
 
   const selectedMaterial = materials.find((m) => m.material === pipeMaterial);
   const scheduleOptions = useMemo(() => selectedMaterial?.schedules ?? [], [selectedMaterial]);

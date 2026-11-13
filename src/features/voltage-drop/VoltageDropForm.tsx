@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
@@ -56,7 +56,7 @@ export function VoltageDropForm({ onResult }: VoltageDropFormProps) {
     handleSubmit,
     setError,
     setValue,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<VoltageDropFormInput, unknown, VoltageDropFormValues>({
     resolver: zodResolver(voltageDropSchema),
@@ -74,11 +74,11 @@ export function VoltageDropForm({ onResult }: VoltageDropFormProps) {
 
   const { impedanceRows } = useConductorImpedanceTable();
 
-  const circuitType = watch("circuitType");
-  const useCustomImpedance = watch("useCustomImpedance");
-  const conductorMaterial = watch("conductorMaterial");
-  const conduitMaterial = watch("conduitMaterial");
-  const conductorSizeLabel = watch("conductorSizeLabel");
+  const circuitType = useWatch({ control, name: "circuitType" });
+  const useCustomImpedance = useWatch({ control, name: "useCustomImpedance" });
+  const conductorMaterial = useWatch({ control, name: "conductorMaterial" });
+  const conduitMaterial = useWatch({ control, name: "conduitMaterial" });
+  const conductorSizeLabel = useWatch({ control, name: "conductorSizeLabel" });
   const isDc = circuitType === "DC";
 
   // Clear the other mode's fields when the impedance mode toggles, so a stale value from

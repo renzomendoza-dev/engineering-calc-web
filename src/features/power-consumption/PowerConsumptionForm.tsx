@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { NumberField } from "@/components/ui/NumberField";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
@@ -55,7 +55,7 @@ export function PowerConsumptionForm({ onResult }: PowerConsumptionFormProps) {
     handleSubmit,
     setError,
     setValue,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<PowerConsumptionFormInput, unknown, PowerConsumptionFormValues>({
     resolver: zodResolver(powerConsumptionSchema),
@@ -63,12 +63,12 @@ export function PowerConsumptionForm({ onResult }: PowerConsumptionFormProps) {
   });
   const { generalError, setGeneralError, handleApiError } = useApiFormError(setError, defaultValues);
 
-  const mode = watch("mode");
-  const circuitType = watch("circuitType");
-  const runtimeEntryMode = watch("runtimeEntryMode");
-  const hoursPerDay = watch("hoursPerDay");
-  const numberOfDays = watch("numberOfDays");
-  const totalOperatingHours = watch("totalOperatingHours");
+  const mode = useWatch({ control, name: "mode" });
+  const circuitType = useWatch({ control, name: "circuitType" });
+  const runtimeEntryMode = useWatch({ control, name: "runtimeEntryMode" });
+  const hoursPerDay = useWatch({ control, name: "hoursPerDay" });
+  const numberOfDays = useWatch({ control, name: "numberOfDays" });
+  const totalOperatingHours = useWatch({ control, name: "totalOperatingHours" });
   const isDc = circuitType === "DC";
 
   // Clear the other two modes' fields whenever mode changes, so a stale value from a
