@@ -100,21 +100,26 @@ describe("error body parsing", () => {
     });
   });
 
-  describe("legacy shapes", () => {
-    it('reads {"error": message}', async () => {
-      stubFetchResponse(400, JSON.stringify({ error: "wattageInput must be positive for DIRECT_WATTAGE mode" }));
+  describe("bodies in another shape", () => {
+    it("reads Spring's default error body by its status, not as field errors", async () => {
+      stubFetchResponse(
+        404,
+        JSON.stringify({ timestamp: "2026-11-13T12:00:00Z", status: 404, error: "Not Found", path: "/api/nope" }),
+        "Not Found",
+      );
 
       const error = await postExpectingError();
-      expect(error.message).toBe("wattageInput must be positive for DIRECT_WATTAGE mode");
+      expect(error.status).toBe(404);
+      expect(error.message).toBe("Not Found");
       expect(error.fieldErrors).toBeUndefined();
     });
 
-    it("reads a flat field -> message map", async () => {
-      stubFetchResponse(400, JSON.stringify({ currentAmps: "must be greater than 0" }));
+    it("no longer reads a flat field -> message map as field errors", async () => {
+      stubFetchResponse(400, JSON.stringify({ currentAmps: "must be greater than 0" }), "Bad Request");
 
       const error = await postExpectingError();
-      expect(error.message).toBe("Validation failed");
-      expect(error.fieldErrors).toEqual({ currentAmps: "must be greater than 0" });
+      expect(error.message).toBe("Bad Request");
+      expect(error.fieldErrors).toBeUndefined();
     });
   });
 
@@ -144,9 +149,8 @@ describe("error body parsing", () => {
 });
 
 describe("isGenericValidationMessage", () => {
-  it("recognizes the backend's and the legacy placeholder messages", () => {
+  it("recognizes the backend's placeholder message", () => {
     expect(isGenericValidationMessage("Request validation failed")).toBe(true);
-    expect(isGenericValidationMessage("Validation failed")).toBe(true);
   });
 
   it("rejects real messages", () => {

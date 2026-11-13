@@ -21,16 +21,14 @@ export class ApiError extends Error {
 }
 
 /**
- * Placeholder messages that carry no information beyond "some fields failed" — the backend's
- * `GlobalExceptionHandler.VALIDATION_FAILED_MESSAGE`, and the one this client assigns to the
- * legacy flat field-map body. When an ApiError has fieldErrors and one of these as its message,
- * the field messages are the whole story; the message itself adds nothing worth showing.
+ * The backend's `GlobalExceptionHandler.VALIDATION_FAILED_MESSAGE`: a placeholder that says no
+ * more than "some fields failed". When an ApiError has fieldErrors and this as its message, the
+ * field messages are the whole story; the message itself adds nothing worth showing.
  */
-const LEGACY_VALIDATION_FAILED_MESSAGE = "Validation failed";
-const GENERIC_VALIDATION_MESSAGES = new Set(["Request validation failed", LEGACY_VALIDATION_FAILED_MESSAGE]);
+const VALIDATION_FAILED_MESSAGE = "Request validation failed";
 
 export function isGenericValidationMessage(message: string): boolean {
-  return GENERIC_VALIDATION_MESSAGES.has(message);
+  return message === VALIDATION_FAILED_MESSAGE;
 }
 
 /** Keeps only the string-valued entries of a plain object; anything else yields `{}`. */
@@ -61,8 +59,8 @@ async function parseErrorBody(response: Response): Promise<ApiError> {
   }
   const record = body as Record<string, unknown>;
 
-  // Current contract. Requiring both keys keeps an unrelated `{"message": ...}` body (e.g. from
-  // a proxy in front of the API) from being mistaken for it.
+  // The backend's one error body. Requiring both keys keeps an unrelated `{"message": ...}` body
+  // (e.g. from a proxy in front of the API) from being mistaken for it.
   if (typeof record.message === "string" && "fieldErrors" in record) {
     const fieldErrors = toStringRecord(record.fieldErrors);
     return new ApiError(
@@ -73,25 +71,14 @@ async function parseErrorBody(response: Response): Promise<ApiError> {
   }
 
   // A `{"message": ...}` body without fieldErrors (typically from a proxy or gateway in front of
-  // the API) is a plain message. Checked before the legacy flat-map branch below, which would
-  // otherwise read "message" as the name of a failed request field. No request DTO has a field
-  // called "message", so this can't swallow a real legacy field error.
+  // the API) is a plain message.
   if (typeof record.message === "string") {
     return new ApiError(response.status, record.message);
   }
 
-  // Legacy shapes, from before the backend unified its error body: `{"error": message}` for
-  // calculation errors (also matches Spring's default error body), and a flat
-  // field -> message map for validation errors. Kept so this client works against a backend
-  // that hasn't been redeployed yet; safe to delete once the new backend is live everywhere.
-  if (typeof record.error === "string") {
-    return new ApiError(response.status, record.error);
-  }
-  const legacyFieldErrors = toStringRecord(record);
-  if (Object.keys(legacyFieldErrors).length > 0) {
-    return new ApiError(response.status, LEGACY_VALIDATION_FAILED_MESSAGE, legacyFieldErrors);
-  }
-
+  // Anything else -- Spring's default error body for what GlobalExceptionHandler does not handle
+  // (`{"timestamp", "status", "error", "path"}` on a 404 or 500), say -- has nothing the user can
+  // act on beyond the status.
   return new ApiError(response.status, fallbackMessage);
 }
 

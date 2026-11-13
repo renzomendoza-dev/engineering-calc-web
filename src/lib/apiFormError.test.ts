@@ -68,12 +68,6 @@ describe("resolveApiFormError", () => {
     );
   });
 
-  it("treats the legacy client-assigned placeholder the same as the backend's", () => {
-    const err = new ApiError(400, "Validation failed", { currentAmps: "must be greater than 0" });
-
-    expect(resolveApiFormError(err, everyFieldInline).banner).toBeNull();
-  });
-
   it("converts Spring list paths so list-item errors can go inline", () => {
     const err = new ApiError(400, "Request validation failed", {
       "conductors[0].quantity": "must be greater than or equal to 1",
