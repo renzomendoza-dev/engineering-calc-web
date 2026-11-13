@@ -51,3 +51,7 @@ export const INLET_OPTION_LABELS: Record<InletSize, string> = {
 /** Said wherever the page shows the rules, because the rules were read from the 2024 edition. */
 export const EDITION_NOTICE =
   "The rules and tables here follow the 2024 edition of NFPA 14 as printed (Chapters 5, 8, 10 and 11). The pressure of the other standpipes, the static pressure at the hose connections and the published friction loss of the hose valve are not covered, so confirm them separately, and check the class and type of system with the authority having jurisdiction.";
+
+/** The tooltip of the C factor field on a segment and on a fire department connection's pipe. */
+export const C_FACTOR_HINT =
+  "Hazen-Williams C. 120 is black steel in wet service in the C table of NFPA 14 (Table 11.3.2.3); other pipe types are listed at the foot of the page. The AHJ may require another value.";
